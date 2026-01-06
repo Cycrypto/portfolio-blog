@@ -36,11 +36,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3002
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: blog
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: postgres123
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: blog
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres123
       JWT_SECRET: test-jwt-secret-key-change-in-production
     depends_on:
       postgres:

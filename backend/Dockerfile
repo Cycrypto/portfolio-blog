@@ -56,6 +56,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./
 
+# uploads 디렉토리 생성 및 권한 부여
+RUN mkdir -p /app/uploads && \
+    chown -R nestjs:nodejs /app/uploads
+
 # 프로덕션 환경변수 설정
 ENV NODE_ENV=production
 ENV PORT=3002
