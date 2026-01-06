@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "start:frontend": "npm run dev --prefix frontend",
+    "start:backend": "npm run start:dev --prefix backend",
+    "start:dev": "concurrently \"npm run start:frontend\" \"npm run start:backend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  },
+  "dependencies": {
+    "@nestjs/jwt": "^11.0.0",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^15.4.5"
+  }
+}

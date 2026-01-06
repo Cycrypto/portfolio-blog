@@ -1,0 +1,259 @@
+# ============================================
+# Node.js & npm
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ============================================
+# Package managers
+# ============================================
+# 주의: package-lock.json은 커밋하는 것이 좋습니다!
+# package-lock.json은 의존성 버전을 고정하여 재현 가능한 빌드를 보장합니다.
+# yarn.lock
+pnpm-lock.yaml
+.pnp
+.pnp.js
+*.tgz
+
+# ============================================
+# Frontend (Next.js)
+# ============================================
+# Build outputs
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+
+# Next.js cache
+frontend/.next/cache/
+
+# Production
+frontend/build
+frontend/dist
+
+# Static files
+frontend/public/uploads/
+
+# Testing
+frontend/coverage/
+frontend/.nyc_output
+
+# ============================================
+# Backend (NestJS)
+# ============================================
+# Build outputs
+backend/dist/
+backend/build/
+
+# Uploads directory (로컬 개발용, 프로덕션은 Cloudflare R2 사용)
+backend/uploads/
+backend/public/uploads/
+
+# Database migration files (생성된 파일만, src/migrations는 커밋)
+backend/dist/migrations/
+
+# Testing
+backend/coverage/
+backend/.nyc_output
+
+# ============================================
+# Environment Variables
+# ============================================
+# 모든 환경변수 파일 무시
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
+# 환경변수 예시 파일은 커밋 (선택사항)
+# !.env.example
+
+# ============================================
+# Database
+# ============================================
+# PostgreSQL 로컬 데이터
+pgdata/
+postgres-data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ============================================
+# OS Generated Files
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+
+# Linux
+*~
+
+# ============================================
+# IDEs and Editors
+# ============================================
+# VSCode
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# WebStorm / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ============================================
+# Testing
+# ============================================
+coverage/
+*.lcov
+.nyc_output
+.jest-cache/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ============================================
+# TypeScript
+# ============================================
+*.tsbuildinfo
+
+# ============================================
+# Docker
+# ============================================
+docker-compose.override.yml
+*.dockerfile.local
+
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.temp
+*.bak
+*.cache
+.cache/
+
+# ============================================
+# Documentation Build
+# ============================================
+.docusaurus
+.cache-loader
+.parcel-cache
+
+# Hugo (static site generator)
+.hugo_build.lock
+public/
+resources/_gen/
+
+# ============================================
+# Misc
+# ============================================
+# Lock files (필요 시 주석 해제)
+# pnpm-lock.yaml
+# yarn.lock
+
+# Sentry
+.sentryclirc
+
+# Vercel
+.vercel
+
+# Turbo
+.turbo
+
+# Railway
+.railway
+
+# ============================================
+# Project Specific
+# ============================================
+# 테스트 스크립트 (선택사항)
+test-*.js
+
+# 임시 마크다운 파일
+*.draft.md
+*.temp.md
+
+# 백업 파일
+*.backup
+
+# ============================================
+# Security & Secrets
+# ============================================
+# API keys and credentials
+*.pem
+*.key
+*.cert
+credentials.json
+serviceAccountKey.json
+
+# AWS
+.aws/
+
+# SSL certificates (로컬 개발용)
+*.crt
+*.csr
+
+# ============================================
+# Build artifacts
+# ============================================
+*.tar
+*.zip
+*.rar
+*.7z
+
+# ============================================
+# Claude Code
+# ============================================
+.claude/
