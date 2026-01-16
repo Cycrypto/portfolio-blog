@@ -223,7 +223,22 @@ db:
 - [ ] 데이터베이스 포트를 외부에 노출하지 않음 (현재 설정 유지)
 - [ ] 정기적인 백업 설정
 
-### 3. 환경변수 관리
+### 3. MinIO 업로드 설정
+
+MinIO를 사용하는 경우 백엔드 환경변수에 다음 항목을 추가합니다:
+
+```env
+S3_ENDPOINT=http://minio:9000
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=강력한_비밀번호
+S3_BUCKET=blog
+S3_REGION=us-east-1
+S3_PUBLIC_URL=https://s3.your-domain.com/blog
+```
+
+버킷은 미리 생성하고, 읽기 공개 정책(anonymous download)을 적용해야 이미지가 바로 노출됩니다.
+
+### 4. 환경변수 관리
 
 민감한 정보는 `.env` 파일이나 시크릿 관리 도구 사용:
 
@@ -238,7 +253,7 @@ DB_PASSWORD=강력한_db_비밀번호
 JWT_SECRET=랜덤_jwt_시크릿_키_최소_32자
 ```
 
-### 4. 로그 관리
+### 5. 로그 관리
 
 생성된 관리자 계정 정보가 포함된 로그 삭제:
 ```bash
