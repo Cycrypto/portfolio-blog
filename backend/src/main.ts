@@ -16,15 +16,22 @@ async function bootstrap() {
   app.use(require('express').json({ limit: '50mb' }));
   app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
 
-  app.enableCors({
-    origin: [
+  const corsOrigins = configService.get<string>('CORS_ORIGINS');
+  const allowedOrigins = corsOrigins
+    ? corsOrigins.split(',').map((origin) => origin.trim()).filter(Boolean)
+    : [
         'http://localhost:3000',
         'http://localhost:3001',
         'http://junha.space',
-        'https://junha.space'
-    ],
-    credentials: true
-  })
+        'https://junha.space',
+        'http://www.junha.space',
+        'https://www.junha.space',
+      ];
+
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+  });
 
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new AllExceptionsFilter());
