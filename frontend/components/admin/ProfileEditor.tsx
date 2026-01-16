@@ -35,6 +35,11 @@ export function ProfileEditor() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isChangingPassword, setIsChangingPassword] = useState(false)
 
+  // 사용자 ID 변경 상태
+  const [currentPasswordForUsername, setCurrentPasswordForUsername] = useState('')
+  const [newUsername, setNewUsername] = useState('')
+  const [isChangingUsername, setIsChangingUsername] = useState(false)
+
   // 컴포넌트 마운트 시 프로필 데이터 로드
   useEffect(() => {
     const loadProfile = async () => {
@@ -196,6 +201,86 @@ export function ProfileEditor() {
       })
     } finally {
       setIsChangingPassword(false)
+    }
+  }
+
+  const handleChangeUsername = async () => {
+    // 유효성 검사
+    if (!currentPasswordForUsername || !newUsername) {
+      toast({
+        title: "입력 오류",
+        description: "모든 필드를 입력해주세요.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (newUsername.length < 3) {
+      toast({
+        title: "사용자 ID 길이 오류",
+        description: "사용자 ID는 최소 3자 이상이어야 합니다.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (newUsername.length > 20) {
+      toast({
+        title: "사용자 ID 길이 오류",
+        description: "사용자 ID는 최대 20자까지 가능합니다.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsChangingUsername(true)
+    try {
+      const token = TokenManager.getToken()
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}/change-username`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: currentPasswordForUsername,
+          newUsername,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || '사용자 ID 변경에 실패했습니다.')
+      }
+
+      // 새 토큰 저장
+      if (result.access_token) {
+        TokenManager.setToken(result.access_token)
+      }
+
+      toast({
+        title: "사용자 ID 변경 성공",
+        description: result.message || "사용자 ID가 성공적으로 변경되었습니다. 새 ID로 다시 로그인해주세요.",
+      })
+
+      // 입력 필드 초기화
+      setCurrentPasswordForUsername('')
+      setNewUsername('')
+
+      // 2초 후 로그아웃 및 로그인 페이지로 이동
+      setTimeout(() => {
+        TokenManager.clearToken()
+        window.location.href = '/admin/login'
+      }, 2000)
+    } catch (error: any) {
+      toast({
+        title: "사용자 ID 변경 실패",
+        description: error.message || "사용자 ID 변경 중 오류가 발생했습니다.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsChangingUsername(false)
     }
   }
 
@@ -518,6 +603,73 @@ export function ProfileEditor() {
 
         {/* 보안 탭 */}
         <TabsContent value="security" className="space-y-6">
+          {/* 사용자 ID 변경 카드 */}
+          <Card className="border-brand-indigo-500/30 bg-white/80 backdrop-blur-sm shadow-lg">
+            <CardHeader className="border-b border-brand-indigo-500/20 bg-gradient-to-r from-brand-blue-50 to-brand-indigo-50">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-indigo-500 to-brand-indigo-700 flex items-center justify-center">
+                  <Lock className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold text-brand-blue-900">사용자 ID 변경</CardTitle>
+                  <CardDescription className="text-neutral-slate-600 mt-1">
+                    관리자 계정의 사용자 ID를 변경합니다
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <div className="space-y-4 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPasswordForUsername" className="text-brand-blue-900">현재 비밀번호</Label>
+                  <Input
+                    id="currentPasswordForUsername"
+                    type="password"
+                    value={currentPasswordForUsername}
+                    onChange={(e) => setCurrentPasswordForUsername(e.target.value)}
+                    placeholder="본인 확인을 위해 현재 비밀번호를 입력하세요"
+                    className="border-brand-indigo-500/50"
+                    autoComplete="current-password"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="newUsername" className="text-brand-blue-900">새 사용자 ID</Label>
+                  <Input
+                    id="newUsername"
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    placeholder="새 사용자 ID를 입력하세요 (3-20자)"
+                    className="border-brand-indigo-500/50"
+                    autoComplete="username"
+                  />
+                </div>
+
+                <Separator className="bg-brand-indigo-500/30 my-4" />
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-800 font-medium mb-2">⚠️ 주의사항</p>
+                  <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
+                    <li>사용자 ID는 3자 이상 20자 이하여야 합니다</li>
+                    <li>변경 후 새 ID로 다시 로그인해야 합니다</li>
+                    <li>중복된 ID는 사용할 수 없습니다</li>
+                  </ul>
+                </div>
+
+                <Button
+                  onClick={handleChangeUsername}
+                  disabled={isChangingUsername}
+                  className="w-full bg-gradient-to-r from-brand-indigo-500 to-brand-indigo-700 hover:from-brand-indigo-600 hover:to-brand-indigo-900 border-0 shadow-md text-white"
+                >
+                  <Lock className="h-4 w-4 mr-2" />
+                  {isChangingUsername ? "변경 중..." : "사용자 ID 변경"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 비밀번호 변경 카드 */}
           <Card className="border-brand-indigo-500/30 bg-white/80 backdrop-blur-sm shadow-lg">
             <CardHeader className="border-b border-brand-indigo-500/20 bg-gradient-to-r from-brand-blue-50 to-brand-indigo-50">
               <div className="flex items-center space-x-3">

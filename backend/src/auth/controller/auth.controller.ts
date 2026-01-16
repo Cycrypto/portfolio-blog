@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nes
 import { AuthService } from "../service/auth.service";
 import { LoginDto, LoginResponseDto } from "../dto/login.dto";
 import { ChangePasswordDto } from "../dto/change-password.dto";
+import { ChangeUsernameDto } from "../dto/change-username.dto";
 import { JwtAuthGuard } from "../common/jwt-auth.guard";
 
 @ApiTags('Authentication')
@@ -61,6 +62,43 @@ export class AuthController {
             req.user.userId,
             changePasswordDto.currentPassword,
             changePasswordDto.newPassword
+        );
+    }
+
+    @Post('change-username')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: '사용자 ID 변경',
+        description: '로그인한 사용자의 사용자 ID를 변경합니다. 새로운 JWT 토큰이 발급됩니다.'
+    })
+    @ApiBody({ type: ChangeUsernameDto })
+    @ApiResponse({
+        status: 200,
+        description: '사용자 ID 변경 성공',
+        schema: {
+            type: 'object',
+            properties: {
+                message: {
+                    type: 'string',
+                    example: '사용자 ID가 성공적으로 변경되었습니다.'
+                },
+                access_token: {
+                    type: 'string',
+                    description: '새로운 JWT 액세스 토큰'
+                }
+            }
+        }
+    })
+    @ApiResponse({
+        status: 401,
+        description: '인증 실패 또는 비밀번호 불일치 또는 중복된 사용자 ID'
+    })
+    async changeUsername(@Request() req, @Body() changeUsernameDto: ChangeUsernameDto) {
+        return this.authService.changeUsername(
+            req.user.userId,
+            changeUsernameDto.currentPassword,
+            changeUsernameDto.newUsername
         );
     }
 

@@ -69,6 +69,41 @@ export class AuthService {
         return { message: '비밀번호가 성공적으로 변경되었습니다.' };
     }
 
+    async changeUsername(userId: number, currentPassword: string, newUsername: string) {
+        // 사용자 찾기
+        const user = await this.usersService.findById(userId);
+        if (!user) {
+            throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+        }
+
+        // 현재 비밀번호 확인 (본인 확인용)
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('비밀번호가 올바르지 않습니다.');
+        }
+
+        // 새 사용자명 중복 확인
+        const existingUser = await this.usersService.findByUsername(newUsername);
+        if (existingUser && existingUser.id !== userId) {
+            throw new UnauthorizedException('이미 사용 중인 사용자 ID입니다.');
+        }
+
+        // 사용자명 업데이트
+        await this.usersService.updateUsername(userId, newUsername);
+
+        // 새로운 JWT 토큰 생성 (username이 변경되었으므로)
+        const payload = {
+            sub: user.id,
+            username: newUsername,
+            roles: user.roles,
+        };
+
+        return {
+            message: '사용자 ID가 성공적으로 변경되었습니다.',
+            access_token: this.jwtService.sign(payload),
+        };
+    }
+
     getDevAccessToken() {
         const mockUser = {
             userId: 1,
