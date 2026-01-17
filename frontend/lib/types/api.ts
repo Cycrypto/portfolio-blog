@@ -9,6 +9,7 @@ export interface PostHeading {
 export interface Post {
   id: number;
   title: string;
+  slug?: string;
   excerpt?: string;
   contentType: PostContentType;
   contentHtml?: string;

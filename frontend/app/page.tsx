@@ -35,7 +35,7 @@ export default function Portfolio() {
       readTime: `${post.readTime}분`,
       tags: post.tags || [post.category],
       image: post.image || "/placeholder.svg?height=200&width=400",
-      slug: post.id.toString(),
+      slug: post.slug || post.id.toString(),
     }
   }
 
