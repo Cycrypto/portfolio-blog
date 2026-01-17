@@ -25,7 +25,6 @@ export default function Portfolio() {
 
   const transformToBlogPost = (post: Post) => {
     const slug = (post.slug && post.slug !== 'null') ? post.slug : post.id.toString()
-    console.log('[DEBUG] Transforming post:', { id: post.id, slug: post.slug, finalSlug: slug, title: post.title })
     return {
       title: post.title,
       excerpt: post.excerpt || `${post.category} 카테고리의 게시물입니다.`,

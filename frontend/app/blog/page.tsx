@@ -79,6 +79,7 @@ export default function BlogPage() {
 
   // 백엔드 Post 데이터를 BlogPost 형태로 변환
   const transformToBlogPost = (post: Post): BlogPost => {
+    const slug = (post.slug && post.slug !== 'null') ? post.slug : post.id.toString()
     return {
       title: post.title,
       excerpt: post.excerpt || `${post.category} 카테고리의 게시물입니다.`,
@@ -90,7 +91,7 @@ export default function BlogPage() {
       readTime: `${post.readTime}분`,
       tags: post.tags || [post.category],
       image: post.image || "/placeholder.svg?height=200&width=400",
-      slug: post.id.toString() // ID 기반으로 변경
+      slug: slug
     }
   }
 
