@@ -23,6 +23,22 @@ export default function Portfolio() {
   const [latestPosts, setLatestPosts] = useState<Post[]>([])
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([])
 
+  const transformToBlogPost = (post: Post) => {
+    return {
+      title: post.title,
+      excerpt: post.excerpt || `${post.category} 카테고리의 게시물입니다.`,
+      date: new Date(post.publishDate).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+      readTime: `${post.readTime}분`,
+      tags: post.tags || [post.category],
+      image: post.image || "/placeholder.svg?height=200&width=400",
+      slug: post.id.toString(),
+    }
+  }
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -292,7 +308,7 @@ export default function Portfolio() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
             {latestPosts.map((post) => (
-              <BlogCard key={post.id} {...post} />
+              <BlogCard key={post.id} {...transformToBlogPost(post)} />
             ))}
           </div>
 

@@ -173,6 +173,7 @@ playwright/.cache/
 # Docker
 # ============================================
 docker-compose.override.yml
+docker-compose.prod.yml
 *.dockerfile.local
 
 # ============================================
