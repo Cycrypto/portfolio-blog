@@ -8,6 +8,7 @@ import { PostListItemDTO } from '../dto/response/post-list-item.dto';
 import { TagsService } from './tags.service';
 import { JSONContent } from '@tiptap/core';
 import { RenderedContent, renderMarkdownContent, renderTiptapContent } from '../utils/content-renderer';
+import { generateSlug } from '../utils/slug-generator';
 
 @Injectable()
 export class PostsService {
@@ -94,8 +95,12 @@ export class PostsService {
             createPostDTO.contentMarkdown
         );
 
+        // slug가 없으면 title에서 자동 생성
+        const slug = createPostDTO.slug || generateSlug(createPostDTO.title);
+
         const postData = {
             ...createPostDTO,
+            slug,
             status: createPostDTO.status as PostStatus,
             tags: tags,
             contentJson: createPostDTO.contentJson as JSONContent,
@@ -138,6 +143,11 @@ export class PostsService {
 
         if (updateData.status) {
             updateData.status = updateData.status as PostStatus;
+        }
+
+        // slug가 없고 title이 변경되면 새로운 slug 생성
+        if (!post.slug && updatePostDTO.title) {
+            updateData.slug = generateSlug(updatePostDTO.title);
         }
 
         const shouldUpdateContent =

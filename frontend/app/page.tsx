@@ -24,7 +24,8 @@ export default function Portfolio() {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([])
 
   const transformToBlogPost = (post: Post) => {
-    console.log('[DEBUG] Transforming post:', { id: post.id, slug: post.slug, title: post.title })
+    const slug = (post.slug && post.slug !== 'null') ? post.slug : post.id.toString()
+    console.log('[DEBUG] Transforming post:', { id: post.id, slug: post.slug, finalSlug: slug, title: post.title })
     return {
       title: post.title,
       excerpt: post.excerpt || `${post.category} 카테고리의 게시물입니다.`,
@@ -36,7 +37,7 @@ export default function Portfolio() {
       readTime: `${post.readTime}분`,
       tags: post.tags || [post.category],
       image: post.image || "/placeholder.svg?height=200&width=400",
-      slug: post.slug || post.id.toString(),
+      slug: slug,
     }
   }
 
