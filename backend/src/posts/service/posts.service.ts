@@ -44,6 +44,7 @@ export class PostsService {
         return posts.map(post => ({
             id: post.id,
             title: post.title,
+            slug: post.slug,
             excerpt: post.excerpt,
             contentType: post.contentType,
             image: post.image,

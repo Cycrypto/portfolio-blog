@@ -4,6 +4,7 @@ import { PostContentType } from '../../entity/post.entity';
 export class PostListItemDTO {
     id: number;  // 포스트 ID
     title: string;  // 포스트 제목
+    slug?: string;  // URL slug
     excerpt?: string;  // 포스트 요약
     contentType: PostContentType;  // 콘텐츠 타입
     image?: string;  // 포스트 이미지

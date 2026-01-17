@@ -24,6 +24,7 @@ export default function Portfolio() {
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([])
 
   const transformToBlogPost = (post: Post) => {
+    console.log('[DEBUG] Transforming post:', { id: post.id, slug: post.slug, title: post.title })
     return {
       title: post.title,
       excerpt: post.excerpt || `${post.category} 카테고리의 게시물입니다.`,
