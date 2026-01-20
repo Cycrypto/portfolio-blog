@@ -44,6 +44,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [newTag, setNewTag] = useState("")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -79,8 +80,6 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove))
   }
-
-  const [newTag, setNewTag] = useState("")
 
   const handleSave = async (saveStatus: string) => {
     console.log('handleSave called with status:', saveStatus)
