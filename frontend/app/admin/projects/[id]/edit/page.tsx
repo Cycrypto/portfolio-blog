@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
 import { ArrowLeft, Save, Eye, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
 import Link from "next/link"
-import { getProject, updateProject } from "@/lib/api"
+import { getProject, updateProject, uploadMedia } from "@/lib/api"
 import { Project } from "@/lib/types/api"
 
 export default function EditProject() {
@@ -40,6 +40,7 @@ export default function EditProject() {
   const [newImage, setNewImage] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -298,19 +299,19 @@ export default function EditProject() {
                         const file = e.target.files?.[0]
                         if (!file) return
                         try {
-                          setIsLoading(true)
+                          setIsSaving(true)
                           const url = await uploadMedia(file)
                           setImages((prev) => [...prev, url])
                         } catch (err) {
                           setError('이미지 업로드에 실패했습니다.')
                         } finally {
-                          setIsLoading(false)
+                          setIsSaving(false)
                         }
                       }}
                     />
-                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isSaving}>
                       <Upload className="w-4 h-4 mr-2" />
-                      {isLoading ? '업로드 중...' : '이미지 업로드'}
+                      {isSaving ? '업로드 중...' : '이미지 업로드'}
                     </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
