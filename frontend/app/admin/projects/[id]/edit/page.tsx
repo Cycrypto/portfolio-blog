@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -40,7 +40,7 @@ export default function EditProject() {
   const [newImage, setNewImage] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const imageInputId = "project-image-upload"
 
   useEffect(() => {
     const load = async () => {
@@ -294,7 +294,7 @@ export default function EditProject() {
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      ref={fileInputRef}
+                      id={imageInputId}
                       onChange={async (e) => {
                         const file = e.target.files?.[0]
                         if (!file) return
@@ -309,7 +309,12 @@ export default function EditProject() {
                         }
                       }}
                     />
-                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isSaving}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById(imageInputId)?.click()}
+                      disabled={isSaving}
+                    >
                       <Upload className="w-4 h-4 mr-2" />
                       {isSaving ? '업로드 중...' : '이미지 업로드'}
                     </Button>

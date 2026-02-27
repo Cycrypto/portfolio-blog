@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Post } from '../posts/entity/post.entity';
+import { Post, PostStatus } from '../posts/entity/post.entity';
 import { Project } from '../projects/project.entity';
 import { Comment } from '../comments/entity/comment.entity';
 
@@ -28,6 +28,21 @@ export class StatsService {
 
   async getRecentPosts(limit = 5) {
     return this.postRepository.find({
+      where: { status: PostStatus.PUBLISHED },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        image: true,
+        status: true,
+        author: true,
+        category: true,
+        publishDate: true,
+        views: true,
+        comments: true,
+        readTime: true,
+      },
       order: { publishDate: 'DESC' },
       take: limit,
     });
@@ -35,6 +50,14 @@ export class StatsService {
 
   async getRecentProjects(limit = 5) {
     return this.projectRepository.find({
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        status: true,
+        progress: true,
+        images: true,
+      },
       order: { id: 'DESC' },
       take: limit,
     });

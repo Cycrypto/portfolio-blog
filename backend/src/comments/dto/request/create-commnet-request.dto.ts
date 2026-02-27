@@ -1,8 +1,11 @@
-import {IsNotEmpty, IsOptional, IsUUID, MaxLength} from "class-validator";
+import {Type} from "class-transformer";
+import {IsEmail, IsInt, IsNotEmpty, IsOptional, IsUUID, MaxLength} from "class-validator";
 
 export class CreateCommnetRequestDto {
-    @IsNotEmpty()
-    postId: string
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    postId?: number;
 
     @IsOptional()
     @IsUUID()
@@ -13,8 +16,10 @@ export class CreateCommnetRequestDto {
     content: string;
 
     @IsNotEmpty()
+    @MaxLength(100)
     authorName: string;
 
-    @IsNotEmpty()
+    @IsEmail()
+    @MaxLength(200)
     authorEmail: string;
 }

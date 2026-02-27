@@ -1,4 +1,4 @@
-import {Body, Controller, Get, Param, Post, Patch, Delete, UseGuards} from "@nestjs/common";
+import {Body, Controller, Get, Param, Post, Patch, Delete, UseGuards, ParseIntPipe, BadRequestException} from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import {CommentsService} from "../service/comments.service";
 import {CreateCommnetRequestDto} from "../dto/request/create-commnet-request.dto";
@@ -21,9 +21,12 @@ export class CommentsController {
     @ApiResponse({ status: 201, description: '댓글이 성공적으로 생성됨', type: CreateCommentResponseDto })
     @ApiResponse({ status: 400, description: '잘못된 요청' })
     async create(
-        @Param('postId') postId: string,
+        @Param('postId', ParseIntPipe) postId: number,
         @Body() dto: CreateCommnetRequestDto,
     ): Promise<CreateCommentResponseDto>{
+        if (dto.postId && dto.postId !== postId) {
+            throw new BadRequestException('URL의 postId와 본문 postId가 일치하지 않습니다.');
+        }
         const comment = await this.commentsService.createComment(({...dto, postId}));
         return {success: true, data: this.mapToResponseDto(comment)};
     }
@@ -34,7 +37,7 @@ export class CommentsController {
     @ApiResponse({ status: 200, description: '성공', type: GetCommentsResponseDto })
     @ApiResponse({ status: 404, description: '포스트를 찾을 수 없음' })
     async getComments(
-        @Param('postId') postId: string,
+        @Param('postId', ParseIntPipe) postId: number,
     ): Promise<GetCommentsResponseDto>{
         const comments = await this.commentsService.getCommentsByPost(postId);
         return {success: true, data: comments.map(comment => this.mapToResponseDto(comment))};
@@ -47,9 +50,10 @@ export class CommentsController {
     @ApiResponse({ status: 200, description: '성공', type: CreateCommentResponseDto })
     @ApiResponse({ status: 404, description: '댓글을 찾을 수 없음' })
     async getComment(
+        @Param('postId', ParseIntPipe) postId: number,
         @Param('commentId') commentId: string,
     ): Promise<CreateCommentResponseDto>{
-        const comment = await this.commentsService.getCommentById(commentId);
+        const comment = await this.commentsService.getCommentById(postId, commentId);
         return {success: true, data: this.mapToResponseDto(comment)};
     }
 
@@ -66,10 +70,11 @@ export class CommentsController {
     @ApiResponse({ status: 403, description: '접근 권한이 없습니다.' })
     @ApiResponse({ status: 404, description: '댓글을 찾을 수 없음' })
     async update(
+        @Param('postId', ParseIntPipe) postId: number,
         @Param('commentId') commentId: string,
         @Body() dto: UpdateCommentRequestDto,
     ): Promise<CreateCommentResponseDto>{
-        const comment = await this.commentsService.updateComment(commentId, dto);
+        const comment = await this.commentsService.updateComment(postId, commentId, dto);
         return {success: true, data: this.mapToResponseDto(comment)};
     }
 
@@ -85,9 +90,10 @@ export class CommentsController {
     @ApiResponse({ status: 403, description: '접근 권한이 없습니다.' })
     @ApiResponse({ status: 404, description: '댓글을 찾을 수 없음' })
     async delete(
+        @Param('postId', ParseIntPipe) postId: number,
         @Param('commentId') commentId: string,
     ): Promise<{success: boolean; message: string}>{
-        await this.commentsService.deleteComment(commentId);
+        await this.commentsService.deleteComment(postId, commentId);
         return {success: true, message: '댓글이 삭제되었습니다.'};
     }
 
@@ -97,12 +103,21 @@ export class CommentsController {
             postId: comment.postId,
             content: comment.content,
             authorName: comment.authorName,
-            authorEmail: comment.authorEmail,
+            authorEmail: this.maskEmail(comment.authorEmail),
             parentId: comment.parentId,
             isDeleted: comment.isDeleted,
             createdAt: comment.createdAt,
             updatedAt: comment.updatedAt,
             replies: comment.replies?.map(reply => this.mapToResponseDto(reply))
         };
+    }
+
+    private maskEmail(email: string): string {
+        const [localPart, domainPart] = email.split('@');
+        if (!localPart || !domainPart || localPart.length <= 2) {
+            return '***';
+        }
+
+        return `${localPart.slice(0, 2)}***@${domainPart}`;
     }
 }

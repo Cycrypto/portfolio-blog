@@ -26,6 +26,23 @@ export class PostsService {
 
         const queryBuilder = this.postRepository.createQueryBuilder('post')
             .leftJoinAndSelect('post.tags', 'tags')
+            .select([
+                'post.id',
+                'post.title',
+                'post.slug',
+                'post.excerpt',
+                'post.contentType',
+                'post.image',
+                'post.status',
+                'post.author',
+                'post.category',
+                'post.publishDate',
+                'post.views',
+                'post.comments',
+                'post.readTime',
+                'tags.id',
+                'tags.name',
+            ])
             .where('post.status = :status', { status: PostStatus.PUBLISHED });
 
         if (keyword) {
@@ -62,7 +79,7 @@ export class PostsService {
 
     async getPostsCount(keyword: string = '', tag: string = ''): Promise<number> {
         const queryBuilder = this.postRepository.createQueryBuilder('post')
-            .leftJoinAndSelect('post.tags', 'tags')
+            .leftJoin('post.tags', 'tags')
             .where('post.status = :status', { status: PostStatus.PUBLISHED });
 
         if (keyword) {
@@ -76,7 +93,7 @@ export class PostsService {
             queryBuilder.andWhere('tags.name = :tagName', { tagName: tag });
         }
 
-        return queryBuilder.getCount();
+        return queryBuilder.select('post.id').distinct(true).getCount();
     }
 
     async createPost(createPostDTO: CreatePostRequestDTO): Promise<Post> {

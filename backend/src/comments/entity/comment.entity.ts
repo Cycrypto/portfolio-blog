@@ -15,11 +15,11 @@ export class Comment{
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column()
-    postId: string;
+    @Column({ type: 'int' })
+    postId: number;
 
-    @ManyToOne(() => Post, (post) => post.comments, {onDelete: 'CASCADE'})
-    @JoinColumn({name: 'post_id'})
+    @ManyToOne(() => Post, {onDelete: 'CASCADE'})
+    @JoinColumn({name: 'postId'})
     post: Post;
 
     @Column({type: 'text'})
@@ -31,7 +31,7 @@ export class Comment{
     @Column()
     authorEmail: string;
 
-    @Column({nullable: true})
+    @Column({ type: 'uuid', nullable: true })
     parentId?: string;
 
     @ManyToOne(() => Comment, (comment) => comment.replies, {nullable: true})

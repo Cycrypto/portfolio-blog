@@ -1,5 +1,5 @@
 import {MiddlewareConsumer, Module, NestModule} from '@nestjs/common';
-import {ConfigModule} from '@nestjs/config';
+import {ConfigModule, ConfigService} from '@nestjs/config';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import {AppController} from './app.controller';
 import {AppService} from './app.service';
@@ -16,23 +16,37 @@ import { ExperienceModule } from './experience/experience.module';
 import { ContactModule } from './contact/contact.module';
 import { UsersModule } from './users/users.module';
 
+function parseBooleanEnv(value: string | undefined, defaultValue: boolean): boolean {
+    if (value === undefined) {
+        return defaultValue;
+    }
+
+    return value.toLowerCase() === 'true';
+}
+
 //Module : Nest의 가장 기본적인 구성 단위
 @Module({
     imports: [
         // env파일 읽을 수 있게 만드는 모듈
         //isGlobal: true로 하면 다른 모듈에서 따로 import 안해도 됨
         ConfigModule.forRoot({isGlobal: true}),
-        TypeOrmModule.forRoot({
-            type: 'postgres',
-            host: process.env.DB_HOST,
-            port: parseInt(process.env.DB_PORT || '5432', 10),
-            username: process.env.DB_USERNAME,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_DATABASE,
-            // 프로젝트 내 .entity 또는 .entity.js 파일을 모두 등록
-            entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            synchronize: true,
-            logging: true, // SQL 로그를 확인할 수 있도록 추가
+        TypeOrmModule.forRootAsync({
+            inject: [ConfigService],
+            useFactory: (configService: ConfigService) => {
+                const isProduction = configService.get<string>('NODE_ENV') === 'production';
+
+                return {
+                    type: 'postgres',
+                    host: configService.get<string>('DB_HOST'),
+                    port: parseInt(configService.get<string>('DB_PORT') || '5432', 10),
+                    username: configService.get<string>('DB_USERNAME'),
+                    password: configService.get<string>('DB_PASSWORD'),
+                    database: configService.get<string>('DB_DATABASE'),
+                    entities: [__dirname + '/**/*.entity{.ts,.js}'],
+                    synchronize: parseBooleanEnv(configService.get<string>('DB_SYNCHRONIZE'), !isProduction),
+                    logging: parseBooleanEnv(configService.get<string>('DB_LOGGING'), !isProduction),
+                };
+            },
         }),
         AuthModule,
         UsersModule,

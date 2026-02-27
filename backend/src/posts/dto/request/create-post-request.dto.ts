@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsEnum, IsDateString, IsOptional, IsArray, IsNumber, IsObject, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { PostContentType } from '../../entity/post.entity';
+import { PostContentType, PostStatus } from '../../entity/post.entity';
 
 export class CreatePostRequestDTO {
     @ApiProperty({ description: '포스트 제목', example: '새로운 NestJS 포스트' })
@@ -44,9 +44,9 @@ export class CreatePostRequestDTO {
     tags?: string[];
 
     @ApiProperty({ description: '포스트 상태', example: 'published' })
-    @IsString()
+    @IsEnum(PostStatus)
     @IsNotEmpty()
-    status: string;
+    status: PostStatus;
 
     @ApiProperty({ description: '작성자 이름', example: 'John Doe' })
     @IsString()

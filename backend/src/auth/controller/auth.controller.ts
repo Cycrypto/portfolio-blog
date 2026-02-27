@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request } from "@nestjs/common";
+import { Controller, Post, Body, UseGuards, Request, ForbiddenException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from "../service/auth.service";
 import { LoginDto, LoginResponseDto } from "../dto/login.dto";
@@ -127,9 +127,11 @@ export class AuthController {
         description: '개발용 토큰 발급이 비활성화됨'
     })
     getDevAccessToken() {
-        // 운영 환경에서는 비활성화
-        if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DEV_TOKEN !== 'true') {
-            throw new Error('개발용 토큰 발급은 개발 환경에서만 사용 가능합니다.');
+        const isExplicitlyEnabled = process.env.ENABLE_DEV_TOKEN === 'true';
+        const isProduction = process.env.NODE_ENV === 'production';
+
+        if (!isExplicitlyEnabled || isProduction) {
+            throw new ForbiddenException('개발용 토큰 발급이 비활성화되어 있습니다.');
         }
         return { access_token: this.authService.getDevAccessToken() };
     }

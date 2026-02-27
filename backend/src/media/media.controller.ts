@@ -6,6 +6,8 @@ import { JwtRoleGuard } from '../auth/common/jwt-role.guard';
 import { Roles } from '../auth/decorator/auth-role.decorator';
 import { StorageService } from '../storage/storage.service';
 
+const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
+
 @ApiTags('Media')
 @Controller('media')
 export class MediaController {
@@ -19,6 +21,9 @@ export class MediaController {
   @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
   @UseInterceptors(FileInterceptor('file', {
     storage: memoryStorage(),
+    limits: {
+      fileSize: MAX_UPLOAD_SIZE_BYTES,
+    },
   }))
   @ApiOperation({ summary: '이미지 업로드 (관리자)' })
   async uploadFile(@UploadedFile() file: Express.Multer.File) {

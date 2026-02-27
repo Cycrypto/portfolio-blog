@@ -5,13 +5,29 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './common/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: 'dev-secret-key', // This should be in an env file in production
-      signOptions: { expiresIn: '1h' },
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET');
+        if (!jwtSecret) {
+          throw new Error('JWT_SECRET environment variable is required');
+        }
+
+        const jwtExpiresIn = configService.get<string>('JWT_EXPIRES_IN') || '1h';
+
+        return {
+          secret: jwtSecret,
+          signOptions: {
+            expiresIn: jwtExpiresIn as any,
+          },
+        };
+      },
     }),
     UsersModule,
   ],

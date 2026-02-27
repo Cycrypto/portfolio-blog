@@ -1,6 +1,6 @@
 export class CommentResponseDto {
     id: string;
-    postId: string;
+    postId: number;
     content: string;
     authorName: string;
     authorEmail: string;

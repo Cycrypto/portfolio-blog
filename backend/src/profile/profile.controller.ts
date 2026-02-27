@@ -8,6 +8,8 @@ import { JwtRoleGuard } from '../auth/common/jwt-role.guard';
 import { Roles } from '../auth/decorator/auth-role.decorator';
 import { StorageService } from '../storage/storage.service';
 
+const MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024;
+
 @ApiTags('Profile')
 @Controller('profile')
 export class ProfileController {
@@ -41,6 +43,9 @@ export class ProfileController {
   @ApiBody({ schema: { type: 'object', properties: { image: { type: 'string', format: 'binary' } } } })
   @UseInterceptors(FileInterceptor('image', {
     storage: memoryStorage(),
+    limits: {
+      fileSize: MAX_UPLOAD_SIZE_BYTES,
+    },
   }))
   @ApiOperation({ summary: '프로필 이미지 업로드 (관리자)' })
   async uploadProfileImage(@UploadedFile() file: Express.Multer.File) {

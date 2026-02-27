@@ -1,9 +1,10 @@
 import {Injectable, NotFoundException} from "@nestjs/common";
 import {InjectRepository} from "@nestjs/typeorm";
-import {Repository, IsNull} from "typeorm";
+import {Repository} from "typeorm";
 import {CreateCommnetRequestDto} from "../dto/request/create-commnet-request.dto";
 import {UpdateCommentRequestDto} from "../dto/request/update-comment-request.dto";
 import {Comment} from '../entity/comment.entity'
+import { Post } from "../../posts/entity/post.entity";
 
 
 @Injectable()
@@ -11,13 +12,24 @@ export class CommentsService {
     constructor(
         @InjectRepository(Comment)
         private readonly commentRepository: Repository<Comment>,
+        @InjectRepository(Post)
+        private readonly postRepository: Repository<Post>,
     ) {}
 
-    async createComment(dto: CreateCommnetRequestDto): Promise<Comment>{
+    async createComment(dto: CreateCommnetRequestDto & { postId: number }): Promise<Comment>{
+        const post = await this.postRepository.findOne({
+            where: { id: dto.postId },
+            select: ['id'],
+        });
+
+        if (!post) {
+            throw new NotFoundException('포스트를 찾을 수 없습니다.');
+        }
+
         // 답글인 경우 상위 댓글이 삭제되지 않았는지 확인
         if (dto.parentId) {
             const parentComment = await this.commentRepository.findOne({
-                where: { id: dto.parentId }
+                where: { id: dto.parentId, postId: dto.postId }
             });
             
             if (!parentComment) {
@@ -33,7 +45,7 @@ export class CommentsService {
         return await this.commentRepository.save(comment)
     }
 
-    async getCommentsByPost(postId: string): Promise<Comment[]>{
+    async getCommentsByPost(postId: number): Promise<Comment[]>{
         // 모든 댓글을 한 번에 조회
         const allComments = await this.commentRepository.find({
             where: {postId, isDeleted: false},
@@ -65,16 +77,15 @@ export class CommentsService {
 
 
 
-    async getCommentById(commentId: string): Promise<Comment> {
+    async getCommentById(postId: number, commentId: string): Promise<Comment> {
         const comment = await this.commentRepository.findOne({
-            where: { id: commentId, isDeleted: false }
+            where: { id: commentId, postId, isDeleted: false }
         });
 
         if (!comment) {
             throw new NotFoundException('댓글을 찾을 수 없습니다.');
         }
 
-        // 답글 트리 구성 (해당 댓글의 postId를 사용하여 전체 댓글에서 찾기)
         const allComments = await this.commentRepository.find({
             where: { postId: comment.postId, isDeleted: false }
         });
@@ -83,9 +94,9 @@ export class CommentsService {
         return comment;
     }
 
-    async updateComment(commentId: string, dto: UpdateCommentRequestDto): Promise<Comment> {
+    async updateComment(postId: number, commentId: string, dto: UpdateCommentRequestDto): Promise<Comment> {
         const comment = await this.commentRepository.findOne({
-            where: { id: commentId, isDeleted: false }
+            where: { id: commentId, postId, isDeleted: false }
         });
 
         if (!comment) {
@@ -95,7 +106,7 @@ export class CommentsService {
         // 상위 댓글이 삭제되었는지 확인
         if (comment.parentId) {
             const parentComment = await this.commentRepository.findOne({
-                where: { id: comment.parentId }
+                where: { id: comment.parentId, postId }
             });
             
             if (parentComment && parentComment.isDeleted) {
@@ -107,9 +118,9 @@ export class CommentsService {
         return await this.commentRepository.save(comment);
     }
 
-    async deleteComment(commentId: string): Promise<void> {
+    async deleteComment(postId: number, commentId: string): Promise<void> {
         const comment = await this.commentRepository.findOne({
-            where: { id: commentId }
+            where: { id: commentId, postId }
         });
 
         if (!comment) {
@@ -122,21 +133,21 @@ export class CommentsService {
         }
 
         // 댓글과 모든 하위 답글들을 재귀적으로 삭제
-        await this.deleteCommentRecursively(commentId);
+        await this.deleteCommentRecursively(postId, commentId);
     }
 
-    private async deleteCommentRecursively(commentId: string): Promise<void> {
+    private async deleteCommentRecursively(postId: number, commentId: string): Promise<void> {
         // 현재 댓글 삭제
         await this.commentRepository.update(commentId, { isDeleted: true });
 
         // 하위 답글들 조회
         const replies = await this.commentRepository.find({
-            where: { parentId: commentId, isDeleted: false }
+            where: { parentId: commentId, postId, isDeleted: false }
         });
 
         // 각 하위 답글에 대해 재귀적으로 삭제 실행
         for (const reply of replies) {
-            await this.deleteCommentRecursively(reply.id);
+            await this.deleteCommentRecursively(postId, reply.id);
         }
     }
 }

@@ -8,7 +8,8 @@ import {
     Patch,
     Delete,
     Query,
-    UseGuards
+    UseGuards,
+    BadRequestException
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { PostsService } from "../service/posts.service";
@@ -35,16 +36,26 @@ export class PostsController {
     @ApiResponse({ status: 200, description: '성공', type: PostListResponseDTO })
     async getPosts(
         @Query('keyword') keyword: string = '',
-        @Query('tags') tag: string = '',
+        @Query('tag') tag: string = '',
+        @Query('tags') tags: string = '',
         @Query('page') page: string = '1',
         @Query('pageSize') pageSize: string = '10'
     ): Promise<PostListResponseDTO> {
         const pageNum = parseInt(page);
         const pageSizeNum = parseInt(pageSize);
+        const effectiveTag = tag || tags;
+
+        if (Number.isNaN(pageNum) || pageNum < 1) {
+            throw new BadRequestException('page는 1 이상의 숫자여야 합니다.');
+        }
+
+        if (Number.isNaN(pageSizeNum) || pageSizeNum < 1 || pageSizeNum > 100) {
+            throw new BadRequestException('pageSize는 1~100 범위의 숫자여야 합니다.');
+        }
 
         const [posts, totalCount] = await Promise.all([
-            this.postsService.getPosts(keyword, tag, pageNum, pageSizeNum),
-            this.postsService.getPostsCount(keyword, tag)
+            this.postsService.getPosts(keyword, effectiveTag, pageNum, pageSizeNum),
+            this.postsService.getPostsCount(keyword, effectiveTag)
         ]);
 
         return {
