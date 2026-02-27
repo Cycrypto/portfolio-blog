@@ -82,9 +82,6 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   }
 
   const handleSave = async (saveStatus: string) => {
-    console.log('handleSave called with status:', saveStatus)
-    console.log('Current id:', id)
-
     if (!title.trim()) {
       setError("제목을 입력해주세요.")
       return
@@ -160,20 +157,10 @@ export default function EditPostPage({ params }: EditPostPageProps) {
         setIsLoading(false)
         return
       }
-      
-      console.log('Changed fields:', Object.keys(postData))
-      console.log('Original post:', post)
-      console.log('Current form values:', { title, featuredImage, tags, status: saveStatus, category, readTime })
 
-      console.log('Sending postData:', postData)
-      console.log('API URL:', `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}/posts/${id}`)
-      console.log('Environment check - NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL)
-
-      const result = await updatePost(id, postData)
-      console.log('Update result:', result)
+      await updatePost(id, postData)
       
       setSuccess('포스트가 성공적으로 수정되었습니다!')
-      console.log('Update successful, redirecting...')
       // 성공 메시지 표시 후 포스트 목록으로 이동
       setTimeout(() => {
         router.push('/admin/posts')

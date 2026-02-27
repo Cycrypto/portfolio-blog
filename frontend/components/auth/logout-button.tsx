@@ -9,7 +9,7 @@ export function LogoutButton() {
   const router = useRouter()
 
   const handleLogout = () => {
-    TokenManager.clearToken()
+    TokenManager.clearTokens()
     router.push('/admin/login')
   }
 

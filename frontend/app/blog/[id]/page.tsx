@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { ArrowLeft, Calendar, Clock, Heart, MessageCircle, Edit, PenSquare } from "lucide-react"
+import Image from "next/image"
+import { ArrowLeft, Calendar, Clock, Heart, MessageCircle } from "lucide-react"
 import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -11,25 +12,24 @@ import { RelatedPosts } from "@/components/blog/related-posts"
 import { CommentSection } from "@/components/blog/CommentSection"
 import { AuthorCard } from "@/components/blog/author-card"
 import { getPost, Post } from "@/lib/api"
-import { DeletePostButton } from "@/components/admin/DeletePostButton"
+import { BlogPostAdminActions } from "@/components/blog/blog-post-admin-actions"
 import { TiptapViewer } from "@/components/editor/TiptapViewer"
-import { use } from "react"
 
 interface BlogPostPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const resolvedParams = await params;
-  let post: Post;
+  const resolvedParams = await params
+  let post: Post
   
   try {
-    post = await getPost(resolvedParams.id);
+    post = await getPost(resolvedParams.id)
   } catch (error) {
-    console.error('Failed to fetch post:', error);
-    notFound();
+    console.error('Failed to fetch post:', error)
+    notFound()
   }
 
   return (
@@ -50,24 +50,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </div>
           <div className="flex items-center gap-2">
             <ShareButtons title={post.title} />
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/posts/new">
-                <PenSquare className="h-4 w-4 mr-1" />
-                새 글
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/admin/posts/${post.id}/edit`}>
-                <Edit className="h-4 w-4 mr-1" />
-                편집
-              </Link>
-            </Button>
-            <DeletePostButton
-              postId={post.id.toString()}
-              postTitle={post.title}
-              variant="outline"
-              size="sm"
-            />
+            <BlogPostAdminActions postId={post.id.toString()} postTitle={post.title} />
           </div>
         </div>
       </header>
@@ -78,7 +61,14 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <div className="lg:col-span-3">
             {/* Hero Image */}
             <div className="relative h-64 md:h-96 rounded-xl overflow-hidden mb-8">
-              <img src={post.image || "/placeholder.svg"} alt={post.title} className="w-full h-full object-cover" />
+              <Image
+                src={post.image || "/placeholder.svg"}
+                alt={post.title}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 75vw"
+                className="object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
             </div>
 
@@ -89,7 +79,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   {post.category}
                 </Badge>
                 {post.tags?.map((tag: string, index: number) => (
-                  <Badge key={index} variant="outline" className="bg-gray-100 text-gray-700">
+                  <Badge key={index} variant="outline" className="bg-neutral-gray-100 text-neutral-gray-700">
                     {tag}
                   </Badge>
                 ))}
@@ -111,7 +101,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   <span>{post.readTime}분</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Button variant="ghost" size="sm" className="text-neutral-slate-500 hover:text-red-500">
+                  <Button variant="ghost" size="sm" className="text-neutral-slate-500 hover:text-destructive">
                     <Heart className="h-4 w-4 mr-1" />
                     {post.views}
                   </Button>
@@ -133,7 +123,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               ) : (
                 <div className="bg-white p-8 rounded-lg shadow-sm">
                   <h2 className="text-2xl font-bold mb-4">포스트 내용</h2>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-neutral-slate-600 mb-4">
                     이 포스트는 ID {post.id}로 생성되었습니다.
                   </p>
                   <div className="space-y-4">

@@ -10,11 +10,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ArrowLeft, Save, Upload, X, Plus, Settings2 } from "lucide-react"
 import Link from "next/link"
 import { createPost, uploadMedia } from "@/lib/api"
 import { TiptapEditor } from "@/components/editor/TiptapEditor"
 import { JSONContent } from "@tiptap/react"
+import { CreatePostRequest } from "@/lib/types/api"
 
 const EMPTY_CONTENT: JSONContent = { type: "doc", content: [{ type: "paragraph" }] }
 
@@ -65,7 +67,7 @@ export default function NewPost() {
       setIsLoading(true)
       setError(null)
 
-      const postData = {
+      const postData: CreatePostRequest = {
         title: title.trim(),
         contentType: "tiptap",
         contentJson,
@@ -78,15 +80,12 @@ export default function NewPost() {
         readTime: typeof readTime === "number" && !Number.isNaN(readTime) ? readTime : 8,
       }
 
-      console.log('Token in localStorage:', localStorage.getItem('token'))
-      console.log('Sending post data:', JSON.stringify(postData, null, 2))
       await createPost(postData)
 
       // 성공 시 포스트 목록으로 이동
       router.push('/admin/posts')
     } catch (err) {
       console.error('Error creating post:', err)
-      console.error('Error details:', JSON.stringify(err, null, 2))
       setError(`게시물 저장에 실패했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`)
     } finally {
       setIsLoading(false)
@@ -299,4 +298,3 @@ export default function NewPost() {
     </div>
   )
 }
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"

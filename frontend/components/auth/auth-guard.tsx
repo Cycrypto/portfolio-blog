@@ -34,13 +34,13 @@ export function AuthGuard({ children }: AuthGuardProps) {
         if (response.ok) {
           setIsAuthenticated(true)
         } else {
-          TokenManager.clearToken()
+          TokenManager.clearTokens()
           setIsAuthenticated(false)
           router.replace('/admin/login')
         }
       } catch (error) {
         console.error('Auth check failed:', error)
-        TokenManager.clearToken()
+        TokenManager.clearTokens()
         setIsAuthenticated(false)
         router.replace('/admin/login')
       }
@@ -59,8 +59,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">인증 확인 중...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-slate-900 mx-auto"></div>
+          <p className="mt-4 text-neutral-slate-600">인증 확인 중...</p>
         </div>
       </div>
     )

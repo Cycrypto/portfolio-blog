@@ -58,7 +58,7 @@ export function DeletePostButton({
       size={size} 
       onClick={handleDelete}
       disabled={isDeleting}
-      className="text-red-500 hover:text-red-700"
+      className="text-destructive hover:text-destructive/80"
     >
       {isDeleting ? (
         "삭제 중..."

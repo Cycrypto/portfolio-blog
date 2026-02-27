@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowUpRight, Github } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -43,10 +44,12 @@ export function ProjectCard({ id, title, description = "", tags = [], image, dem
         <div className="relative h-full flex flex-col">
           <div className="relative overflow-hidden h-48">
             <div className="absolute inset-0 bg-gradient-to-b from-brand-blue-500/10 to-brand-blue-700/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
-            <img
+            <Image
               src={image || "/placeholder.svg"}
               alt={title}
-              className={`w-full h-full object-cover transition-transform duration-700 ${isHovered ? "scale-110" : "scale-100"}`}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className={`object-cover transition-transform duration-700 ${isHovered ? "scale-110" : "scale-100"}`}
             />
           </div>
 
@@ -63,7 +66,7 @@ export function ProjectCard({ id, title, description = "", tags = [], image, dem
                 <Badge
                   key={index}
                   variant="secondary"
-                  className="bg-brand-blue-100 hover:bg-blue-200 text-brand-blue-700 border-brand-blue-200"
+                  className="bg-brand-blue-100 hover:bg-brand-blue-200 text-brand-blue-700 border-brand-blue-200"
                 >
                   {tag}
                 </Badge>
@@ -97,7 +100,7 @@ export function ProjectCard({ id, title, description = "", tags = [], image, dem
 
           <div className="absolute top-3 right-3 z-20">
             <div
-              className={`w-3 h-3 rounded-full ${isHovered ? "bg-green-500" : "bg-slate-400"} transition-colors duration-300`}
+              className={`w-3 h-3 rounded-full ${isHovered ? "bg-brand-blue-500" : "bg-slate-400"} transition-colors duration-300`}
             ></div>
           </div>
         </div>

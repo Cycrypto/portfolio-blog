@@ -1,8 +1,17 @@
 import Link from "next/link"
 import { Eye, Edit, FolderOpen, MessageSquare, User, Briefcase, Mail, Home } from "lucide-react"
 
+export type AdminSidebarActive =
+  | "dashboard"
+  | "posts"
+  | "projects"
+  | "comments"
+  | "profile"
+  | "experience"
+  | "contacts"
+
 interface AdminSidebarProps {
-  active?: 'dashboard' | 'posts' | 'projects' | 'comments' | 'profile' | 'experience' | 'contacts'
+  active?: AdminSidebarActive
 }
 
 export function AdminSidebar({ active }: AdminSidebarProps) {

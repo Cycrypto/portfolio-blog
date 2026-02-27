@@ -7,6 +7,7 @@ import { Menu, X, PenSquare, LayoutDashboard, FileText, Settings } from "lucide-
 
 import { Button } from "@/components/ui/button"
 import { useMobile } from "@/hooks/use-mobile"
+import { useAdminAuth } from "@/hooks/use-admin-auth"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +19,7 @@ import {
 export function FloatingNav() {
   const [isVisible, setIsVisible] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const isAdmin = useAdminAuth()
   const isMobile = useMobile()
 
   useEffect(() => {
@@ -32,12 +33,6 @@ export function FloatingNav() {
 
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
-
-  useEffect(() => {
-    // 관리자 로그인 상태 확인
-    const token = localStorage.getItem("token")
-    setIsAdmin(!!token)
   }, [])
 
   const navItems = [
@@ -64,7 +59,7 @@ export function FloatingNav() {
         transition={{ duration: 0.3 }}
       >
         <div className="relative px-4 py-3 rounded-full bg-white/80 backdrop-blur-md border border-brand-blue-200/50 shadow-lg">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-full blur opacity-50"></div>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-blue-500/20 to-brand-indigo-500/20 rounded-full blur opacity-50"></div>
 
           {isMobile ? (
             <div className="relative flex items-center justify-between">

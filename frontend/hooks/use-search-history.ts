@@ -14,15 +14,18 @@ export function useSearchHistory() {
 
   // 로컬 스토리지에서 검색 기록 로드
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const savedHistory = localStorage.getItem(SEARCH_HISTORY_KEY);
-    console.log('로드된 검색 기록:', savedHistory);
     if (savedHistory) {
       try {
         const parsed = JSON.parse(savedHistory);
-        console.log('파싱된 검색 기록:', parsed);
-        setSearchHistory(parsed);
+        setSearchHistory(Array.isArray(parsed) ? parsed : []);
       } catch (error) {
         console.error('Failed to parse search history:', error);
+        localStorage.removeItem(SEARCH_HISTORY_KEY);
       }
     }
   }, []);
@@ -57,11 +60,9 @@ export function useSearchHistory() {
 
   // 검색 기록 삭제
   const removeFromHistory = (query: string) => {
-    console.log('검색 기록 삭제 시도:', query);
     setSearchHistory(prev => {
       const updated = prev.filter(item => item.query !== query);
       localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updated));
-      console.log('검색 기록 삭제 완료:', updated);
       return updated;
     });
   };

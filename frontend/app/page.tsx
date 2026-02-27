@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight, Github, Linkedin, Mail, BookOpen } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -43,20 +44,17 @@ export default function Portfolio() {
   useEffect(() => {
     const load = async () => {
       try {
-        console.log('[DEBUG] Starting to load data...')
         const [postsRes, projectsRes, profileRes] = await Promise.all([
           getPosts(1, 6),
           getProjects(),
           profileService.getProfile(),
         ])
-        console.log('[DEBUG] Data loaded successfully', { postsRes, projectsRes, profileRes })
         setLatestPosts(postsRes.posts || [])
         setFeaturedProjects((projectsRes || []).slice(0, 6))
         setProfile(profileRes)
       } catch (error) {
-        console.error('[DEBUG] Failed to load landing data:', error)
+        console.error('Failed to load landing data:', error)
         const defaultProfile = profileService.getDefaultProfile()
-        console.log('[DEBUG] Using default profile:', defaultProfile)
         setProfile(defaultProfile)
       }
     }
@@ -156,7 +154,7 @@ export default function Portfolio() {
             </div>
           </div>
           <div className="flex justify-center">
-            <CreativeHero profileImage={profile.profileImage} />
+            <CreativeHero />
           </div>
         </div>
 
@@ -179,13 +177,20 @@ export default function Portfolio() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mt-16">
             <div className="relative">
-              <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-blue-500/20 to-indigo-500/20 blur-xl opacity-70"></div>
+              <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-brand-blue-500/20 to-brand-indigo-500/20 blur-xl opacity-70"></div>
               <div className="relative aspect-square rounded-xl overflow-hidden border border-brand-blue-200 bg-white">
-                <img src={profile.profileImage || "/placeholder.svg?height=600&width=600"} alt={profile.name} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 via-transparent to-transparent"></div>
+                <Image
+                  src={profile.profileImage || "/placeholder.svg?height=600&width=600"}
+                  alt={profile.name}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-blue-900/20 via-transparent to-transparent"></div>
                 <div className="absolute bottom-0 left-0 w-full p-6">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                    <div className="w-3 h-3 rounded-full bg-brand-blue-500 animate-pulse"></div>
                     <span className="text-sm font-medium text-neutral-slate-700">{profile.statusMessage || '새로운 기회에 열려있습니다'}</span>
                   </div>
                 </div>
@@ -216,7 +221,7 @@ export default function Portfolio() {
                   </div>
                   <div className="space-y-1">
                     <div className="text-sm text-neutral-slate-500">상태</div>
-                    <div className="font-medium text-green-600">{profile.status}</div>
+                    <div className="font-medium text-brand-blue-700">{profile.status}</div>
                   </div>
                 </div>
 
@@ -375,7 +380,7 @@ export default function Portfolio() {
               <div className="mt-8 pt-8 border-t border-neutral-slate-200">
                 <h4 className="text-lg font-medium mb-4">현재 상태</h4>
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${profile.isAvailable ? 'bg-green-500' : 'bg-slate-400'} animate-pulse`}></div>
+                  <div className={`w-3 h-3 rounded-full ${profile.isAvailable ? 'bg-brand-blue-500' : 'bg-slate-400'} animate-pulse`}></div>
                   <span>{profile.statusMessage || '새로운 프로젝트와 협업 기회를 찾고 있습니다'}</span>
                 </div>
               </div>

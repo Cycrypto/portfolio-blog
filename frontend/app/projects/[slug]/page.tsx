@@ -99,12 +99,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               <div className="prose prose-lg max-w-none">
                 <div className="bg-white p-8 rounded-lg shadow-sm">
                   <h2 className="text-2xl font-bold mb-4">프로젝트 개요</h2>
-                  <p className="text-gray-600 leading-relaxed whitespace-pre-line">{project.longDescription}</p>
+                  <p className="text-neutral-slate-600 leading-relaxed whitespace-pre-line">{project.longDescription}</p>
                 </div>
               </div>
             )}
-
-            <RelatedProjects currentSlug={slug} />
           </div>
 
           <div className="lg:col-span-1">
@@ -116,7 +114,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   <div className="space-y-3 text-sm">
                     <div>
                       <span className="text-neutral-slate-500">상태:</span>
-                      <span className="ml-2 font-medium text-green-600">{project.status || '정보 없음'}</span>
+                      <span className="ml-2 font-medium text-brand-blue-700">{project.status || '정보 없음'}</span>
                     </div>
                     <div>
                       <span className="text-neutral-slate-500">기술 스택:</span>

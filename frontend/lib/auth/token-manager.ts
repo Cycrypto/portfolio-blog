@@ -4,15 +4,25 @@
  */
 
 const TOKEN_KEY = 'auth_token';
+const LEGACY_TOKEN_KEY = 'token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
+const TOKEN_CHANGE_EVENT = 'auth-token-changed';
 
 export class TokenManager {
+  private static emitTokenChange(): void {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(TOKEN_CHANGE_EVENT));
+    }
+  }
+
   /**
    * 토큰을 로컬 스토리지에 저장
    */
   static setToken(token: string): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem(TOKEN_KEY, token);
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+      this.emitTokenChange();
     }
   }
 
@@ -22,6 +32,7 @@ export class TokenManager {
   static setRefreshToken(refreshToken: string): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      this.emitTokenChange();
     }
   }
 
@@ -30,7 +41,18 @@ export class TokenManager {
    */
   static getToken(): string | null {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(TOKEN_KEY);
+      const currentToken = localStorage.getItem(TOKEN_KEY);
+      if (currentToken) {
+        return currentToken;
+      }
+
+      // 레거시 키("token")를 사용하는 세션을 자동 마이그레이션
+      const legacyToken = localStorage.getItem(LEGACY_TOKEN_KEY);
+      if (legacyToken) {
+        localStorage.setItem(TOKEN_KEY, legacyToken);
+        localStorage.removeItem(LEGACY_TOKEN_KEY);
+      }
+      return legacyToken;
     }
     return null;
   }
@@ -51,6 +73,8 @@ export class TokenManager {
   static removeToken(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+      this.emitTokenChange();
     }
   }
 
@@ -60,6 +84,7 @@ export class TokenManager {
   static removeRefreshToken(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(REFRESH_TOKEN_KEY);
+      this.emitTokenChange();
     }
   }
 
@@ -67,8 +92,19 @@ export class TokenManager {
    * 모든 토큰을 삭제
    */
   static clearTokens(): void {
-    this.removeToken();
-    this.removeRefreshToken();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      this.emitTokenChange();
+    }
+  }
+
+  /**
+   * 하위 호환용: clearTokens로 위임
+   */
+  static clearToken(): void {
+    this.clearTokens();
   }
 
   /**

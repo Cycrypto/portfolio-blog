@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -26,10 +27,13 @@ export function ProjectGallery({ images, title }: ProjectGalleryProps) {
 
       <div className="relative">
         <div className="relative h-64 md:h-96 rounded-xl overflow-hidden">
-          <img
+          <Image
             src={images[currentImage] || "/placeholder.svg"}
             alt={`${title} - 이미지 ${currentImage + 1}`}
-            className="w-full h-full object-cover"
+            fill
+            priority={currentImage === 0}
+            sizes="(max-width: 1024px) 100vw, 75vw"
+            className="object-cover"
           />
 
           {images.length > 1 && (

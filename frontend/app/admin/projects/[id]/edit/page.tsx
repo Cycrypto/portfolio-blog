@@ -11,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
-import { ArrowLeft, Save, Eye, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
+import { ArrowLeft, Save, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
 import Link from "next/link"
 import { getProject, updateProject, uploadMedia } from "@/lib/api"
 import { Project } from "@/lib/types/api"
+import { AdminShell } from "@/components/admin/AdminShell"
 
 export default function EditProject() {
   const router = useRouter()
@@ -132,45 +133,23 @@ export default function EditProject() {
   }
 
   if (!project) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500">프로젝트를 불러오는 중...</div>
+    return <div className="min-h-screen flex items-center justify-center text-neutral-slate-500">프로젝트를 불러오는 중...</div>
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex">
-        <div className="w-64 bg-white shadow-sm border-r">
-          <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-800">관리자 대쉬보드</h2>
-          </div>
-          <nav className="mt-6">
-            <Link href="/admin" className="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50">
-              <Eye className="w-5 h-5 mr-3" />
-              대쉬보드
-            </Link>
-            <Link
-              href="/admin/projects"
-              className="flex items-center px-6 py-3 text-brand-blue-600 bg-brand-blue-50 border-r-2 border-blue-600"
-            >
-              <Eye className="w-5 h-5 mr-3" />
-              프로젝트
-            </Link>
-          </nav>
-        </div>
-
-        <div className="flex-1 p-8">
-          <div className="flex items-center gap-4 mb-8">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/projects">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                프로젝트 목록으로
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">프로젝트 수정</h1>
-              <p className="text-gray-600 mt-2">프로젝트 정보를 수정하세요</p>
-            </div>
-          </div>
-
+    <AdminShell
+      active="projects"
+      title="프로젝트 수정"
+      description="프로젝트 정보를 수정하세요"
+      actions={
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/admin/projects">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            프로젝트 목록으로
+          </Link>
+        </Button>
+      }
+    >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* 메인 정보 */}
             <div className="lg:col-span-2 space-y-6">
@@ -385,7 +364,7 @@ export default function EditProject() {
 
                   <Separator />
 
-                  {error && <div className="text-sm text-red-500">{error}</div>}
+                  {error && <div className="text-sm text-destructive">{error}</div>}
 
                   <Button onClick={handleSave} className="w-full" disabled={isSaving}>
                     <Save className="w-4 h-4 mr-2" />
@@ -423,7 +402,7 @@ export default function EditProject() {
                   <div>
                     <Label htmlFor="github">GitHub</Label>
                     <div className="relative">
-                      <Github className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                      <Github className="w-5 h-5 text-neutral-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
                       <Input
                         id="github"
                         className="pl-10"
@@ -436,7 +415,7 @@ export default function EditProject() {
                   <div>
                     <Label htmlFor="live">라이브 링크</Label>
                     <div className="relative">
-                      <LinkIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                      <LinkIcon className="w-5 h-5 text-neutral-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
                       <Input
                         id="live"
                         className="pl-10"
@@ -450,8 +429,6 @@ export default function EditProject() {
               </Card>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </AdminShell>
   )
 }

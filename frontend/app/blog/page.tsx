@@ -11,7 +11,8 @@ import { SectionHeading } from "@/components/common/section-heading"
 import { BlogFilter } from "@/components/blog/blog-filter"
 import { Pagination } from "@/components/common/pagination"
 import { AdvancedSearch } from "@/components/common/advanced-search"
-import { getPosts, Post } from "@/lib/api"
+import { Post } from "@/lib/api"
+import { useAdminAuth } from "@/hooks/use-admin-auth"
 
 interface BlogPost {
   title: string;
@@ -31,14 +32,8 @@ export default function BlogPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [selectedTag, setSelectedTag] = useState<string>("")
   const [searchKeyword, setSearchKeyword] = useState<string>("")
-  const [isAdmin, setIsAdmin] = useState(false)
+  const isAdmin = useAdminAuth()
   const postsPerPage = 9
-
-  useEffect(() => {
-    // 관리자 로그인 상태 확인
-    const token = localStorage.getItem("token")
-    setIsAdmin(!!token)
-  }, [])
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -187,15 +182,15 @@ export default function BlogPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {loading ? (
             <div className="col-span-full flex justify-center items-center py-12">
-              <div className="text-gray-500">게시물을 불러오는 중...</div>
+              <div className="text-neutral-slate-500">게시물을 불러오는 중...</div>
             </div>
           ) : error ? (
             <div className="col-span-full flex justify-center items-center py-12">
-              <div className="text-red-500">{error}</div>
+              <div className="text-destructive">{error}</div>
             </div>
           ) : posts.length === 0 ? (
             <div className="col-span-full flex justify-center items-center py-12">
-              <div className="text-gray-500">
+              <div className="text-neutral-slate-500">
                 {searchKeyword || selectedTag ? "검색 결과가 없습니다." : "등록된 게시물이 없습니다."}
               </div>
             </div>
@@ -206,7 +201,7 @@ export default function BlogPage() {
               ))
               : (
                 <div className="col-span-full flex justify-center items-center py-12">
-                  <div className="text-red-500">데이터 형식이 올바르지 않습니다.</div>
+                  <div className="text-destructive">데이터 형식이 올바르지 않습니다.</div>
                 </div>
               )
           )}
