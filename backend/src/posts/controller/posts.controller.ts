@@ -66,13 +66,13 @@ export class PostsController {
 
     @Get(':id')
     @ApiOperation({ summary: '특정 포스트 상세 조회' })
-    @ApiParam({ name: 'id', description: '포스트 ID' })
+    @ApiParam({ name: 'id', description: '포스트 ID 또는 slug' })
     @ApiResponse({ status: 200, description: '성공', type: PostResponseDTO })
     @ApiResponse({ status: 404, description: '포스트를 찾을 수 없음' })
     async getDetailPost(@Param('id') id: string): Promise<PostResponseDTO> {
-        const post = await this.postsService.getPostById(parseInt(id));
+        const post = await this.postsService.getPostByIdentifier(id);
         if (!post) {
-            throw new NotFoundException(`Post with id '${id}' not found`);
+            throw new NotFoundException(`Post with identifier '${id}' not found`);
         }
         return this.toPostResponseDTO(post);
     }

@@ -86,7 +86,6 @@ jobs:
           username: ${{ env.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
           port: ${{ env.DEPLOY_PORT }}
-          script_stop: true
           command_timeout: 45m
           script: |
             set -euo pipefail
