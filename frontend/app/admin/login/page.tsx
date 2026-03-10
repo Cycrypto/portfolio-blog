@@ -57,10 +57,10 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>관리자 로그인</CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50 p-4">
+      <Card className="surface-default w-full max-w-md shadow-none">
+        <CardHeader className="border-b border-brand-blue-100">
+          <CardTitle className="text-2xl font-bold text-neutral-slate-800">관리자 로그인</CardTitle>
           <CardDescription>
             관리자 계정으로 로그인하세요.
             <br />
@@ -97,9 +97,9 @@ export default function AdminLogin() {
               />
             </div>
 
-            {error && <div className="text-red-500 text-sm">{error}</div>}
+            {error && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
 
-            <Button type="submit" className="w-full text-white" disabled={loading}>
+            <Button type="submit" className="w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700" disabled={loading}>
               {loading ? '로그인 중...' : '로그인'}
             </Button>
           </form>

@@ -296,7 +296,7 @@ export function ProfileEditor() {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 bg-white/80 backdrop-blur-sm border border-brand-indigo-500/30">
+        <TabsList className="grid w-full grid-cols-2 gap-1 rounded-lg border border-brand-blue-100 bg-white p-1 md:grid-cols-5">
           <TabsTrigger value="basic">기본 정보</TabsTrigger>
           <TabsTrigger value="about">소개</TabsTrigger>
           <TabsTrigger value="skills">기술 스택</TabsTrigger>
@@ -306,8 +306,8 @@ export function ProfileEditor() {
 
         {/* 기본 정보 탭 */}
         <TabsContent value="basic" className="space-y-6">
-          <Card className="border-brand-indigo-500/30 bg-white/80 backdrop-blur-sm shadow-lg">
-            <CardHeader className="border-b border-brand-indigo-500/20 bg-gradient-to-r from-brand-blue-50 to-brand-indigo-50">
+          <Card className="surface-default shadow-none">
+            <CardHeader className="border-b border-brand-blue-100">
               <CardTitle className="text-xl font-bold text-brand-blue-900">기본 정보</CardTitle>
               <CardDescription className="text-neutral-slate-600 mt-1">
                 이름, 직함, 상태 등 기본적인 프로필 정보를 설정합니다
@@ -417,8 +417,8 @@ export function ProfileEditor() {
             </CardContent>
           </Card>
 
-          <Card className="border-brand-indigo-500/30 bg-white/80 backdrop-blur-sm shadow-lg">
-            <CardHeader className="border-b border-brand-indigo-500/20 bg-gradient-to-r from-brand-blue-50 to-brand-indigo-50">
+          <Card className="surface-default shadow-none">
+            <CardHeader className="border-b border-brand-blue-100">
               <CardTitle className="text-xl font-bold text-brand-blue-900">프로필 이미지</CardTitle>
               <CardDescription className="text-neutral-slate-600 mt-1">
                 프로필에 표시될 이미지를 업로드합니다
@@ -468,8 +468,8 @@ export function ProfileEditor() {
 
         {/* 소개 탭 */}
         <TabsContent value="about" className="space-y-6">
-          <Card className="border-brand-indigo-500/30 bg-white/80 backdrop-blur-sm shadow-lg">
-            <CardHeader className="border-b border-brand-indigo-500/20 bg-gradient-to-r from-brand-blue-50 to-brand-indigo-50">
+          <Card className="surface-default shadow-none">
+            <CardHeader className="border-b border-brand-blue-100">
               <CardTitle className="text-xl font-bold text-brand-blue-900">자기소개</CardTitle>
               <CardDescription className="text-neutral-slate-600 mt-1">
                 랜딩 페이지에 표시될 자기소개 내용을 작성합니다
@@ -505,8 +505,8 @@ export function ProfileEditor() {
 
         {/* 기술 스택 탭 */}
         <TabsContent value="skills" className="space-y-6">
-          <Card className="border-brand-indigo-500/30 bg-white/80 backdrop-blur-sm shadow-lg">
-            <CardHeader className="border-b border-brand-indigo-500/20 bg-gradient-to-r from-brand-blue-50 to-brand-indigo-50">
+          <Card className="surface-default shadow-none">
+            <CardHeader className="border-b border-brand-blue-100">
               <CardTitle className="text-xl font-bold text-brand-blue-900">기술 스택</CardTitle>
               <CardDescription className="text-neutral-slate-600 mt-1">
                 보유한 기술과 숙련도를 설정합니다
@@ -567,8 +567,8 @@ export function ProfileEditor() {
 
         {/* 소셜 & 연락처 탭 */}
         <TabsContent value="social" className="space-y-6">
-          <Card className="border-brand-indigo-500/30 bg-white/80 backdrop-blur-sm shadow-lg">
-            <CardHeader className="border-b border-brand-indigo-500/20 bg-gradient-to-r from-brand-blue-50 to-brand-indigo-50">
+          <Card className="surface-default shadow-none">
+            <CardHeader className="border-b border-brand-blue-100">
               <CardTitle className="text-xl font-bold text-brand-blue-900">소셜 미디어 & 연락처</CardTitle>
               <CardDescription className="text-neutral-slate-600 mt-1">
                 소셜 미디어 링크와 연락처 정보를 설정합니다
@@ -604,8 +604,8 @@ export function ProfileEditor() {
         {/* 보안 탭 */}
         <TabsContent value="security" className="space-y-6">
           {/* 사용자 ID 변경 카드 */}
-          <Card className="border-brand-indigo-500/30 bg-white/80 backdrop-blur-sm shadow-lg">
-            <CardHeader className="border-b border-brand-indigo-500/20 bg-gradient-to-r from-brand-blue-50 to-brand-indigo-50">
+          <Card className="surface-default shadow-none">
+            <CardHeader className="border-b border-brand-blue-100">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-indigo-500 to-brand-indigo-700 flex items-center justify-center">
                   <Lock className="h-5 w-5 text-white" />
@@ -670,8 +670,8 @@ export function ProfileEditor() {
           </Card>
 
           {/* 비밀번호 변경 카드 */}
-          <Card className="border-brand-indigo-500/30 bg-white/80 backdrop-blur-sm shadow-lg">
-            <CardHeader className="border-b border-brand-indigo-500/20 bg-gradient-to-r from-brand-blue-50 to-brand-indigo-50">
+          <Card className="surface-default shadow-none">
+            <CardHeader className="border-b border-brand-blue-100">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-blue-500 to-brand-blue-700 flex items-center justify-center">
                   <Lock className="h-5 w-5 text-white" />

@@ -1,0 +1,106 @@
+{
+  "generatedAt": "2026-03-10T07:06:47.619Z",
+  "desktop": {
+    "admin-login": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/admin-ui-audit-after/desktop-admin-login.png",
+      "metrics": {
+        "buttons": 1,
+        "links": 0,
+        "inputs": 2,
+        "tables": 0,
+        "animatedCount": 0,
+        "blurCount": 0,
+        "fixedStickyCount": 0,
+        "logs": []
+      }
+    },
+    "admin-dashboard": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/admin-ui-audit-after/desktop-admin-dashboard.png",
+      "metrics": {
+        "buttons": 1,
+        "links": 16,
+        "inputs": 0,
+        "tables": 0,
+        "animatedCount": 0,
+        "blurCount": 1,
+        "fixedStickyCount": 1,
+        "logs": [
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+        ]
+      }
+    },
+    "admin-posts": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/admin-ui-audit-after/desktop-admin-posts.png",
+      "metrics": {
+        "buttons": 3,
+        "links": 9,
+        "inputs": 1,
+        "tables": 0,
+        "animatedCount": 0,
+        "blurCount": 1,
+        "fixedStickyCount": 1,
+        "logs": [
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Error fetching posts: ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async getPosts (webpack-internal:///(app-pages-browser)/./lib/api/services/posts.ts:20:24)\n    at async fetchPosts (webpack-internal:///(app-pages-browser)/./app/admin/posts/page.tsx:57:37)",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Error fetching posts: ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async getPosts (webpack-internal:///(app-pages-browser)/./lib/api/services/posts.ts:20:24)\n    at async fetchPosts (webpack-internal:///(app-pages-browser)/./app/admin/posts/page.tsx:57:37)"
+        ]
+      }
+    },
+    "admin-projects": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/admin-ui-audit-after/desktop-admin-projects.png",
+      "metrics": {
+        "buttons": 2,
+        "links": 9,
+        "inputs": 1,
+        "tables": 0,
+        "animatedCount": 0,
+        "blurCount": 1,
+        "fixedStickyCount": 1,
+        "logs": [
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async getProjects (webpack-internal:///(app-pages-browser)/./lib/api/services/projects.ts:14:20)\n    at async fetchProjects (webpack-internal:///(app-pages-browser)/./app/admin/projects/page.tsx:53:26)",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async getProjects (webpack-internal:///(app-pages-browser)/./lib/api/services/projects.ts:14:20)\n    at async fetchProjects (webpack-internal:///(app-pages-browser)/./app/admin/projects/page.tsx:53:26)"
+        ]
+      }
+    },
+    "admin-contacts": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/admin-ui-audit-after/desktop-admin-contacts.png",
+      "metrics": {
+        "buttons": 3,
+        "links": 8,
+        "inputs": 0,
+        "tables": 0,
+        "animatedCount": 0,
+        "blurCount": 1,
+        "fixedStickyCount": 1,
+        "logs": [
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to fetch contacts ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async fetchContacts (webpack-internal:///(app-pages-browser)/./lib/api/services/contact.ts:20:20)\n    at async loadContacts (webpack-internal:///(app-pages-browser)/./app/admin/contacts/page.tsx:43:26)",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to fetch contacts ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async fetchContacts (webpack-internal:///(app-pages-browser)/./lib/api/services/contact.ts:20:20)\n    at async loadContacts (webpack-internal:///(app-pages-browser)/./app/admin/contacts/page.tsx:43:26)"
+        ]
+      }
+    }
+  },
+  "mobile": {
+    "dashboard": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/admin-ui-audit-after/mobile-admin-dashboard.png",
+      "metrics": {
+        "buttons": 1,
+        "links": 16,
+        "inputs": 0,
+        "tables": 0,
+        "animatedCount": 0,
+        "blurCount": 1,
+        "fixedStickyCount": 1,
+        "logs": [
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+        ]
+      }
+    }
+  }
+}

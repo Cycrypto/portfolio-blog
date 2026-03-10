@@ -26,8 +26,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   if (!authorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600">
-        관리자 인증을 확인하는 중...
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50 text-neutral-slate-600">
+        관리자 인증 확인 중...
       </div>
     )
   }

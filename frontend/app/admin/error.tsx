@@ -11,8 +11,8 @@ export default function AdminError({ error, reset }: { error: Error; reset: () =
   }, [error])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50 p-6">
-      <div className="max-w-md w-full space-y-6 bg-white/80 backdrop-blur-sm border border-brand-blue-200/60 rounded-2xl p-8 shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50 p-6">
+      <div className="surface-default max-w-md w-full space-y-6 p-8 shadow-none">
         <div className="flex items-center gap-3 text-red-600">
           <AlertCircle className="h-6 w-6" />
           <h1 className="text-xl font-semibold">관리자 영역 오류</h1>
