@@ -1,4 +1,4 @@
-import { generateHTML, generateText, JSONContent } from '@tiptap/core';
+import { generateHTML, generateJSON, generateText, JSONContent } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
@@ -226,6 +226,11 @@ export function renderMarkdownContent(markdown: string): RenderedContent {
         wordCount,
         readTime,
     };
+}
+
+export function convertMarkdownToTiptapJSON(markdown: string): JSONContent {
+    const html = marked.parse(markdown, { breaks: true, gfm: true }) as string;
+    return generateJSON(html, viewerExtensions);
 }
 
 function extractPlainText(html: string): string {

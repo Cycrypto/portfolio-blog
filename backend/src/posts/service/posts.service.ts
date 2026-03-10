@@ -7,7 +7,7 @@ import { UpdatePostRequestDTO } from '../dto/request/update-post-request.dto';
 import { PostListItemDTO } from '../dto/response/post-list-item.dto';
 import { TagsService } from './tags.service';
 import { JSONContent } from '@tiptap/core';
-import { RenderedContent, renderMarkdownContent, renderTiptapContent } from '../utils/content-renderer';
+import { convertMarkdownToTiptapJSON, RenderedContent, renderMarkdownContent, renderTiptapContent } from '../utils/content-renderer';
 import { generateSlug } from '../utils/slug-generator';
 
 @Injectable()
@@ -215,6 +215,51 @@ export class PostsService {
         return this.postRepository.findOne({
             where: { id },
             relations: ['tags']
+        });
+    }
+
+    async convertMarkdownPostToTiptap(id: number, updatePostDTO: UpdatePostRequestDTO = {}): Promise<Post | null> {
+        const post = await this.postRepository.findOne({
+            where: { id },
+            relations: ['tags'],
+        });
+
+        if (!post) {
+            return null;
+        }
+
+        if (post.contentType === PostContentType.TIPTAP) {
+            throw new BadRequestException('이미 Tiptap 형식입니다.');
+        }
+
+        if (!post.contentMarkdown) {
+            throw new BadRequestException('변환할 Markdown 콘텐츠가 없습니다.');
+        }
+
+        const tiptapJson = convertMarkdownToTiptapJSON(post.contentMarkdown);
+        const originalContent = renderMarkdownContent(post.contentMarkdown);
+        const convertedContent = renderTiptapContent(tiptapJson);
+        const originalLength = originalContent.plainText.length;
+        const convertedLength = convertedContent.plainText.length;
+        const ratio = originalLength === 0 ? 1 : convertedLength / originalLength;
+
+        if (ratio < 0.8 || ratio > 1.2) {
+            throw new BadRequestException(
+                `변환 손실이 감지되었습니다. 원본 ${originalLength}자, 변환 ${convertedLength}자`,
+            );
+        }
+
+        const {
+            contentType: _contentType,
+            contentJson: _contentJson,
+            contentMarkdown: _contentMarkdown,
+            ...metadataUpdate
+        } = updatePostDTO;
+
+        return this.updatePost(id, {
+            ...metadataUpdate,
+            contentType: PostContentType.TIPTAP,
+            contentJson: tiptapJson,
         });
     }
 

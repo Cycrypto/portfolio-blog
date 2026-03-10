@@ -118,6 +118,27 @@ export async function updatePost(id: string, postData: UpdatePostRequest): Promi
   }
 }
 
+export async function convertPostToTiptap(id: string, postData: UpdatePostRequest = {}): Promise<PostEdit> {
+  try {
+    const result = await apiRequest<{ data: PostEdit }>(`/posts/${id}/convert-to-tiptap`, {
+      method: 'PATCH',
+      body: JSON.stringify(postData),
+    });
+
+    return result.data;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.status === 404) {
+        throw new PostNotFoundException(id);
+      }
+      if (error.status === 400) {
+        throw new PostValidationException('data', postData);
+      }
+    }
+    throw new PostUpdateException(id, error instanceof Error ? error : undefined, { postData });
+  }
+}
+
 export async function deletePost(id: string): Promise<void> {
   try {
     await apiRequest(`/posts/${id}`, {
