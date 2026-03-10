@@ -46,8 +46,25 @@ jobs:
             echo "ref=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Resolve Tailscale auth mode
+        id: ts_auth
+        shell: bash
+        env:
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+        run: |
+          if [[ -n "$TS_OAUTH_CLIENT_ID" && -n "$TS_OAUTH_SECRET" ]]; then
+            echo "mode=oauth" >> "$GITHUB_OUTPUT"
+          elif [[ -n "$TAILSCALE_AUTHKEY" ]]; then
+            echo "mode=authkey" >> "$GITHUB_OUTPUT"
+          else
+            echo "Neither OAuth secrets nor TAILSCALE_AUTHKEY is configured."
+            exit 1
+          fi
+
       - name: Connect to tailnet
-        if: ${{ secrets.TS_OAUTH_CLIENT_ID != '' && secrets.TS_OAUTH_SECRET != '' }}
+        if: ${{ steps.ts_auth.outputs.mode == 'oauth' }}
         uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
@@ -56,7 +73,7 @@ jobs:
           version: latest
 
       - name: Connect to tailnet (auth key fallback)
-        if: ${{ secrets.TS_OAUTH_CLIENT_ID == '' || secrets.TS_OAUTH_SECRET == '' }}
+        if: ${{ steps.ts_auth.outputs.mode == 'authkey' }}
         uses: tailscale/github-action@v4
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
