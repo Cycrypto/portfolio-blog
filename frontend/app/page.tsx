@@ -3,13 +3,12 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, Github, Linkedin, Mail, BookOpen, RefreshCcw } from "lucide-react"
+import { ArrowRight, Github, Linkedin, Mail, BookOpen, MapPin, RefreshCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { ProjectCard } from "@/components/project/project-card"
 import { SkillBadge } from "@/components/common/skill-badge"
 import { ContactForm } from "@/components/common/contact-form"
-import { CreativeHero } from "@/components/home/creative-hero"
 import { FloatingNav } from "@/components/common/layout/floating-nav"
 import { SectionHeading } from "@/components/common/section-heading"
 import { GlassmorphicCard } from "@/components/common/glassmorphic-card"
@@ -40,6 +39,8 @@ export default function Portfolio() {
       slug,
     }
   }
+
+  const getPostSlug = (post: Post) => (post.slug && post.slug !== "null" ? post.slug : post.id.toString())
 
   useEffect(() => {
     const load = async () => {
@@ -93,30 +94,37 @@ export default function Portfolio() {
     )
   }
 
+  const heroSubtitle =
+    profile.subtitle.length > 92 ? `${profile.subtitle.slice(0, 92).trimEnd()}...` : profile.subtitle
+  const heroSkills = (profile.skills || []).slice(0, 3)
+  const heroRecentPosts = latestPosts.slice(0, 2)
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50 text-neutral-slate-900">
       <FloatingNav />
 
-      <section className="section-spacing relative overflow-hidden pt-24 md:pt-28">
+      <section className="relative overflow-hidden pb-12 pt-20 md:pb-14 md:pt-24">
         <div className="pointer-events-none absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_12%,rgba(148,180,193,0.2),transparent_38%),radial-gradient(circle_at_85%_16%,rgba(220,232,239,0.6),transparent_42%)]" />
           <div className="absolute left-8 top-10 h-56 w-56 rounded-full bg-brand-blue-100/70 blur-3xl" />
           <div className="absolute bottom-10 right-12 h-56 w-56 rounded-full bg-brand-indigo-50/80 blur-3xl" />
+          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-white/80" />
         </div>
 
-        <div className="container relative z-10 grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
-          <div className="space-y-6">
+        <div className="container relative z-10 grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-12">
+          <div className="space-y-5 md:space-y-6 lg:order-2">
             <div className="inline-flex items-center rounded-full border border-brand-blue-200 bg-brand-blue-50 px-4 py-2 text-sm font-medium text-brand-blue-700">
               {profile.title}
             </div>
 
-            <h1 className="text-4xl font-bold tracking-tight text-neutral-slate-800 md:text-6xl">
+            <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-neutral-slate-800 md:text-6xl">
               안녕하세요,
               <span className="block text-brand-blue-700">{profile.name}입니다</span>
             </h1>
 
-            <p className="max-w-[620px] text-lg text-neutral-slate-600 md:text-xl">{profile.subtitle}</p>
+            <p className="max-w-[620px] text-base leading-relaxed text-neutral-slate-600 md:text-lg">{heroSubtitle}</p>
 
-            <div className="flex flex-wrap gap-3 pt-1">
+            <div className="flex flex-wrap gap-3 pt-2">
               <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
                 <Link href="/blog">
                   블로그 보기 <BookOpen className="ml-2 h-4 w-4" />
@@ -132,12 +140,16 @@ export default function Portfolio() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-slate-600">
-              <span className="rounded-full bg-white px-3 py-1 border border-brand-blue-200/70">최신 글 {latestPosts.length}개</span>
-              <span className="rounded-full bg-white px-3 py-1 border border-brand-blue-200/70">프로젝트 {featuredProjects.length}개</span>
-              <span className="rounded-full bg-white px-3 py-1 border border-brand-blue-200/70">상태 {profile.status || "확인 필요"}</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-blue-200/80 bg-white px-3 py-1">
+                <MapPin className="h-3.5 w-3.5 text-brand-blue-600" />
+                {profile.location || "위치 정보 없음"}
+              </span>
+              <span className="rounded-full border border-brand-blue-200/80 bg-white px-3 py-1">
+                {profile.status || "상태 확인 필요"}
+              </span>
             </div>
 
-            <div className="flex gap-3 pt-1">
+            <div className="flex flex-wrap gap-3 pt-1">
               <Link href={profile.github || "https://github.com"} target="_blank" rel="noopener noreferrer">
                 <Button
                   variant="ghost"
@@ -173,7 +185,7 @@ export default function Portfolio() {
             </div>
 
             {hasPartialDataError && (
-              <div className="surface-default flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+              <div className="surface-default flex flex-wrap items-center justify-between gap-3 p-4 text-sm md:max-w-[620px]">
                 <p className="text-neutral-slate-700">데이터 연결 상태가 불안정해 일부 정보가 기본값으로 표시됩니다.</p>
                 <Button
                   variant="outline"
@@ -188,8 +200,98 @@ export default function Portfolio() {
             )}
           </div>
 
-          <div className="flex justify-center">
-            <CreativeHero />
+          <div className="mx-auto w-full max-w-[560px] lg:order-1">
+            <div className="surface-default relative overflow-hidden border-brand-blue-200/80 bg-white/95 p-6 shadow-xl shadow-brand-blue-100/40 backdrop-blur md:p-8">
+              <div className="pointer-events-none absolute -right-16 -top-14 h-44 w-44 rounded-full bg-brand-blue-100/80 blur-3xl" />
+              <div className="pointer-events-none absolute -left-20 bottom-4 h-32 w-32 rounded-full bg-brand-indigo-50/90 blur-3xl" />
+
+              <div className="relative">
+                <div className="flex items-start gap-4">
+                  <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-brand-blue-200/80 bg-brand-blue-50">
+                    <Image
+                      src={profile.profileImage || "/placeholder.svg?height=200&width=200"}
+                      alt={profile.name}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-blue-600">Snapshot</p>
+                    <p className="mt-1 text-xl font-bold text-neutral-slate-800">{profile.name}</p>
+                    <p className="mt-1 text-sm text-neutral-slate-600">{profile.title}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">
+                    <p className="text-xs text-neutral-slate-500">최신 글</p>
+                    <p className="mt-1 text-lg font-semibold text-neutral-slate-800">{latestPosts.length}개</p>
+                  </div>
+                  <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">
+                    <p className="text-xs text-neutral-slate-500">대표 프로젝트</p>
+                    <p className="mt-1 text-lg font-semibold text-neutral-slate-800">{featuredProjects.length}개</p>
+                  </div>
+                  <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">
+                    <p className="text-xs text-neutral-slate-500">활동 지역</p>
+                    <p className="mt-1 text-sm font-semibold text-neutral-slate-800">{profile.location || "미등록"}</p>
+                  </div>
+                  <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">
+                    <p className="text-xs text-neutral-slate-500">현재 상태</p>
+                    <p className="mt-1 text-sm font-semibold text-brand-blue-700">{profile.status || "확인 필요"}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <p className="text-xs font-semibold text-neutral-slate-500">최근 글 미리보기</p>
+                  <div className="mt-3 space-y-2">
+                    {heroRecentPosts.length > 0 ? (
+                      heroRecentPosts.map((post) => (
+                        <Link
+                          key={post.id}
+                          href={`/blog/${getPostSlug(post)}`}
+                          className="group flex items-start justify-between rounded-lg border border-brand-blue-200/70 bg-white px-3 py-2.5 transition-colors hover:bg-brand-blue-50/60"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-neutral-slate-800 group-hover:text-brand-blue-700">
+                              {post.title}
+                            </p>
+                            <p className="mt-1 text-xs text-neutral-slate-500">
+                              {new Date(post.publishDate).toLocaleDateString("ko-KR", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </p>
+                          </div>
+                          <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-blue-500 transition-transform duration-200 group-hover:translate-x-0.5" />
+                        </Link>
+                      ))
+                    ) : (
+                      <div className="rounded-lg border border-brand-blue-200/70 bg-white px-3 py-3 text-sm text-neutral-slate-500">
+                        아직 게시된 글이 없습니다. 곧 업데이트됩니다.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {heroSkills.length > 0 ? (
+                    heroSkills.map((skill) => (
+                      <span
+                        key={skill.name}
+                        className="rounded-full border border-brand-blue-200/80 bg-brand-blue-50 px-3 py-1 text-xs font-medium text-brand-blue-700"
+                      >
+                        {skill.name}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="rounded-full border border-brand-blue-200/80 bg-brand-blue-50 px-3 py-1 text-xs font-medium text-brand-blue-700">
+                      핵심 기술 준비 중
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
