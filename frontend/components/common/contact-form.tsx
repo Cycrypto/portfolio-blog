@@ -54,13 +54,11 @@ export function ContactForm() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.35 }}
       viewport={{ once: true }}
     >
-      <div className="relative overflow-hidden rounded-xl bg-white/80 backdrop-blur-sm border border-brand-blue-200/50 p-6 transition-all duration-300 hover:border-brand-blue-200/50">
-        <div className="absolute -inset-1 bg-gradient-to-r from-brand-blue-500/10 to-brand-blue-700/10 rounded-xl blur opacity-25 hover:opacity-100 transition duration-1000 hover:duration-200"></div>
-
-        <div className="relative">
+      <div className="surface-elevated p-6">
+        <div>
           <h3 className="text-2xl font-bold mb-6 text-neutral-slate-800">메시지 보내기</h3>
 
           <form onSubmit={handleSubmit} className="space-y-6">

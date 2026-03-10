@@ -3,16 +3,14 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, Github, Linkedin, Mail, BookOpen } from "lucide-react"
+import { ArrowRight, Github, Linkedin, Mail, BookOpen, RefreshCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { ProjectCard } from "@/components/project/project-card"
 import { SkillBadge } from "@/components/common/skill-badge"
-import { Timeline } from "@/components/home/timeline"
 import { ContactForm } from "@/components/common/contact-form"
 import { CreativeHero } from "@/components/home/creative-hero"
 import { FloatingNav } from "@/components/common/layout/floating-nav"
-import { ScrollProgress } from "@/components/common/scroll-progress"
 import { SectionHeading } from "@/components/common/section-heading"
 import { GlassmorphicCard } from "@/components/common/glassmorphic-card"
 import { BlogCard } from "@/components/blog/blog-card"
@@ -23,107 +21,128 @@ export default function Portfolio() {
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [latestPosts, setLatestPosts] = useState<Post[]>([])
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([])
+  const [hasPartialDataError, setHasPartialDataError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   const transformToBlogPost = (post: Post) => {
-    const slug = (post.slug && post.slug !== 'null') ? post.slug : post.id.toString()
+    const slug = post.slug && post.slug !== "null" ? post.slug : post.id.toString()
     return {
       title: post.title,
       excerpt: post.excerpt || `${post.category} 카테고리의 게시물입니다.`,
-      date: new Date(post.publishDate).toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+      date: new Date(post.publishDate).toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       }),
       readTime: `${post.readTime}분`,
       tags: post.tags || [post.category],
       image: post.image || "/placeholder.svg?height=200&width=400",
-      slug: slug,
+      slug,
     }
   }
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [postsRes, projectsRes, profileRes] = await Promise.all([
+        const [postsResult, projectsResult, profileResult] = await Promise.allSettled([
           getPosts(1, 6),
           getProjects(),
           profileService.getProfile(),
         ])
-        setLatestPosts(postsRes.posts || [])
-        setFeaturedProjects((projectsRes || []).slice(0, 6))
-        setProfile(profileRes)
+
+        setHasPartialDataError(
+          postsResult.status === "rejected" || projectsResult.status === "rejected" || profileResult.status === "rejected",
+        )
+
+        if (postsResult.status === "fulfilled") {
+          setLatestPosts((postsResult.value.posts || []).slice(0, 3))
+        } else {
+          console.error("Failed to load posts for landing:", postsResult.reason)
+          setLatestPosts([])
+        }
+
+        if (projectsResult.status === "fulfilled") {
+          setFeaturedProjects((projectsResult.value || []).slice(0, 3))
+        } else {
+          console.error("Failed to load projects for landing:", projectsResult.reason)
+          setFeaturedProjects([])
+        }
+
+        if (profileResult.status === "fulfilled") {
+          setProfile(profileResult.value)
+        } else {
+          console.error("Failed to load profile:", profileResult.reason)
+          setProfile(profileService.getDefaultProfile())
+        }
       } catch (error) {
-        console.error('Failed to load landing data:', error)
-        const defaultProfile = profileService.getDefaultProfile()
-        setProfile(defaultProfile)
+        console.error("Failed to load landing data:", error)
+        setHasPartialDataError(true)
+        setLatestPosts([])
+        setFeaturedProjects([])
+        setProfile(profileService.getDefaultProfile())
       }
     }
     load()
-  }, [])
+  }, [reloadKey])
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50">
         <div className="text-neutral-slate-600">로딩 중...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50 text-neutral-slate-900 overflow-hidden">
-      <ScrollProgress />
+    <div className="min-h-screen bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50 text-neutral-slate-900">
       <FloatingNav />
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-brand-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-          <div className="absolute top-40 right-10 w-72 h-72 bg-brand-blue-700 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-brand-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+      <section className="section-spacing relative overflow-hidden pt-24 md:pt-28">
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <div className="absolute left-8 top-10 h-56 w-56 rounded-full bg-brand-blue-100/70 blur-3xl" />
+          <div className="absolute bottom-10 right-12 h-56 w-56 rounded-full bg-brand-indigo-50/80 blur-3xl" />
         </div>
 
-        <div className="container relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="container relative z-10 grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
           <div className="space-y-6">
-            <div className="inline-block">
-              <div className="relative px-4 py-2 text-sm font-medium rounded-full bg-brand-blue-100 border border-brand-blue-200 mb-4 mt-4">
-                <span className="relative z-10 text-brand-blue-700">{profile.title}</span>
-                <span className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-blue-500/10 to-brand-blue-700/10 animate-pulse"></span>
-              </div>
+            <div className="inline-flex items-center rounded-full border border-brand-blue-200 bg-brand-blue-50 px-4 py-2 text-sm font-medium text-brand-blue-700">
+              {profile.title}
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-              <span className="block text-neutral-slate-800">안녕하세요,</span>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-blue-600 to-brand-blue-900">
-                {profile.name}입니다
-              </span>
+
+            <h1 className="text-4xl font-bold tracking-tight text-neutral-slate-800 md:text-6xl">
+              안녕하세요,
+              <span className="block text-brand-blue-700">{profile.name}입니다</span>
             </h1>
-            <p className="text-xl text-neutral-slate-600 max-w-[600px]">
-              {profile.subtitle}
-            </p>
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Button
-                className="relative overflow-hidden group bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 border-0 hover:from-brand-blue-600 hover:to-brand-blue-900 text-white"
-                asChild
-              >
+
+            <p className="max-w-[620px] text-lg text-neutral-slate-600 md:text-xl">{profile.subtitle}</p>
+
+            <div className="flex flex-wrap gap-3 pt-1">
+              <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
                 <Link href="/blog">
-                  <span className="relative z-10 flex items-center">
-                    블로그 보기 <BookOpen className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </span>
+                  블로그 보기 <BookOpen className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button
                 variant="outline"
-                className="border-brand-blue-200 text-brand-blue-600 hover:text-brand-blue-900 hover:border-brand-blue-500 hover:bg-brand-blue-50 bg-transparent"
+                className="border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
                 asChild
               >
                 <Link href="#contact">연락하기</Link>
               </Button>
             </div>
-            <div className="flex gap-4 pt-4">
+
+            <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-slate-600">
+              <span className="rounded-full bg-white px-3 py-1 border border-brand-blue-200/70">최신 글 {latestPosts.length}개</span>
+              <span className="rounded-full bg-white px-3 py-1 border border-brand-blue-200/70">프로젝트 {featuredProjects.length}개</span>
+              <span className="rounded-full bg-white px-3 py-1 border border-brand-blue-200/70">상태 {profile.status || "확인 필요"}</span>
+            </div>
+
+            <div className="flex gap-3 pt-1">
               <Link href={profile.github || "https://github.com"} target="_blank" rel="noopener noreferrer">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full bg-slate-100 hover:bg-slate-200 text-neutral-slate-600 hover:text-neutral-slate-800"
+                  className="rounded-full bg-white border border-brand-blue-200 text-neutral-slate-700 hover:bg-brand-blue-50"
                 >
                   <Github className="h-5 w-5" />
                   <span className="sr-only">GitHub</span>
@@ -133,7 +152,7 @@ export default function Portfolio() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full bg-slate-100 hover:bg-slate-200 text-neutral-slate-600 hover:text-neutral-slate-800"
+                  className="rounded-full bg-white border border-brand-blue-200 text-neutral-slate-700 hover:bg-brand-blue-50"
                 >
                   <Linkedin className="h-5 w-5" />
                   <span className="sr-only">LinkedIn</span>
@@ -144,7 +163,7 @@ export default function Portfolio() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full bg-slate-100 hover:bg-slate-200 text-neutral-slate-600 hover:text-neutral-slate-800"
+                    className="rounded-full bg-white border border-brand-blue-200 text-neutral-slate-700 hover:bg-brand-blue-50"
                   >
                     <Mail className="h-5 w-5" />
                     <span className="sr-only">이메일</span>
@@ -152,236 +171,202 @@ export default function Portfolio() {
                 </Link>
               )}
             </div>
+
+            {hasPartialDataError && (
+              <div className="surface-default flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+                <p className="text-neutral-slate-700">데이터 연결 상태가 불안정해 일부 정보가 기본값으로 표시됩니다.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
+                  onClick={() => setReloadKey((prev) => prev + 1)}
+                >
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  다시 시도
+                </Button>
+              </div>
+            )}
           </div>
+
           <div className="flex justify-center">
             <CreativeHero />
           </div>
         </div>
-
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 rounded-full border-2 border-brand-blue-200 flex justify-center items-start p-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-brand-blue-500 animate-pulse"></div>
-          </div>
-        </div>
       </section>
 
-      {/* About Section */}
-      <section id="about" className="py-32 relative">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-brand-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="absolute bottom-1/3 left-1/3 w-64 h-64 bg-brand-blue-700 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-        </div>
+      <section id="about" className="section-spacing">
+        <div className="container">
+          <SectionHeading title="소개" subtitle="저를 빠르게 파악할 수 있도록" />
 
-        <div className="container relative z-10">
-          <SectionHeading title="소개" subtitle="저에 대해 알아보세요" />
+          <div className="mt-14 grid grid-cols-1 items-start gap-10 lg:grid-cols-2">
+            <div className="surface-default relative aspect-square overflow-hidden">
+              <Image
+                src={profile.profileImage || "/placeholder.svg?height=600&width=600"}
+                alt={profile.name}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+              />
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mt-16">
-            <div className="relative">
-              <div className="absolute -inset-4 rounded-xl bg-gradient-to-r from-brand-blue-500/20 to-brand-indigo-500/20 blur-xl opacity-70"></div>
-              <div className="relative aspect-square rounded-xl overflow-hidden border border-brand-blue-200 bg-white">
-                <Image
-                  src={profile.profileImage || "/placeholder.svg?height=600&width=600"}
-                  alt={profile.name}
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-blue-900/20 via-transparent to-transparent"></div>
-                <div className="absolute bottom-0 left-0 w-full p-6">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-brand-blue-500 animate-pulse"></div>
-                    <span className="text-sm font-medium text-neutral-slate-700">{profile.statusMessage || '새로운 기회에 열려있습니다'}</span>
-                  </div>
+            <GlassmorphicCard>
+              <p className="text-lg text-neutral-slate-700">{profile.about}</p>
+              <p className="mt-4 text-lg text-neutral-slate-700">{profile.description}</p>
+
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-neutral-slate-500">이름</div>
+                  <div className="font-medium">{profile.name}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-neutral-slate-500">이메일</div>
+                  <div className="font-medium break-all">{profile.email}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-neutral-slate-500">위치</div>
+                  <div className="font-medium">{profile.location}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-neutral-slate-500">상태</div>
+                  <div className="font-medium text-brand-blue-700">{profile.status}</div>
                 </div>
               </div>
-            </div>
+            </GlassmorphicCard>
+          </div>
 
-            <div className="space-y-6">
-              <GlassmorphicCard>
-                <p className="text-lg text-neutral-slate-700">
-                  {profile.about}
-                </p>
-                <p className="text-lg text-neutral-slate-700 mt-4">
-                  {profile.description}
-                </p>
-
-                <div className="grid grid-cols-2 gap-4 mt-8">
-                  <div className="space-y-1">
-                    <div className="text-sm text-neutral-slate-500">이름</div>
-                    <div className="font-medium">{profile.name}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-sm text-neutral-slate-500">이메일</div>
-                    <div className="font-medium">{profile.email}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-sm text-neutral-slate-500">위치</div>
-                    <div className="font-medium">{profile.location}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-sm text-neutral-slate-500">상태</div>
-                    <div className="font-medium text-brand-blue-700">{profile.status}</div>
-                  </div>
-                </div>
-
-                <div className="mt-8">
-                  <Button className="bg-brand-blue-500 hover:bg-brand-blue-600 text-white">이력서 다운로드</Button>
-                </div>
-              </GlassmorphicCard>
-            </div>
+          <div className="mt-12">
+            <h3 className="text-xl font-bold text-neutral-slate-800">핵심 기술</h3>
+            {(profile.skills || []).length > 0 ? (
+              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                {profile.skills.slice(0, 8).map((skill, index) => (
+                  <SkillBadge key={index} name={skill.name} level={skill.level} />
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-neutral-slate-500">아직 등록된 기술 정보가 없습니다.</p>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Skills Section */}
-      <section id="skills" className="py-32 relative">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-brand-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-brand-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-        </div>
+      <section id="projects" className="section-spacing">
+        <div className="container">
+          <SectionHeading title="대표 프로젝트" subtitle="핵심 결과 중심으로" />
 
-        <div className="container relative z-10">
-          <SectionHeading title="기술 스택" subtitle="주요 역량과 숙련도" />
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
-            {(profile.skills || []).map((skill, index) => (
-              <SkillBadge key={index} name={skill.name} level={skill.level} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Projects Section */}
-      <section id="projects" className="py-32 relative">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-brand-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-brand-blue-700 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-        </div>
-
-        <div className="container relative z-10">
-          <SectionHeading title="주요 프로젝트" subtitle="제가 작업한 프로젝트들" />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
-            {featuredProjects.map((project, index) => (
-              <ProjectCard
-                key={project.id || index}
-                id={project.id}
-                title={project.title}
-                description={project.description || project.longDescription || ''}
-                tags={project.techStack || []}
-                image={(project.images && project.images[0]) || "/placeholder.svg"}
-                demoUrl={project.liveUrl}
-                repoUrl={project.githubUrl}
-              />
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button className="bg-brand-blue-500 hover:bg-brand-blue-600 text-white" asChild>
-              <Link href="/projects">
-                모든 프로젝트 보기 <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+          {featuredProjects.length > 0 ? (
+            <>
+              <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {featuredProjects.map((project, index) => (
+                  <ProjectCard
+                    key={project.id || index}
+                    id={project.id}
+                    title={project.title}
+                    description={project.description || project.longDescription || ""}
+                    tags={project.techStack || []}
+                    image={(project.images && project.images[0]) || "/placeholder.svg"}
+                    demoUrl={project.liveUrl}
+                    repoUrl={project.githubUrl}
+                  />
+                ))}
+              </div>
+              <div className="mt-10 text-center">
+                <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+                  <Link href="/projects">
+                    모든 프로젝트 보기 <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <GlassmorphicCard className="mt-12 text-center">
+              <p className="text-neutral-slate-600">표시할 프로젝트가 아직 없습니다.</p>
+              <Button className="mt-4 bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+                <Link href="/projects">프로젝트 페이지로 이동</Link>
+              </Button>
+            </GlassmorphicCard>
+          )}
         </div>
       </section>
 
-      {/* Experience Section */}
-      <section id="experience" className="py-32 relative">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-brand-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-brand-blue-700 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-        </div>
+      <section id="blog" className="section-spacing">
+        <div className="container">
+          <SectionHeading title="최신 글" subtitle="핵심 주제만 먼저" />
 
-        <div className="container relative z-10">
-          <SectionHeading title="경험" subtitle="경력과 성취" />
-          <div className="mt-16">
-            <Timeline />
-          </div>
-        </div>
-      </section>
-
-      {/* Blog Section */}
-      <section id="blog" className="py-32 relative">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-brand-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-brand-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-        </div>
-
-        <div className="container relative z-10">
-          <SectionHeading title="블로그" subtitle="최신 글을 만나보세요" />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
-            {latestPosts.map((post) => (
-              <BlogCard key={post.id} {...transformToBlogPost(post)} />
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button className="bg-brand-blue-500 hover:bg-brand-blue-600 text-white" asChild>
-              <Link href="/blog">
-                모든 포스트 보기 <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+          {latestPosts.length > 0 ? (
+            <>
+              <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {latestPosts.map((post) => (
+                  <BlogCard key={post.id} {...transformToBlogPost(post)} />
+                ))}
+              </div>
+              <div className="mt-10 text-center">
+                <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+                  <Link href="/blog">
+                    모든 포스트 보기 <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <GlassmorphicCard className="mt-12 text-center">
+              <p className="text-neutral-slate-600">아직 게시된 글이 없습니다.</p>
+              <Button className="mt-4 bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+                <Link href="/blog">블로그로 이동</Link>
+              </Button>
+            </GlassmorphicCard>
+          )}
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section id="contact" className="py-32 relative">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-brand-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-          <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-brand-blue-700 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-        </div>
+      <section id="contact" className="section-spacing">
+        <div className="container">
+          <SectionHeading title="연락하기" subtitle="프로젝트/협업 문의" />
 
-        <div className="container relative z-10">
-          <SectionHeading title="연락하기" subtitle="함께 이야기 나눠요" />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-16">
+          <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-2">
             <GlassmorphicCard>
-              <h3 className="text-xl font-bold text-neutral-slate-800 mb-4">연락처</h3>
-              <p className="text-neutral-slate-600 mb-6">
-                프로젝트 제안, 협업, 채용 문의 등 언제든 환영합니다.
-              </p>
+              <h3 className="mb-4 text-xl font-bold text-neutral-slate-800">연락처</h3>
+              <p className="mb-6 text-neutral-slate-600">프로젝트 제안, 협업, 채용 문의를 언제든 남겨주세요.</p>
 
               <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-brand-blue-100 flex items-center justify-center">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-brand-blue-50 p-3">
                     <Mail className="h-5 w-5 text-brand-blue-600" />
                   </div>
                   <div>
                     <div className="text-sm text-neutral-slate-500">이메일</div>
-                    <div className="font-medium">{profile.email}</div>
+                    <div className="font-medium break-all">{profile.email}</div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-brand-blue-100 flex items-center justify-center">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-brand-blue-50 p-3">
                     <Github className="h-5 w-5 text-brand-blue-600" />
                   </div>
                   <div>
                     <div className="text-sm text-neutral-slate-500">GitHub</div>
-                    <div className="font-medium">{profile.github}</div>
+                    <div className="font-medium break-all">{profile.github}</div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-brand-blue-100 flex items-center justify-center">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-brand-blue-50 p-3">
                     <Linkedin className="h-5 w-5 text-brand-blue-600" />
                   </div>
                   <div>
                     <div className="text-sm text-neutral-slate-500">LinkedIn</div>
-                    <div className="font-medium">{profile.linkedin}</div>
+                    <div className="font-medium break-all">{profile.linkedin}</div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 pt-8 border-t border-neutral-slate-200">
-                <h4 className="text-lg font-medium mb-4">현재 상태</h4>
+              <div className="mt-8 border-t border-neutral-slate-200 pt-6">
+                <h4 className="mb-2 text-base font-medium">현재 상태</h4>
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${profile.isAvailable ? 'bg-brand-blue-500' : 'bg-slate-400'} animate-pulse`}></div>
-                  <span>{profile.statusMessage || '새로운 프로젝트와 협업 기회를 찾고 있습니다'}</span>
+                  <div className={`h-2.5 w-2.5 rounded-full ${profile.isAvailable ? "bg-brand-blue-500" : "bg-slate-400"}`} />
+                  <span className="text-sm text-neutral-slate-700">
+                    {profile.statusMessage || "새로운 프로젝트와 협업 기회를 찾고 있습니다"}
+                  </span>
                 </div>
               </div>
             </GlassmorphicCard>
@@ -391,22 +376,20 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-neutral-slate-200 py-12 bg-white/50">
-        <div className="container flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="border-t border-neutral-slate-200 bg-white py-10">
+        <div className="container flex flex-col items-center justify-between gap-5 md:flex-row">
           <div>
-            <Link href="/" className="font-bold text-xl">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-blue-600 to-brand-blue-900">{profile.name}</span>
-              <span className="text-neutral-slate-800"> 블로그</span>
+            <Link href="/" className="text-xl font-bold text-neutral-slate-800">
+              {profile.name} 블로그
             </Link>
-            <p className="text-sm text-neutral-slate-500 mt-2">© {new Date().getFullYear()} {profile.name}. 모든 권리 보유.</p>
+            <p className="mt-2 text-sm text-neutral-slate-500">© {new Date().getFullYear()} {profile.name}. 모든 권리 보유.</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <Link href={profile.github || "https://github.com"} target="_blank" rel="noopener noreferrer">
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full bg-slate-100 hover:bg-slate-200 text-neutral-slate-600 hover:text-neutral-slate-800"
+                className="rounded-full bg-white border border-brand-blue-200 text-neutral-slate-700 hover:bg-brand-blue-50"
               >
                 <Github className="h-5 w-5" />
                 <span className="sr-only">GitHub</span>
@@ -416,7 +399,7 @@ export default function Portfolio() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full bg-slate-100 hover:bg-slate-200 text-neutral-slate-600 hover:text-neutral-slate-800"
+                className="rounded-full bg-white border border-brand-blue-200 text-neutral-slate-700 hover:bg-brand-blue-50"
               >
                 <Linkedin className="h-5 w-5" />
                 <span className="sr-only">LinkedIn</span>
@@ -427,7 +410,7 @@ export default function Portfolio() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full bg-slate-100 hover:bg-slate-200 text-neutral-slate-600 hover:text-neutral-slate-800"
+                  className="rounded-full bg-white border border-brand-blue-200 text-neutral-slate-700 hover:bg-brand-blue-50"
                 >
                   <Mail className="h-5 w-5" />
                   <span className="sr-only">이메일</span>

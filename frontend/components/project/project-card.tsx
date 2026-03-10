@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowUpRight, Github } from "lucide-react"
@@ -20,36 +19,23 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ id, title, description = "", tags = [], image, demoUrl = "", repoUrl = "" }: ProjectCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
-  const slug = title
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.35 }}
       viewport={{ once: true }}
       className="group"
     >
-      <div
-        className="relative h-full overflow-hidden rounded-xl bg-white/80 backdrop-blur-sm border border-brand-blue-200/50 transition-all duration-300 group-hover:border-brand-blue-200/50 group-hover:shadow-lg"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className="absolute -inset-1 bg-gradient-to-r from-brand-blue-500/10 to-brand-blue-700/10 rounded-xl blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-
-        <div className="relative h-full flex flex-col">
+      <div className="surface-elevated h-full overflow-hidden">
+        <div className="flex h-full flex-col">
           <div className="relative overflow-hidden h-48">
-            <div className="absolute inset-0 bg-gradient-to-b from-brand-blue-500/10 to-brand-blue-700/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
             <Image
               src={image || "/placeholder.svg"}
               alt={title}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className={`object-cover transition-transform duration-700 ${isHovered ? "scale-110" : "scale-100"}`}
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
 
@@ -90,18 +76,12 @@ export function ProjectCard({ id, title, description = "", tags = [], image, dem
                 className="bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 hover:from-brand-blue-600 hover:to-brand-blue-900 border-0"
                 asChild
               >
-                <Link href={`/projects/${id}`}>
-                  자세히 보기
+                <Link href={demoUrl || `/projects/${id}`} target={demoUrl ? "_blank" : undefined} rel={demoUrl ? "noopener noreferrer" : undefined}>
+                  {demoUrl ? "라이브 데모" : "자세히 보기"}
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             </div>
-          </div>
-
-          <div className="absolute top-3 right-3 z-20">
-            <div
-              className={`w-3 h-3 rounded-full ${isHovered ? "bg-brand-blue-500" : "bg-slate-400"} transition-colors duration-300`}
-            ></div>
           </div>
         </div>
       </div>

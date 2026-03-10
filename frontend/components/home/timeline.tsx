@@ -8,6 +8,7 @@ import { getExperiences, Experience } from "@/lib/api"
 export function Timeline() {
   const isMobile = useMobile()
   const [experiences, setExperiences] = useState<Experience[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
@@ -16,6 +17,8 @@ export function Timeline() {
         setExperiences(data)
       } catch (e) {
         setExperiences([])
+      } finally {
+        setLoading(false)
       }
     }
     load()
@@ -28,6 +31,19 @@ export function Timeline() {
       return bDate - aDate
     })
   }, [experiences])
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="surface-default h-32 animate-pulse" />
+        <div className="surface-default h-32 animate-pulse" />
+      </div>
+    )
+  }
+
+  if (sorted.length === 0) {
+    return <div className="surface-default px-6 py-8 text-center text-neutral-slate-500">등록된 경력 정보가 없습니다.</div>
+  }
 
   return (
     <div
@@ -46,20 +62,16 @@ export function Timeline() {
             className={`w-full md:w-1/2 ${index % 2 === 0 ? "md:pl-10" : "md:pr-10"}`}
             initial={{ opacity: 0, x: index % 2 === 0 ? 50 : -50 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.35 }}
             viewport={{ once: true }}
           >
-            <div className="relative overflow-hidden rounded-xl bg-white/80 backdrop-blur-sm border border-brand-blue-200/50 p-6 transition-all duration-300 hover:border-brand-blue-200/50 hover:shadow-lg">
-              <div className="absolute -inset-1 bg-gradient-to-r from-brand-blue-500/10 to-brand-blue-700/10 rounded-xl blur opacity-25 hover:opacity-100 transition duration-1000 hover:duration-200"></div>
-
-              <div className="relative">
-                <h3 className="text-xl font-bold text-neutral-slate-800">{experience.title}</h3>
-                <div className="text-neutral-slate-600 mb-4">
-                  {experience.company} | {experience.startDate}
-                  {experience.endDate ? ` - ${experience.endDate}` : ' - 현재'}
-                </div>
-                <p className="text-neutral-slate-700">{experience.description}</p>
+            <div className="surface-elevated p-6">
+              <h3 className="text-xl font-bold text-neutral-slate-800">{experience.title}</h3>
+              <div className="text-neutral-slate-600 mb-4">
+                {experience.company} | {experience.startDate}
+                {experience.endDate ? ` - ${experience.endDate}` : " - 현재"}
               </div>
+              <p className="text-neutral-slate-700">{experience.description}</p>
             </div>
           </motion.div>
 

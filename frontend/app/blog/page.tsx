@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, PenSquare } from "lucide-react"
+import { ArrowLeft, PenSquare, RefreshCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,13 +15,13 @@ import { Post } from "@/lib/api"
 import { useAdminAuth } from "@/hooks/use-admin-auth"
 
 interface BlogPost {
-  title: string;
-  excerpt: string;
-  date: string;
-  readTime: string;
-  tags: string[];
-  image: string;
-  slug: string;
+  title: string
+  excerpt: string
+  date: string
+  readTime: string
+  tags: string[]
+  image: string
+  slug: string
 }
 
 export default function BlogPage() {
@@ -30,103 +30,146 @@ export default function BlogPage() {
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [selectedTag, setSelectedTag] = useState<string>("")
-  const [searchKeyword, setSearchKeyword] = useState<string>("")
+  const [selectedTag, setSelectedTag] = useState("")
+  const [searchKeyword, setSearchKeyword] = useState("")
+  const [refreshKey, setRefreshKey] = useState(0)
+
   const isAdmin = useAdminAuth()
   const postsPerPage = 9
 
   useEffect(() => {
+    const controller = new AbortController()
+
     const fetchPosts = async () => {
       try {
         setLoading(true)
+        setError(null)
+
         const params = new URLSearchParams({
           page: currentPage.toString(),
-          pageSize: postsPerPage.toString()
+          pageSize: postsPerPage.toString(),
         })
-        
+
         if (selectedTag) {
-          params.append('tags', selectedTag)
+          params.append("tags", selectedTag)
         }
-        
+
         if (searchKeyword) {
-          params.append('keyword', searchKeyword.trim())
+          params.append("keyword", searchKeyword.trim())
         }
-        
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}/posts?${params}`)
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002"}/posts?${params}`, {
+          signal: controller.signal,
+        })
+
         if (!response.ok) {
-          throw new Error('Failed to fetch posts')
+          throw new Error("Failed to fetch posts")
         }
+
         const result = await response.json()
-        const { data: posts, totalCount } = result.data
-        
-        setPosts(posts || [])
-        setTotalPages(Math.ceil(totalCount / postsPerPage))
+        const { data: nextPosts, totalCount } = result.data
+
+        setPosts(Array.isArray(nextPosts) ? nextPosts : [])
+        setTotalPages(Math.max(1, Math.ceil((totalCount || 0) / postsPerPage)))
       } catch (err) {
-        setError('게시물을 불러오는데 실패했습니다.')
-        console.error('Error fetching posts:', err)
+        if (controller.signal.aborted) {
+          return
+        }
+        setError("게시물을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.")
+        setPosts([])
+        console.error("Error fetching posts:", err)
       } finally {
-        setLoading(false)
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
       }
     }
 
     fetchPosts()
-  }, [currentPage, selectedTag, searchKeyword])
 
-  // 백엔드 Post 데이터를 BlogPost 형태로 변환
+    return () => controller.abort()
+  }, [currentPage, selectedTag, searchKeyword, refreshKey])
+
   const transformToBlogPost = (post: Post): BlogPost => {
-    const slug = (post.slug && post.slug !== 'null') ? post.slug : post.id.toString()
+    const slug = post.slug && post.slug !== "null" ? post.slug : post.id.toString()
     return {
       title: post.title,
       excerpt: post.excerpt || `${post.category} 카테고리의 게시물입니다.`,
-      date: new Date(post.publishDate).toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      date: new Date(post.publishDate).toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       }),
       readTime: `${post.readTime}분`,
       tags: post.tags || [post.category],
       image: post.image || "/placeholder.svg?height=200&width=400",
-      slug: slug
+      slug,
     }
-  }
-
-  // 현재 페이지의 포스트 (이미 백엔드에서 published 상태만 반환됨)
-  const getCurrentPagePosts = () => {
-    return posts
   }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
-    // 페이지 상단으로 스크롤
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
+
+  const clearSearchState = () => {
+    setSearchKeyword("")
+    setSelectedTag("")
+    setCurrentPage(1)
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
-      {/* Header */}
-      <header className="border-b border-neutral-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container flex items-center justify-between py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/">
-                <ArrowLeft className="h-5 w-5" />
+    <div className="min-h-screen bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50">
+      <header className="sticky top-0 z-40 border-b border-neutral-slate-200 bg-white/95 backdrop-blur-sm">
+        <div className="container py-3 md:py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2 md:gap-4">
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/">
+                  <ArrowLeft className="h-5 w-5" />
+                </Link>
+              </Button>
+              <Link href="/" className="truncate text-lg font-bold text-neutral-slate-800 md:text-xl">
+                박준하 블로그
               </Link>
-            </Button>
-            <Link href="/" className="font-bold text-xl">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-blue-600 to-brand-blue-900">박준하</span>
-              <span className="text-neutral-slate-800"> 블로그</span>
-            </Link>
+            </div>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="hidden border-brand-blue-200 bg-brand-blue-50 text-brand-blue-700 hover:bg-brand-blue-100 sm:inline-flex"
+              >
+                <Link href="/admin/posts/new">
+                  <PenSquare className="mr-1 h-4 w-4" />
+                  새 글 작성
+                </Link>
+              </Button>
+            )}
           </div>
-          <div className="flex items-center gap-4">
+
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <AdvancedSearch
-              onSearch={setSearchKeyword}
-              onTagSearch={setSelectedTag}
+              onSearch={(value) => {
+                setCurrentPage(1)
+                setSearchKeyword(value)
+              }}
+              onTagSearch={(value) => {
+                setCurrentPage(1)
+                setSelectedTag(value)
+              }}
               placeholder="제목, 내용, 요약에서 검색..."
-              className="w-64"
+              className="w-full sm:w-80"
             />
             {isAdmin && (
-              <Button variant="outline" size="sm" asChild className="border-brand-blue-200 bg-brand-blue-50 hover:bg-brand-blue-100 text-brand-blue-700">
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="w-full border-brand-blue-200 bg-brand-blue-50 text-brand-blue-700 hover:bg-brand-blue-100 sm:hidden"
+              >
                 <Link href="/admin/posts/new">
-                  <PenSquare className="h-4 w-4 mr-1" />
+                  <PenSquare className="mr-1 h-4 w-4" />
                   새 글 작성
                 </Link>
               </Button>
@@ -135,86 +178,71 @@ export default function BlogPage() {
         </div>
       </header>
 
-      <div className="container py-12">
+      <div className="container py-10 md:py-12">
         <SectionHeading title="블로그" subtitle="개발 경험과 지식을 공유합니다" />
 
-        {/* Filter and Search */}
-        <div className="mt-12 mb-8">
-          <BlogFilter onTagSelect={setSelectedTag} />
+        <div className="mb-6 mt-10">
+          <BlogFilter
+            onTagSelect={(value) => {
+              setCurrentPage(1)
+              setSelectedTag(value)
+            }}
+          />
         </div>
 
-        {/* 검색 결과 표시 */}
         {(searchKeyword || selectedTag) && (
-          <div className="mb-6 p-4 bg-brand-blue-50 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-brand-blue-700">
-                <span className="font-medium">검색 결과:</span>
-                {searchKeyword && (
-                  <Badge variant="outline" className="bg-brand-blue-100">
-                    키워드: "{searchKeyword}"
-                  </Badge>
-                )}
-                {selectedTag && (
-                  <Badge variant="outline" className="bg-brand-blue-100">
-                    태그: "{selectedTag}"
-                  </Badge>
-                )}
-                <span className="text-sm text-brand-blue-600">
-                  ({posts.length}개의 포스트)
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchKeyword("")
-                  setSelectedTag("")
-                }}
-                className="text-brand-blue-600 hover:text-brand-blue-900"
-              >
-                검색 초기화
-              </Button>
+          <div className="surface-default mb-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-brand-blue-700">
+              <span className="font-medium">검색 결과</span>
+              {searchKeyword && (
+                <Badge variant="outline" className="bg-brand-blue-50">
+                  키워드: "{searchKeyword}"
+                </Badge>
+              )}
+              {selectedTag && (
+                <Badge variant="outline" className="bg-brand-blue-50">
+                  태그: "{selectedTag}"
+                </Badge>
+              )}
+              <span className="text-sm text-brand-blue-600">{posts.length}개</span>
             </div>
+            <Button variant="ghost" size="sm" onClick={clearSearchState} className="w-fit text-brand-blue-700 hover:bg-brand-blue-50">
+              검색 초기화
+            </Button>
           </div>
         )}
 
-        {/* Blog Posts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-            <div className="col-span-full flex justify-center items-center py-12">
-              <div className="text-neutral-slate-500">게시물을 불러오는 중...</div>
-            </div>
+            <div className="col-span-full py-14 text-center text-neutral-slate-500">게시물을 불러오는 중...</div>
           ) : error ? (
-            <div className="col-span-full flex justify-center items-center py-12">
-              <div className="text-destructive">{error}</div>
+            <div className="col-span-full">
+              <div className="surface-default py-10 text-center">
+                <p className="text-destructive">{error}</p>
+                <Button
+                  variant="outline"
+                  className="mt-4 border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
+                  onClick={() => setRefreshKey((prev) => prev + 1)}
+                >
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  다시 시도
+                </Button>
+              </div>
             </div>
           ) : posts.length === 0 ? (
-            <div className="col-span-full flex justify-center items-center py-12">
-              <div className="text-neutral-slate-500">
+            <div className="col-span-full">
+              <div className="surface-default py-10 text-center text-neutral-slate-500">
                 {searchKeyword || selectedTag ? "검색 결과가 없습니다." : "등록된 게시물이 없습니다."}
               </div>
             </div>
           ) : (
-            Array.isArray(posts) ? 
-              getCurrentPagePosts().map((post) => (
-                <BlogCard key={post.id} {...transformToBlogPost(post)} />
-              ))
-              : (
-                <div className="col-span-full flex justify-center items-center py-12">
-                  <div className="text-destructive">데이터 형식이 올바르지 않습니다.</div>
-                </div>
-              )
+            posts.map((post) => <BlogCard key={post.id} {...transformToBlogPost(post)} />)
           )}
         </div>
 
-        {/* Pagination */}
         {!loading && !error && posts.length > 0 && totalPages > 1 && (
-          <div className="flex justify-center">
-            <Pagination 
-              currentPage={currentPage} 
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
+          <div className="mt-10 flex justify-center">
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
           </div>
         )}
       </div>

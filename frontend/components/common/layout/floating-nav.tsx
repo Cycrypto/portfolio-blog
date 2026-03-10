@@ -24,7 +24,7 @@ export function FloatingNav() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 100) {
+      if (window.scrollY > 80) {
         setIsVisible(true)
       } else {
         setIsVisible(false)
@@ -35,12 +35,16 @@ export function FloatingNav() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  useEffect(() => {
+    if (!isMobile) {
+      setIsOpen(false)
+    }
+  }, [isMobile])
+
   const navItems = [
     { name: "소개", href: "#about" },
-    { name: "기술", href: "#skills" },
-    { name: "블로그", href: "#blog" },
     { name: "프로젝트", href: "#projects" },
-    { name: "경력", href: "#experience" },
+    { name: "블로그", href: "#blog" },
     { name: "연락", href: "#contact" },
   ]
 
@@ -53,44 +57,67 @@ export function FloatingNav() {
   return (
     <>
       <motion.div
-        className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed left-1/2 top-4 z-50 -translate-x-1/2 ${isVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
         initial={{ y: -100 }}
         animate={{ y: isVisible ? 0 : -100 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.25 }}
       >
-        <div className="relative px-4 py-3 rounded-full bg-white/80 backdrop-blur-md border border-brand-blue-200/50 shadow-lg">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-blue-500/20 to-brand-indigo-500/20 rounded-full blur opacity-50"></div>
+        <div className="surface-default relative rounded-full px-3 py-2 shadow-lg">
 
           {isMobile ? (
-            <div className="relative flex items-center justify-between">
-              <Link href="/" className="font-bold text-lg">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-blue-600 to-brand-blue-900">
-                  박준하
-                </span>
-                <span className="text-neutral-slate-800"> 블로그</span>
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-neutral-slate-600 hover:text-neutral-slate-800 hover:bg-brand-blue-50"
-                onClick={() => setIsOpen(!isOpen)}
-              >
-                {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
+            <div className="relative">
+              <div className="flex items-center justify-between gap-2">
+                <Link href="/" className="px-2 font-semibold text-neutral-slate-800">
+                  박준하 블로그
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-neutral-slate-600 hover:bg-brand-blue-50 hover:text-neutral-slate-800"
+                  onClick={() => setIsOpen((prev) => !prev)}
+                >
+                  {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                </Button>
+              </div>
+              {isOpen && (
+                <div className="surface-default absolute right-0 top-full mt-2 w-44 p-2 shadow-lg">
+                  <nav className="space-y-1">
+                    {navItems.map((item) => (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className="block rounded-md px-3 py-2 text-sm font-medium text-neutral-slate-700 hover:bg-brand-blue-50 hover:text-brand-blue-700"
+                        onClick={handleNavClick}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </nav>
+                  {isAdmin && (
+                    <div className="mt-2 border-t border-neutral-slate-200 pt-2">
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-blue-700 hover:bg-brand-blue-50"
+                        onClick={handleNavClick}
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        관리자
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <div className="relative flex items-center gap-1">
-              <Link href="/" className="font-bold text-lg mr-4">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-blue-600 to-brand-blue-900">
-                  박준하
-                </span>
-                <span className="text-neutral-slate-800"> 블로그</span>
+              <Link href="/" className="mr-2 px-2 font-semibold text-neutral-slate-800">
+                박준하 블로그
               </Link>
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="px-3 py-1 text-sm font-medium text-neutral-slate-600 hover:text-brand-blue-600 transition-colors"
+                  className="rounded-full px-3 py-1 text-sm font-medium text-neutral-slate-600 transition-colors hover:bg-brand-blue-50 hover:text-brand-blue-700"
                   onClick={handleNavClick}
                 >
                   {item.name}
@@ -104,7 +131,7 @@ export function FloatingNav() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="ml-2 border-brand-blue-200 bg-brand-blue-50 hover:bg-brand-blue-100 text-brand-blue-700"
+                        className="ml-1 border-brand-blue-200 bg-brand-blue-50 text-brand-blue-700 hover:bg-brand-blue-100"
                       >
                         <Settings className="h-4 w-4 mr-1" />
                         관리
@@ -134,71 +161,10 @@ export function FloatingNav() {
                   </DropdownMenu>
                 </>
               )}
-              <Button
-                size="sm"
-                className="ml-2 bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 hover:from-brand-blue-600 hover:to-brand-blue-900 border-0"
-              >
-                이력서
-              </Button>
             </div>
           )}
         </div>
       </motion.div>
-
-      {/* Mobile menu */}
-      {isMobile && (
-        <motion.div
-          className={`fixed inset-0 z-40 bg-white/90 backdrop-blur-md ${isOpen ? "block" : "hidden"}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isOpen ? 1 : 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="flex flex-col items-center justify-center h-full">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="px-8 py-4 text-2xl font-medium text-neutral-slate-800 hover:text-brand-blue-600 transition-colors"
-                onClick={handleNavClick}
-              >
-                {item.name}
-              </Link>
-            ))}
-            {isAdmin && (
-              <>
-                <div className="w-32 h-px bg-neutral-slate-300 my-4" />
-                <Link
-                  href="/admin/posts/new"
-                  className="px-8 py-3 text-lg font-medium text-brand-blue-700 hover:text-brand-blue-900 transition-colors flex items-center gap-2"
-                  onClick={handleNavClick}
-                >
-                  <PenSquare className="h-5 w-5" />
-                  새 글 작성
-                </Link>
-                <Link
-                  href="/admin/posts"
-                  className="px-8 py-3 text-lg font-medium text-brand-blue-700 hover:text-brand-blue-900 transition-colors flex items-center gap-2"
-                  onClick={handleNavClick}
-                >
-                  <FileText className="h-5 w-5" />
-                  글 목록
-                </Link>
-                <Link
-                  href="/admin"
-                  className="px-8 py-3 text-lg font-medium text-brand-blue-700 hover:text-brand-blue-900 transition-colors flex items-center gap-2"
-                  onClick={handleNavClick}
-                >
-                  <LayoutDashboard className="h-5 w-5" />
-                  대시보드
-                </Link>
-              </>
-            )}
-            <Button className="mt-6 bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 hover:from-brand-blue-600 hover:to-brand-blue-900 border-0">
-              이력서
-            </Button>
-          </div>
-        </motion.div>
-      )}
     </>
   )
 }

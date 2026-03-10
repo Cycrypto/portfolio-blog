@@ -9,38 +9,26 @@ interface SectionHeadingProps {
 
 export function SectionHeading({ title, subtitle }: SectionHeadingProps) {
   return (
-    <div className="text-center space-y-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
+    <div className="text-center">
+      <motion.p
+        className="inline-flex items-center rounded-full border border-brand-blue-200 bg-brand-blue-50 px-3 py-1 text-sm font-medium text-brand-blue-700"
+        initial={{ opacity: 0, y: 8 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.3 }}
         viewport={{ once: true }}
       >
-        <div className="inline-block">
-          <div className="relative px-3 py-1 text-sm font-medium rounded-full bg-brand-blue-100 border border-brand-blue-200 mb-2">
-            <span className="relative z-10 text-brand-blue-700">{subtitle}</span>
-            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-blue-500/10 to-brand-blue-700/10 animate-pulse"></span>
-          </div>
-        </div>
-      </motion.div>
-
+        {subtitle}
+      </motion.p>
       <motion.h2
-        className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600"
-        initial={{ opacity: 0, y: 20 }}
+        className="mt-3 text-3xl font-extrabold tracking-tight text-neutral-slate-800 md:text-4xl"
+        initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
+        transition={{ duration: 0.35, delay: 0.05 }}
         viewport={{ once: true }}
       >
         {title}
       </motion.h2>
-
-      <motion.div
-        className="w-24 h-1.5 bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 rounded-full mx-auto mt-6"
-        initial={{ opacity: 0, scale: 0 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-        viewport={{ once: true }}
-      />
+      <div className="mx-auto mt-4 h-1 w-16 rounded-full bg-brand-blue-500" />
     </div>
   )
 }

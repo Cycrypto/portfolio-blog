@@ -1,0 +1,122 @@
+{
+  "generatedAt": "2026-03-10T06:50:36.955Z",
+  "desktop": {
+    "home": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit-after/desktop-home.png",
+      "metrics": {
+        "sections": 6,
+        "sectionIds": [
+          "(no-id)",
+          "about",
+          "projects",
+          "blog",
+          "contact",
+          "(no-id)"
+        ],
+        "buttons": 8,
+        "links": 16,
+        "inputs": 4,
+        "animatedCount": 0,
+        "blurCount": 18,
+        "gradientClassCount": 18,
+        "fixedStickyCount": 1,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "logs": [
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to fetch profile: ApiError: Network error: Failed to fetch\n    at s (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:4211)\n    at async Object.getProfile (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:1577)\n    at async Promise.allSettled (index 2)\n    at async http://127.0.0.1:3000/_next/static/chunks/app/page-bce06df1b90c7eaf.js:1:11853",
+          "Failed to load posts for landing: ApiError: Network error: Failed to fetch\n    at s (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:4211)\n    at async R (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:10598)\n    at async Promise.allSettled (index 0)\n    at async http://127.0.0.1:3000/_next/static/chunks/app/page-bce06df1b90c7eaf.js:1:11853",
+          "Failed to load projects for landing: ApiError: Network error: Failed to fetch\n    at s (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:4211)\n    at async M (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:14715)\n    at async Promise.allSettled (index 1)\n    at async http://127.0.0.1:3000/_next/static/chunks/app/page-bce06df1b90c7eaf.js:1:11853",
+          "Failed to load profile: Error: 프로필 데이터를 가져오는데 실패했습니다.\n    at Object.getProfile (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:1773)\n    at async Promise.allSettled (index 2)\n    at async http://127.0.0.1:3000/_next/static/chunks/app/page-bce06df1b90c7eaf.js:1:11853"
+        ]
+      }
+    },
+    "blog": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit-after/desktop-blog.png",
+      "metrics": {
+        "sections": 1,
+        "sectionIds": [
+          "(no-id)"
+        ],
+        "buttons": 2,
+        "links": 2,
+        "inputs": 1,
+        "animatedCount": 0,
+        "blurCount": 1,
+        "gradientClassCount": 1,
+        "fixedStickyCount": 1,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "logs": [
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Error fetching tags: ApiError: Network error: Failed to fetch\n    at s (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:4211)\n    at async w (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:12224)\n    at async http://127.0.0.1:3000/_next/static/chunks/app/blog/page-badb8821f506f165.js:1:1564",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Error fetching posts: TypeError: Failed to fetch\n    at http://127.0.0.1:3000/_next/static/chunks/app/blog/page-badb8821f506f165.js:1:8061\n    at http://127.0.0.1:3000/_next/static/chunks/app/blog/page-badb8821f506f165.js:1:8476\n    at o1 (http://127.0.0.1:3000/_next/static/chunks/4bd1b696-f785427dddbba9fb.js:1:88952)\n    at e (http://127.0.0.1:3000/_next/static/chunks/4bd1b696-f785427dddbba9fb.js:1:105602)\n    at e (http://127.0.0.1:3000/_next/static/chunks/4bd1b696-f785427dddbba9fb.js:1:105589)\n    at e (http://127.0.0.1:3000/_next/static/chunks/4bd1b696-f785427dddbba9fb.js:1:105847)\n    at e (http://127.0.0.1:3000/_next/static/chunks/4bd1b696-f785427dddbba9fb.js:1:105847)\n    at e (http://127.0.0.1:3000/_next/static/chunks/4bd1b696-f785427dddbba9fb.js:1:105589)\n    at e (http://127.0.0.1:3000/_next/static/chunks/4bd1b696-f785427dddbba9fb.js:1:105847)\n    at e (http://127.0.0.1:3000/_next/static/chunks/4bd1b696-f785427dddbba9fb.js:1:105589)"
+        ]
+      }
+    },
+    "projects": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit-after/desktop-projects.png",
+      "metrics": {
+        "sections": 1,
+        "sectionIds": [
+          "(no-id)"
+        ],
+        "buttons": 0,
+        "links": 2,
+        "inputs": 0,
+        "animatedCount": 0,
+        "blurCount": 1,
+        "gradientClassCount": 1,
+        "fixedStickyCount": 1,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "logs": []
+      }
+    }
+  },
+  "mobile": {
+    "home": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit-after/mobile-home.png",
+      "metrics": {
+        "sections": 6,
+        "sectionIds": [
+          "(no-id)",
+          "about",
+          "projects",
+          "blog",
+          "contact",
+          "(no-id)"
+        ],
+        "buttons": 9,
+        "links": 12,
+        "inputs": 4,
+        "animatedCount": 0,
+        "blurCount": 18,
+        "gradientClassCount": 18,
+        "fixedStickyCount": 1,
+        "viewport": {
+          "width": 390,
+          "height": 664
+        },
+        "logs": [
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to load resource: net::ERR_CONNECTION_REFUSED",
+          "Failed to fetch profile: ApiError: Network error: Failed to fetch\n    at s (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:4211)\n    at async Object.getProfile (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:1577)\n    at async Promise.allSettled (index 2)\n    at async http://127.0.0.1:3000/_next/static/chunks/app/page-bce06df1b90c7eaf.js:1:11853",
+          "Failed to load posts for landing: ApiError: Network error: Failed to fetch\n    at s (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:4211)\n    at async R (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:10598)\n    at async Promise.allSettled (index 0)\n    at async http://127.0.0.1:3000/_next/static/chunks/app/page-bce06df1b90c7eaf.js:1:11853",
+          "Failed to load projects for landing: ApiError: Network error: Failed to fetch\n    at s (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:4211)\n    at async M (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:14715)\n    at async Promise.allSettled (index 1)\n    at async http://127.0.0.1:3000/_next/static/chunks/app/page-bce06df1b90c7eaf.js:1:11853",
+          "Failed to load profile: Error: 프로필 데이터를 가져오는데 실패했습니다.\n    at Object.getProfile (http://127.0.0.1:3000/_next/static/chunks/3382-ecd49c68992e3820.js:1:1773)\n    at async Promise.allSettled (index 2)\n    at async http://127.0.0.1:3000/_next/static/chunks/app/page-bce06df1b90c7eaf.js:1:11853"
+        ]
+      }
+    }
+  }
+}

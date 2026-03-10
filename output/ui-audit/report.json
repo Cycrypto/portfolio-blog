@@ -1,0 +1,342 @@
+{
+  "generatedAt": "2026-03-10T06:19:50.129Z",
+  "desktop": {
+    "home": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit/desktop-home.png",
+      "metrics": {
+        "pageTitle": "박준하 - 백엔드 개발자 블로그",
+        "sections": 8,
+        "sectionIds": [
+          "(no-id)",
+          "about",
+          "skills",
+          "projects",
+          "experience",
+          "blog",
+          "contact",
+          "(no-id)"
+        ],
+        "headings": 10,
+        "h1": [
+          "안녕하세요,박준하입니다"
+        ],
+        "buttons": 9,
+        "links": 18,
+        "inputs": 4,
+        "cardsLike": 0,
+        "animatedCount": 14,
+        "blurCount": 48,
+        "fixedStickyCount": 2,
+        "gradientClassCount": 57,
+        "textLength": 954,
+        "primaryButtons": [
+          "박준하 블로그",
+          "소개",
+          "기술",
+          "블로그",
+          "프로젝트",
+          "경력",
+          "연락",
+          "이력서",
+          "블로그 보기",
+          "연락하기",
+          "GitHub",
+          "GitHub",
+          "LinkedIn",
+          "LinkedIn",
+          "이메일",
+          "이메일",
+          "이력서 다운로드",
+          "모든 프로젝트 보기",
+          "모든 포스트 보기",
+          "메시지 전송"
+        ],
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "url": "http://127.0.0.1:3000/",
+        "logs": [
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load landing data: ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async getPosts (webpack-internal:///(app-pages-browser)/./lib/api/services/posts.ts:20:24)\n    at async Promise.all (index 0)\n    at async Portfolio.useEffect.load (webpack-internal:///(app-pages-browser)/./app/page.tsx:76:69)"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Failed to fetch profile: ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async Object.getProfile (webpack-internal:///(app-pages-browser)/./lib/api/services/profile.ts:15:30)\n    at async Promise.all (index 2)"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          }
+        ]
+      }
+    },
+    "blog": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit/desktop-blog.png",
+      "metrics": {
+        "pageTitle": "박준하 - 백엔드 개발자 블로그",
+        "sections": 1,
+        "sectionIds": [
+          "(no-id)"
+        ],
+        "headings": 1,
+        "h1": [],
+        "buttons": 1,
+        "links": 2,
+        "inputs": 1,
+        "cardsLike": 0,
+        "animatedCount": 1,
+        "blurCount": 1,
+        "fixedStickyCount": 1,
+        "gradientClassCount": 5,
+        "textLength": 50,
+        "primaryButtons": [
+          "박준하 블로그",
+          "전체"
+        ],
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "url": "http://127.0.0.1:3000/blog",
+        "logs": [
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Error fetching tags: ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async getTopTags (webpack-internal:///(app-pages-browser)/./lib/api/services/posts.ts:140:24)\n    at async BlogFilter.useEffect.fetchTags (webpack-internal:///(app-pages-browser)/./components/blog/blog-filter.tsx:30:41)"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Error fetching posts: TypeError: Failed to fetch\n    at BlogPage.useEffect.fetchPosts (webpack-internal:///(app-pages-browser)/./app/blog/page.tsx:61:48)\n    at BlogPage.useEffect (webpack-internal:///(app-pages-browser)/./app/blog/page.tsx:77:13)\n    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:23669:20)\n    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:872:30)\n    at commitHookEffectListMount (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:12345:29)\n    at commitHookPassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:12466:11)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14563:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14610:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14610:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14610:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14493:17)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14458:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14390:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14514:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14514:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14514:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14514:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)"
+          }
+        ]
+      }
+    },
+    "projects": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit/desktop-projects.png",
+      "metrics": {
+        "pageTitle": "박준하 - 백엔드 개발자 블로그",
+        "sections": 1,
+        "sectionIds": [
+          "(no-id)"
+        ],
+        "headings": 1,
+        "h1": [],
+        "buttons": 0,
+        "links": 2,
+        "inputs": 0,
+        "cardsLike": 0,
+        "animatedCount": 1,
+        "blurCount": 1,
+        "fixedStickyCount": 1,
+        "gradientClassCount": 5,
+        "textLength": 32,
+        "primaryButtons": [
+          "박준하 블로그"
+        ],
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "url": "http://127.0.0.1:3000/projects",
+        "logs": [
+          {
+            "type": "console",
+            "text": "%c%s%c Failed to fetch projects: background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Server   ApiError: Network error: fetch failed\n    at apiRequest (about://React/Server/webpack-internal:///(rsc)/./lib/api/client/base.ts?3:53:15)\n    at getProjects (about://React/Server/webpack-internal:///(rsc)/./lib/api/services/projects.ts?4:13:20)\n    at ProjectsPage (about://React/Server/webpack-internal:///(rsc)/./app/projects/page.tsx?5:24:20)\n    at resolveErrorDev (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:2379:46)\n    at getOutlinedModel (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:1732:22)\n    at parseModelString (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:1933:15)\n    at Object.eval (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:3038:18)\n    at JSON.parse (<anonymous>)\n    at initializeModelChunk (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:1265:26)\n    at getOutlinedModel (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:1667:11)\n    at parseModelString (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:2026:15)\n    at Array.eval (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:3038:18)\n    at JSON.parse (<anonymous>)\n    at initializeModelChunk (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:1265:26)\n    at resolveConsoleEntry (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:2666:13)\n    at processFullStringRow (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:2906:11)\n    at processFullBinaryRow (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:2808:7)\n    at processBinaryChunk (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:3011:15)\n    at progress (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-client.browser.development.js:3275:13)"
+          }
+        ]
+      }
+    },
+    "admin-login": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit/desktop-admin-login.png",
+      "metrics": {
+        "pageTitle": "박준하 - 백엔드 개발자 블로그",
+        "sections": 1,
+        "sectionIds": [
+          "(no-id)"
+        ],
+        "headings": 0,
+        "h1": [],
+        "buttons": 1,
+        "links": 0,
+        "inputs": 2,
+        "cardsLike": 1,
+        "animatedCount": 0,
+        "blurCount": 0,
+        "fixedStickyCount": 0,
+        "gradientClassCount": 1,
+        "textLength": 70,
+        "primaryButtons": [
+          "로그인"
+        ],
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "url": "http://127.0.0.1:3000/admin/login",
+        "logs": []
+      }
+    }
+  },
+  "mobile": {
+    "home": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit/mobile-home.png",
+      "metrics": {
+        "pageTitle": "박준하 - 백엔드 개발자 블로그",
+        "sections": 8,
+        "sectionIds": [
+          "(no-id)",
+          "about",
+          "skills",
+          "projects",
+          "experience",
+          "blog",
+          "contact",
+          "(no-id)"
+        ],
+        "headings": 10,
+        "h1": [
+          "안녕하세요,박준하입니다"
+        ],
+        "buttons": 10,
+        "links": 18,
+        "inputs": 4,
+        "cardsLike": 0,
+        "animatedCount": 14,
+        "blurCount": 49,
+        "fixedStickyCount": 3,
+        "gradientClassCount": 57,
+        "textLength": 929,
+        "primaryButtons": [
+          "박준하 블로그",
+          "소개",
+          "기술",
+          "블로그",
+          "프로젝트",
+          "경력",
+          "연락",
+          "이력서",
+          "블로그 보기",
+          "연락하기",
+          "GitHub",
+          "GitHub",
+          "LinkedIn",
+          "LinkedIn",
+          "이메일",
+          "이메일",
+          "이력서 다운로드",
+          "모든 프로젝트 보기",
+          "모든 포스트 보기",
+          "메시지 전송"
+        ],
+        "viewport": {
+          "width": 390,
+          "height": 664
+        },
+        "url": "http://127.0.0.1:3000/",
+        "logs": [
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load landing data: ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async getPosts (webpack-internal:///(app-pages-browser)/./lib/api/services/posts.ts:20:24)\n    at async Promise.all (index 0)\n    at async Portfolio.useEffect.load (webpack-internal:///(app-pages-browser)/./app/page.tsx:76:69)"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Failed to fetch profile: ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async Object.getProfile (webpack-internal:///(app-pages-browser)/./lib/api/services/profile.ts:15:30)\n    at async Promise.all (index 2)"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          }
+        ]
+      }
+    },
+    "blog": {
+      "screenshotPath": "/Users/cycrpto/Desktop/my-blog/output/ui-audit/mobile-blog.png",
+      "metrics": {
+        "pageTitle": "박준하 - 백엔드 개발자 블로그",
+        "sections": 1,
+        "sectionIds": [
+          "(no-id)"
+        ],
+        "headings": 1,
+        "h1": [],
+        "buttons": 1,
+        "links": 2,
+        "inputs": 1,
+        "cardsLike": 0,
+        "animatedCount": 1,
+        "blurCount": 1,
+        "fixedStickyCount": 1,
+        "gradientClassCount": 5,
+        "textLength": 50,
+        "primaryButtons": [
+          "박준하 블로그",
+          "전체"
+        ],
+        "viewport": {
+          "width": 390,
+          "height": 664
+        },
+        "url": "http://127.0.0.1:3000/blog",
+        "logs": [
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Error fetching tags: ApiError: Network error: Failed to fetch\n    at apiRequest (webpack-internal:///(app-pages-browser)/./lib/api/client/base.ts:55:15)\n    at async getTopTags (webpack-internal:///(app-pages-browser)/./lib/api/services/posts.ts:140:24)\n    at async BlogFilter.useEffect.fetchTags (webpack-internal:///(app-pages-browser)/./components/blog/blog-filter.tsx:30:41)"
+          },
+          {
+            "type": "console",
+            "text": "Failed to load resource: net::ERR_CONNECTION_REFUSED"
+          },
+          {
+            "type": "console",
+            "text": "Error fetching posts: TypeError: Failed to fetch\n    at BlogPage.useEffect.fetchPosts (webpack-internal:///(app-pages-browser)/./app/blog/page.tsx:61:48)\n    at BlogPage.useEffect (webpack-internal:///(app-pages-browser)/./app/blog/page.tsx:77:13)\n    at Object.react_stack_bottom_frame (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:23669:20)\n    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:872:30)\n    at commitHookEffectListMount (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:12345:29)\n    at commitHookPassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:12466:11)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14563:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14610:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14610:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14610:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at reconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14556:11)\n    at recursivelyTraverseReconnectPassiveEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14534:9)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14493:17)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14458:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14390:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14514:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14514:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14380:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14514:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)\n    at commitPassiveMountOnFiber (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14514:11)\n    at recursivelyTraversePassiveMountEffects (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14360:11)"
+          }
+        ]
+      }
+    }
+  }
+}

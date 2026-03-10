@@ -89,6 +89,20 @@
   }
 }
 
+@layer components {
+  .surface-default {
+    @apply rounded-xl border border-brand-blue-200/70 bg-white shadow-sm;
+  }
+
+  .surface-elevated {
+    @apply rounded-xl border border-brand-blue-200/70 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md;
+  }
+
+  .section-spacing {
+    @apply py-16 md:py-20;
+  }
+}
+
 @layer utilities {
   .animation-delay-2000 {
     animation-delay: 2s;
@@ -129,6 +143,22 @@
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-blob,
+  .animate-float {
+    animation: none !important;
+  }
 }
 
 /* Tiptap Editor Styles */
