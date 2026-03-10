@@ -1,0 +1,79 @@
+name: Deploy (Tailscale)
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch or tag to deploy"
+        required: true
+        default: "main"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  DEPLOY_HOST: 100.76.8.11
+  DEPLOY_USER: ubuntu
+  DEPLOY_PORT: "22"
+  DEPLOY_PATH: /home/ubuntu/apps/portfolio-blog
+  COMPOSE_FILE: docker-compose.prod.yml
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
+    environment: production
+    steps:
+      - name: Resolve deploy ref
+        id: vars
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Connect to tailnet
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          version: stable
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ env.DEPLOY_HOST }}
+          username: ${{ env.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
+          port: ${{ env.DEPLOY_PORT }}
+          script_stop: true
+          command_timeout: 45m
+          script: |
+            set -euo pipefail
+
+            cd "${{ env.DEPLOY_PATH }}"
+            git fetch --all --prune
+            git checkout "${{ steps.vars.outputs.ref }}"
+            git pull origin "${{ steps.vars.outputs.ref }}"
+
+            if docker compose version >/dev/null 2>&1; then
+              DC="docker compose"
+            else
+              DC="docker-compose"
+            fi
+
+            $DC -f "${{ env.COMPOSE_FILE }}" up -d --build
+            $DC -f "${{ env.COMPOSE_FILE }}" ps
