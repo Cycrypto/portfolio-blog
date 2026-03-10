@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface Author {
   name: string
-  avatar: string
+  avatar?: string
   bio: string
 }
 
@@ -22,7 +22,7 @@ export function AuthorCard({ author }: AuthorCardProps) {
 
       <div className="relative flex items-start gap-4">
         <Avatar className="w-16 h-16">
-          <AvatarImage src={author.avatar || "/placeholder.svg"} alt={author.name} />
+          {author.avatar ? <AvatarImage src={author.avatar} alt={author.name} /> : null}
           <AvatarFallback>{author.name[0]}</AvatarFallback>
         </Avatar>
 

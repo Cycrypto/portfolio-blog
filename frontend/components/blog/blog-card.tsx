@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface BlogCardProps {
   title: string
@@ -14,11 +15,13 @@ interface BlogCardProps {
   date: string
   readTime: string
   tags: string[]
-  image: string
+  image?: string
   slug: string
 }
 
 export function BlogCard({ title, excerpt, date, readTime, tags, image, slug }: BlogCardProps) {
+  const normalizedImage = normalizeImageUrl(image)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -29,15 +32,17 @@ export function BlogCard({ title, excerpt, date, readTime, tags, image, slug }: 
     >
       <div className="surface-elevated h-full overflow-hidden">
         <div className="flex h-full flex-col">
-          <div className="relative overflow-hidden h-48">
-            <Image
-              src={image || "/placeholder.svg"}
-              alt={title}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          </div>
+          {normalizedImage && (
+            <div className="relative h-48 overflow-hidden">
+              <Image
+                src={normalizedImage}
+                alt={title}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+          )}
 
           <div className="p-6 flex-grow">
             <div className="flex items-center gap-4 text-sm text-neutral-slate-500 mb-3">

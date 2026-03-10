@@ -4,6 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface ProjectGalleryProps {
   images: string[]
@@ -12,13 +13,18 @@ interface ProjectGalleryProps {
 
 export function ProjectGallery({ images, title }: ProjectGalleryProps) {
   const [currentImage, setCurrentImage] = useState(0)
+  const validImages = images.map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image))
+
+  if (validImages.length === 0) {
+    return null
+  }
 
   const nextImage = () => {
-    setCurrentImage((prev) => (prev + 1) % images.length)
+    setCurrentImage((prev) => (prev + 1) % validImages.length)
   }
 
   const prevImage = () => {
-    setCurrentImage((prev) => (prev - 1 + images.length) % images.length)
+    setCurrentImage((prev) => (prev - 1 + validImages.length) % validImages.length)
   }
 
   return (
@@ -28,7 +34,7 @@ export function ProjectGallery({ images, title }: ProjectGalleryProps) {
       <div className="relative">
         <div className="relative h-64 md:h-96 rounded-xl overflow-hidden">
           <Image
-            src={images[currentImage] || "/placeholder.svg"}
+            src={validImages[currentImage]}
             alt={`${title} - 이미지 ${currentImage + 1}`}
             fill
             priority={currentImage === 0}
@@ -36,7 +42,7 @@ export function ProjectGallery({ images, title }: ProjectGalleryProps) {
             className="object-cover"
           />
 
-          {images.length > 1 && (
+          {validImages.length > 1 && (
             <>
               <Button
                 variant="outline"
@@ -58,9 +64,9 @@ export function ProjectGallery({ images, title }: ProjectGalleryProps) {
           )}
         </div>
 
-        {images.length > 1 && (
+        {validImages.length > 1 && (
           <div className="flex justify-center gap-2 mt-4">
-            {images.map((_, index) => (
+            {validImages.map((_, index) => (
               <button
                 key={index}
                 className={`w-3 h-3 rounded-full transition-colors ${

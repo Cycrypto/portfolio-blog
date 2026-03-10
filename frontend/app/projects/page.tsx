@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button"
 import { ProjectCard } from "@/components/project/project-card"
 import { SectionHeading } from "@/components/common/section-heading"
 import { getProjects, Project } from "@/lib/api"
+import { normalizeImageUrl } from "@/lib/utils/image"
+
+const getPrimaryImage = (images?: string[]) =>
+  (images || []).map((image) => normalizeImageUrl(image)).find((image): image is string => Boolean(image))
 
 export default async function ProjectsPage() {
   let projects: Project[] = []
@@ -41,7 +45,7 @@ export default async function ProjectsPage() {
                 title={project.title}
                 description={project.description}
                 tags={project.techStack || []}
-                image={(project.images && project.images[0]) || "/placeholder.svg"}
+                image={getPrimaryImage(project.images)}
                 demoUrl={project.liveUrl}
                 repoUrl={project.githubUrl}
               />

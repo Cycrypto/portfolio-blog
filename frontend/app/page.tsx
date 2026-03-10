@@ -15,6 +15,7 @@ import { GlassmorphicCard } from "@/components/common/glassmorphic-card"
 import { BlogCard } from "@/components/blog/blog-card"
 import { getPosts, Post, getProjects, Project } from "@/lib/api"
 import { profileService, type ProfileData } from "@/lib/api/services/profile"
+import { normalizeImageUrl } from "@/lib/utils/image"
 
 export default function Portfolio() {
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -35,12 +36,14 @@ export default function Portfolio() {
       }),
       readTime: `${post.readTime}분`,
       tags: post.tags || [post.category],
-      image: post.image || "/placeholder.svg?height=200&width=400",
+      image: normalizeImageUrl(post.image),
       slug,
     }
   }
 
   const getPostSlug = (post: Post) => (post.slug && post.slug !== "null" ? post.slug : post.id.toString())
+  const getPrimaryImage = (images?: string[]) =>
+    (images || []).map((image) => normalizeImageUrl(image)).find((image): image is string => Boolean(image))
 
   useEffect(() => {
     const load = async () => {
@@ -98,6 +101,7 @@ export default function Portfolio() {
     profile.subtitle.length > 92 ? `${profile.subtitle.slice(0, 92).trimEnd()}...` : profile.subtitle
   const heroSkills = (profile.skills || []).slice(0, 3)
   const heroRecentPosts = latestPosts.slice(0, 2)
+  const normalizedProfileImage = normalizeImageUrl(profile.profileImage)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50 text-neutral-slate-900">
@@ -208,13 +212,13 @@ export default function Portfolio() {
               <div className="relative">
                 <div className="flex items-start gap-4">
                   <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-brand-blue-200/80 bg-brand-blue-50">
-                    <Image
-                      src={profile.profileImage || "/placeholder.svg?height=200&width=200"}
-                      alt={profile.name}
-                      fill
-                      sizes="64px"
-                      className="object-cover"
-                    />
+                    {normalizedProfileImage ? (
+                      <Image src={normalizedProfileImage} alt={profile.name} fill sizes="64px" className="object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-brand-blue-700">
+                        {profile.name.slice(0, 1)}
+                      </div>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-blue-600">Snapshot</p>
@@ -302,14 +306,23 @@ export default function Portfolio() {
 
           <div className="mt-14 grid grid-cols-1 items-start gap-10 lg:grid-cols-2">
             <div className="surface-default relative aspect-square overflow-hidden">
-              <Image
-                src={profile.profileImage || "/placeholder.svg?height=600&width=600"}
-                alt={profile.name}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
-              />
+              {normalizedProfileImage ? (
+                <Image
+                  src={normalizedProfileImage}
+                  alt={profile.name}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-brand-blue-50 text-center">
+                  <div>
+                    <p className="text-lg font-semibold text-brand-blue-700">{profile.name}</p>
+                    <p className="mt-1 text-sm text-brand-blue-600">프로필 이미지를 설정하면 여기에 표시됩니다.</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <GlassmorphicCard>
@@ -366,7 +379,7 @@ export default function Portfolio() {
                     title={project.title}
                     description={project.description || project.longDescription || ""}
                     tags={project.techStack || []}
-                    image={(project.images && project.images[0]) || "/placeholder.svg"}
+                    image={getPrimaryImage(project.images)}
                     demoUrl={project.liveUrl}
                     repoUrl={project.githubUrl}
                   />

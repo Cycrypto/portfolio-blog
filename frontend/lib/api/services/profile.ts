@@ -118,7 +118,7 @@ export const profileService = {
         { name: "AWS", level: 80 },
         { name: "Jenkins", level: 70 }
       ],
-      profileImage: "/placeholder.svg",
+      profileImage: "",
       isAvailable: true,
       showStatus: true
     }

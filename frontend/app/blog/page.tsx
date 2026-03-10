@@ -13,6 +13,7 @@ import { Pagination } from "@/components/common/pagination"
 import { AdvancedSearch } from "@/components/common/advanced-search"
 import { Post } from "@/lib/api"
 import { useAdminAuth } from "@/hooks/use-admin-auth"
+import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface BlogPost {
   title: string
@@ -20,7 +21,7 @@ interface BlogPost {
   date: string
   readTime: string
   tags: string[]
-  image: string
+  image?: string
   slug: string
 }
 
@@ -102,7 +103,7 @@ export default function BlogPage() {
       }),
       readTime: `${post.readTime}분`,
       tags: post.tags || [post.category],
-      image: post.image || "/placeholder.svg?height=200&width=400",
+      image: normalizeImageUrl(post.image),
       slug,
     }
   }

@@ -16,6 +16,7 @@ import Link from "next/link"
 import { getProject, updateProject, uploadMedia } from "@/lib/api"
 import { Project } from "@/lib/types/api"
 import { AdminShell } from "@/components/admin/AdminShell"
+import { normalizeImageUrl } from "@/lib/utils/image"
 
 export default function EditProject() {
   const router = useRouter()
@@ -60,7 +61,7 @@ export default function EditProject() {
         setEndDate(data.endDate || "")
         setGithubUrl(data.githubUrl || "")
         setLiveUrl(data.liveUrl || "")
-        setImages(data.images || [])
+        setImages((data.images || []).map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image)))
       } catch (err) {
         setError('프로젝트를 불러오는 데 실패했습니다.')
       }
@@ -91,10 +92,10 @@ export default function EditProject() {
   }
 
   const addImage = () => {
-    if (newImage.trim() && !images.includes(newImage.trim())) {
-      setImages([...images, newImage.trim()])
-      setNewImage("")
-    }
+    const normalized = normalizeImageUrl(newImage)
+    if (!normalized || images.includes(normalized)) return
+    setImages([...images, normalized])
+    setNewImage("")
   }
 
   const removeImage = (imageToRemove: string) => {
@@ -122,7 +123,7 @@ export default function EditProject() {
         endDate,
         githubUrl,
         liveUrl,
-        images,
+        images: images.map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image)),
       })
       router.push('/admin/projects')
     } catch (err) {
@@ -206,7 +207,12 @@ export default function EditProject() {
                       placeholder="기술 스택 입력 (예: React, Node.js)"
                       value={newTech}
                       onChange={(e) => setNewTech(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addTech()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          addTech()
+                        }
+                      }}
                     />
                     <Button onClick={addTech} size="sm">
                       <Plus className="w-4 h-4" />
@@ -234,7 +240,12 @@ export default function EditProject() {
                       placeholder="기능 입력"
                       value={newFeature}
                       onChange={(e) => setNewFeature(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addFeature()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          addFeature()
+                        }
+                      }}
                     />
                     <Button onClick={addFeature} size="sm">
                       <Plus className="w-4 h-4" />
@@ -254,7 +265,7 @@ export default function EditProject() {
               <Card>
                 <CardHeader>
                   <CardTitle>이미지</CardTitle>
-                  <CardDescription>프로젝트 이미지를 추가하세요</CardDescription>
+                  <CardDescription>이미지는 선택 사항입니다. 없으면 표시하지 않습니다.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex gap-2">
@@ -262,7 +273,12 @@ export default function EditProject() {
                       placeholder="이미지 URL"
                       value={newImage}
                       onChange={(e) => setNewImage(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addImage()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          addImage()
+                        }
+                      }}
                     />
                     <Button onClick={addImage} size="sm">
                       <Upload className="w-4 h-4" />
@@ -280,7 +296,10 @@ export default function EditProject() {
                         try {
                           setIsSaving(true)
                           const url = await uploadMedia(file)
-                          setImages((prev) => [...prev, url])
+                          const normalized = normalizeImageUrl(url)
+                          if (normalized) {
+                            setImages((prev) => (prev.includes(normalized) ? prev : [...prev, normalized]))
+                          }
                         } catch (err) {
                           setError('이미지 업로드에 실패했습니다.')
                         } finally {
@@ -301,7 +320,7 @@ export default function EditProject() {
                   <div className="grid grid-cols-2 gap-2">
                     {images.map((img) => (
                       <div key={img} className="relative border rounded">
-                        <img src={img || '/placeholder.svg'} alt="프로젝트 이미지" className="w-full h-32 object-cover" />
+                        <img src={img} alt="프로젝트 이미지" className="w-full h-32 object-cover" />
                         <Button
                           size="icon"
                           variant="destructive"

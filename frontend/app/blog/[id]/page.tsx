@@ -14,6 +14,7 @@ import { AuthorCard } from "@/components/blog/author-card"
 import { getPost, Post } from "@/lib/api"
 import { BlogPostAdminActions } from "@/components/blog/blog-post-admin-actions"
 import { TiptapViewer } from "@/components/editor/TiptapViewer"
+import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -31,6 +32,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     console.error('Failed to fetch post:', error)
     notFound()
   }
+
+  const heroImage = normalizeImageUrl(post.image)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
@@ -60,17 +63,19 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           {/* Main Content */}
           <div className="lg:col-span-3">
             {/* Hero Image */}
-            <div className="relative h-64 md:h-96 rounded-xl overflow-hidden mb-8">
-              <Image
-                src={post.image || "/placeholder.svg"}
-                alt={post.title}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 75vw"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-            </div>
+            {heroImage && (
+              <div className="relative mb-8 h-64 overflow-hidden rounded-xl md:h-96">
+                <Image
+                  src={heroImage}
+                  alt={post.title}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 75vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+              </div>
+            )}
 
             {/* Post Header */}
             <div className="mb-8">
@@ -155,7 +160,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             {/* Author Card */}
             <AuthorCard author={{
               name: post.author,
-              avatar: "/placeholder.svg?height=100&width=100",
+              avatar: undefined,
               bio: "블로그 작성자"
             }} />
 

@@ -15,6 +15,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createProject, uploadMedia } from "@/lib/api"
 import { AdminShell } from "@/components/admin/AdminShell"
+import { normalizeImageUrl } from "@/lib/utils/image"
 
 export default function NewProject() {
   const router = useRouter()
@@ -61,10 +62,10 @@ export default function NewProject() {
   }
 
   const addImage = () => {
-    if (newImage.trim() && !images.includes(newImage.trim())) {
-      setImages([...images, newImage.trim()])
-      setNewImage("")
-    }
+    const normalized = normalizeImageUrl(newImage)
+    if (!normalized || images.includes(normalized)) return
+    setImages([...images, normalized])
+    setNewImage("")
   }
 
   const removeImage = (imageToRemove: string) => {
@@ -93,7 +94,7 @@ export default function NewProject() {
         endDate,
         githubUrl,
         liveUrl,
-        images,
+        images: images.map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image)),
       })
       router.push('/admin/projects')
     } catch (err) {
@@ -174,7 +175,12 @@ export default function NewProject() {
                       placeholder="기술 스택 입력 (예: React, Node.js)"
                       value={newTech}
                       onChange={(e) => setNewTech(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addTech()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          addTech()
+                        }
+                      }}
                     />
                     <Button onClick={addTech} size="sm">
                       <Plus className="w-4 h-4" />
@@ -202,7 +208,12 @@ export default function NewProject() {
                       placeholder="주요 기능 입력"
                       value={newFeature}
                       onChange={(e) => setNewFeature(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addFeature()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          addFeature()
+                        }
+                      }}
                     />
                     <Button onClick={addFeature} size="sm">
                       <Plus className="w-4 h-4" />
@@ -338,6 +349,7 @@ export default function NewProject() {
               <Card>
                 <CardHeader>
                   <CardTitle>프로젝트 이미지</CardTitle>
+                  <CardDescription>이미지는 선택 사항입니다. 없으면 표시하지 않습니다.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex gap-2">
@@ -345,7 +357,12 @@ export default function NewProject() {
                       placeholder="이미지 URL 입력"
                       value={newImage}
                       onChange={(e) => setNewImage(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addImage()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          addImage()
+                        }
+                      }}
                     />
                     <Button onClick={addImage} size="sm">
                       <Plus className="w-4 h-4" />
@@ -363,7 +380,10 @@ export default function NewProject() {
                         try {
                           setIsSaving(true)
                           const url = await uploadMedia(file)
-                          setImages((prev) => [...prev, url])
+                          const normalized = normalizeImageUrl(url)
+                          if (normalized) {
+                            setImages((prev) => (prev.includes(normalized) ? prev : [...prev, normalized]))
+                          }
                         } catch (err) {
                           setError('이미지 업로드에 실패했습니다.')
                         } finally {
@@ -382,23 +402,26 @@ export default function NewProject() {
                     </Button>
                   </div>
                   <div className="space-y-2">
-                    {images.map((image, index) => (
-                      <div key={image} className="relative border rounded-lg p-2">
-                        <img
-                          src={image || "/placeholder.svg"}
-                          alt={`프로젝트 이미지 ${index + 1}`}
-                          className="w-full h-20 object-cover rounded"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="absolute top-1 right-1 bg-transparent"
-                          onClick={() => removeImage(image)}
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
+                    {images
+                      .map((image) => normalizeImageUrl(image))
+                      .filter((image): image is string => Boolean(image))
+                      .map((image, index) => (
+                        <div key={image} className="relative border rounded-lg p-2">
+                          <img
+                            src={image}
+                            alt={`프로젝트 이미지 ${index + 1}`}
+                            className="w-full h-20 object-cover rounded"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="absolute top-1 right-1 bg-transparent"
+                            onClick={() => removeImage(image)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
                   </div>
                 </CardContent>
               </Card>

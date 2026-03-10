@@ -427,11 +427,17 @@ export function ProfileEditor() {
             <CardContent className="space-y-4 pt-6">
               <div className="flex items-center space-x-4">
                 <div className="w-24 h-24 rounded-lg overflow-hidden border border-brand-indigo-500">
-                  <img
-                    src={profileData.profileImage || '/placeholder.svg'}
-                    alt="프로필 이미지"
-                    className="w-full h-full object-cover"
-                  />
+                  {profileData.profileImage ? (
+                    <img
+                      src={profileData.profileImage}
+                      alt="프로필 이미지"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-brand-blue-50 text-xs text-brand-blue-600">
+                      이미지 없음
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="image-upload" className="text-brand-blue-900">이미지 업로드</Label>
@@ -453,7 +459,7 @@ export function ProfileEditor() {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => handleInputChange('profileImage', '/placeholder.svg')}
+                      onClick={() => handleInputChange('profileImage', '')}
                       className="border-brand-indigo-500/50 hover:bg-brand-blue-50 hover:border-brand-blue-500"
                     >
                       <X className="h-4 w-4 mr-2" />

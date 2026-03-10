@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { ProjectGallery } from "@/components/project/project-gallery"
 import { RelatedProjects } from "@/components/project/related-projects"
 import { getProject } from "@/lib/api"
+import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface ProjectPageProps {
   params: Promise<{ slug: string }>
@@ -28,7 +29,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     notFound()
   }
 
-  const images = project.images && project.images.length > 0 ? project.images : ["/placeholder.svg"]
+  const images = (project.images || [])
+    .map((image: string) => normalizeImageUrl(image))
+    .filter((image: string | undefined): image is string => Boolean(image))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
@@ -93,7 +96,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
             <Separator className="mb-8" />
 
-            <ProjectGallery images={images} title={project.title} />
+            {images.length > 0 ? <ProjectGallery images={images} title={project.title} /> : null}
 
             {project.longDescription && (
               <div className="prose prose-lg max-w-none">

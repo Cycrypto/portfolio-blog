@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { MessageCircle, Heart, Reply, Edit, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { Comment, getComments, createComment, updateComment, deleteComment } from "@/lib/api"
 import { TokenManager } from "@/lib/auth/token-manager"
@@ -139,7 +139,6 @@ export function CommentSection({ postId }: CommentSectionProps) {
             <div key={comment.id} className="space-y-4">
             <div className="flex gap-4">
               <Avatar>
-                <AvatarImage src="/placeholder.svg" alt={comment.authorName} />
                 <AvatarFallback>{comment.authorName[0]}</AvatarFallback>
               </Avatar>
 
@@ -308,7 +307,6 @@ export function CommentSection({ postId }: CommentSectionProps) {
                   <div key={reply.id} className="space-y-4">
                     <div className="flex gap-4">
                       <Avatar className="w-8 h-8">
-                        <AvatarImage src="/placeholder.svg" alt={reply.authorName} />
                         <AvatarFallback className="text-xs">{reply.authorName[0]}</AvatarFallback>
                       </Avatar>
 
@@ -424,7 +422,6 @@ export function CommentSection({ postId }: CommentSectionProps) {
                         {reply.replies.filter(replyToReply => !replyToReply.isDeleted).map((replyToReply) => (
                           <div key={replyToReply.id} className="flex gap-4">
                             <Avatar className="w-6 h-6">
-                              <AvatarImage src="/placeholder.svg" alt={replyToReply.authorName} />
                               <AvatarFallback className="text-xs">{replyToReply.authorName[0]}</AvatarFallback>
                             </Avatar>
 
