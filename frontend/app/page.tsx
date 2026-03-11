@@ -13,6 +13,7 @@ import { FloatingNav } from "@/components/common/layout/floating-nav"
 import { SectionHeading } from "@/components/common/section-heading"
 import { GlassmorphicCard } from "@/components/common/glassmorphic-card"
 import { BlogCard } from "@/components/blog/blog-card"
+import { Timeline } from "@/components/home/timeline"
 import { getPosts, Post, getProjects, Project } from "@/lib/api"
 import { profileService, type ProfileData } from "@/lib/api/services/profile"
 import { normalizeImageUrl } from "@/lib/utils/image"
@@ -401,6 +402,16 @@ export default function Portfolio() {
               </Button>
             </GlassmorphicCard>
           )}
+        </div>
+      </section>
+
+      <section id="experience" className="section-spacing">
+        <div className="container">
+          <SectionHeading title="경험" subtitle="경력과 성취" />
+
+          <div className="mt-12">
+            <Timeline />
+          </div>
         </div>
       </section>
 
