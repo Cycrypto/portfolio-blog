@@ -13,7 +13,8 @@ import { ApiError } from '../client/base';
 export async function getComments(postId: string): Promise<{success: boolean, data: {success: boolean, data: Comment[]}}> {
   try {
     const result = await apiRequest<{success: boolean, data: {success: boolean, data: Comment[]}}>(
-      `/posts/${postId}/comments`
+      `/posts/${postId}/comments`,
+      { requireAuth: false }
     );
     return result;
   } catch (error) {
@@ -29,8 +30,8 @@ export async function createComment(commentData: CreateCommentRequest): Promise<
   if (!commentData.authorName?.trim()) {
     throw new CommentValidationException('authorName', commentData.authorName);
   }
-  if (!commentData.authorEmail?.trim()) {
-    throw new CommentValidationException('authorEmail', commentData.authorEmail);
+  if (!commentData.password?.trim()) {
+    throw new CommentValidationException('password', commentData.password);
   }
 
   try {
@@ -38,6 +39,7 @@ export async function createComment(commentData: CreateCommentRequest): Promise<
       `/posts/${commentData.postId}/comments`,
       {
         method: 'POST',
+        requireAuth: false,
         body: JSON.stringify(commentData),
       }
     );
@@ -58,12 +60,16 @@ export async function updateComment(postId: string, commentId: string, commentDa
   if (!commentData.content?.trim()) {
     throw new CommentValidationException('content', commentData.content);
   }
+  if (!commentData.password?.trim()) {
+    throw new CommentValidationException('password', commentData.password);
+  }
 
   try {
     const result = await apiRequest<{ data: Comment }>(
       `/posts/${postId}/comments/${commentId}`,
       {
         method: 'PATCH',
+        requireAuth: false,
         body: JSON.stringify(commentData),
       }
     );
@@ -75,7 +81,7 @@ export async function updateComment(postId: string, commentId: string, commentDa
         throw new CommentNotFoundException(commentId, postId);
       }
       if (error.status === 403) {
-        throw new CommentIsPrivateException(commentId);
+        throw new CommentIsPrivateException(commentId, '댓글 비밀번호가 일치하지 않습니다.');
       }
       if (error.status === 400) {
         throw new CommentValidationException('data', commentData);

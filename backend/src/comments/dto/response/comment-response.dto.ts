@@ -3,7 +3,6 @@ export class CommentResponseDto {
     postId: number;
     content: string;
     authorName: string;
-    authorEmail: string;
     parentId?: string;
     isDeleted: boolean;
     createdAt: Date;

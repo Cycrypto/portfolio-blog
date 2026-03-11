@@ -1,5 +1,6 @@
-import {Injectable, NotFoundException} from "@nestjs/common";
+import {ForbiddenException, Injectable, NotFoundException} from "@nestjs/common";
 import {InjectRepository} from "@nestjs/typeorm";
+import {compare, hash} from "bcrypt";
 import {Repository} from "typeorm";
 import {CreateCommnetRequestDto} from "../dto/request/create-commnet-request.dto";
 import {UpdateCommentRequestDto} from "../dto/request/update-comment-request.dto";
@@ -41,7 +42,11 @@ export class CommentsService {
             }
         }
 
-        const comment = this.commentRepository.create(dto);
+        const { password, ...commentData } = dto;
+        const comment = this.commentRepository.create({
+            ...commentData,
+            authorEmail: await hash(password, 10),
+        });
         return await this.commentRepository.save(comment)
     }
 
@@ -95,13 +100,19 @@ export class CommentsService {
     }
 
     async updateComment(postId: number, commentId: string, dto: UpdateCommentRequestDto): Promise<Comment> {
-        const comment = await this.commentRepository.findOne({
-            where: { id: commentId, postId, isDeleted: false }
-        });
+        const comment = await this.commentRepository
+            .createQueryBuilder('comment')
+            .addSelect('comment.authorEmail')
+            .where('comment.id = :commentId', { commentId })
+            .andWhere('comment.postId = :postId', { postId })
+            .andWhere('comment.isDeleted = :isDeleted', { isDeleted: false })
+            .getOne();
 
         if (!comment) {
             throw new NotFoundException('댓글을 찾을 수 없습니다.');
         }
+
+        await this.verifyCommentPassword(comment, dto.password);
 
         // 상위 댓글이 삭제되었는지 확인
         if (comment.parentId) {
@@ -115,6 +126,11 @@ export class CommentsService {
         }
 
         comment.content = dto.content;
+
+        if (!this.isHashedCredential(comment.authorEmail)) {
+            comment.authorEmail = await hash(dto.password, 10);
+        }
+
         return await this.commentRepository.save(comment);
     }
 
@@ -149,5 +165,19 @@ export class CommentsService {
         for (const reply of replies) {
             await this.deleteCommentRecursively(postId, reply.id);
         }
+    }
+
+    private async verifyCommentPassword(comment: Comment, password: string): Promise<void> {
+        const isPasswordValid = this.isHashedCredential(comment.authorEmail)
+            ? await compare(password, comment.authorEmail)
+            : Boolean(comment.authorEmail && comment.authorEmail === password);
+
+        if (!isPasswordValid) {
+            throw new ForbiddenException('댓글 비밀번호가 일치하지 않습니다.');
+        }
+    }
+
+    private isHashedCredential(value: string): boolean {
+        return value.startsWith('$2');
     }
 }

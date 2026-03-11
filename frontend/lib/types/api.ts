@@ -82,7 +82,6 @@ export interface Comment {
   postId: string;
   content: string;
   authorName: string;
-  authorEmail: string;
   parentId?: string;
   isDeleted: boolean;
   createdAt: string;
@@ -95,11 +94,12 @@ export interface CreateCommentRequest {
   parentId?: string;
   content: string;
   authorName: string;
-  authorEmail: string;
+  password: string;
 }
 
 export interface UpdateCommentRequest {
   content: string;
+  password: string;
 }
 
 export interface Tag {
