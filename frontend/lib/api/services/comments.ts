@@ -5,8 +5,7 @@ import {
   CommentCreateException, 
   CommentUpdateException, 
   CommentDeleteException,
-  CommentValidationException,
-  CommentIsPrivateException 
+  CommentValidationException
 } from '../../comments/exceptions';
 import { ApiError } from '../client/base';
 
@@ -85,10 +84,11 @@ export async function updateComment(postId: string, commentId: string, commentDa
   }
 }
 
-export async function deleteComment(postId: string, commentId: string): Promise<void> {
+export async function deleteComment(postId: string, commentId: string, authorEmail?: string): Promise<void> {
   try {
     await apiRequest(`/posts/${postId}/comments/${commentId}`, {
       method: 'DELETE',
+      body: JSON.stringify(authorEmail ? { authorEmail } : {}),
     });
   } catch (error) {
     if (error instanceof ApiError) {
@@ -96,7 +96,10 @@ export async function deleteComment(postId: string, commentId: string): Promise<
         throw new CommentNotFoundException(commentId, postId);
       }
       if (error.status === 403) {
-        throw new CommentIsPrivateException(commentId);
+        throw error;
+      }
+      if (error.status === 400 && authorEmail !== undefined) {
+        throw new CommentValidationException('authorEmail', authorEmail);
       }
     }
     throw new CommentDeleteException(commentId, error instanceof Error ? error : undefined, { postId });

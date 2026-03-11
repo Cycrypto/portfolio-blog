@@ -317,6 +317,25 @@ docker-compose -f docker-compose.prod.yml exec backend npm run seed:prod
    docker logs traefik | grep junha.space
    ```
 
+### `/posts` 또는 블로그 목록 API가 500을 반환해요
+
+새 백엔드 이미지를 배포했는데 기존 PostgreSQL 볼륨이 오래된 스키마를 유지하고 있으면 `posts` 테이블에 `contentType`, `plainText`, `contentHtml` 같은 컬럼이 없어 500이 발생할 수 있습니다.
+
+1. **백엔드 에러 로그 확인**
+   ```bash
+   docker logs blog-backend --tail 100
+   ```
+
+2. **스키마 보정 스크립트 실행**
+   ```bash
+   docker exec -it blog-backend npm run repair:posts-schema
+   ```
+
+3. **컨테이너 재시작**
+   ```bash
+   docker restart blog-backend
+   ```
+
 ---
 
 ## 배포 체크리스트

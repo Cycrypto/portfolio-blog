@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Calendar, Clock, Heart, MessageCircle } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, Eye, MessageCircle } from "lucide-react"
 import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -105,14 +105,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   <Clock className="h-4 w-4" />
                   <span>{post.readTime}분</span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <Button variant="ghost" size="sm" className="text-neutral-slate-500 hover:text-destructive">
-                    <Heart className="h-4 w-4 mr-1" />
-                    {post.views}
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-neutral-slate-500 hover:text-brand-blue-500">
-                    <MessageCircle className="h-4 w-4 mr-1" />{post.comments}
-                  </Button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-neutral-slate-200 bg-white/70 px-3 py-1 text-neutral-slate-500">
+                    <Eye className="h-4 w-4 text-neutral-slate-400" />
+                    <span>{post.views}</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-neutral-slate-200 bg-white/70 px-3 py-1 text-neutral-slate-500">
+                    <MessageCircle className="h-4 w-4 text-neutral-slate-400" />
+                    <span>{post.comments}</span>
+                  </div>
                 </div>
               </div>
             </div>

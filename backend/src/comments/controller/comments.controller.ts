@@ -1,11 +1,14 @@
-import {Body, Controller, Get, Param, Post, Patch, Delete, UseGuards, ParseIntPipe, BadRequestException} from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Patch, Delete, UseGuards, ParseIntPipe, BadRequestException, Req } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import type { Request } from 'express';
 import {CommentsService} from "../service/comments.service";
 import {CreateCommnetRequestDto} from "../dto/request/create-commnet-request.dto";
+import { DeleteCommentRequestDto } from "../dto/request/delete-comment-request.dto";
 import {UpdateCommentRequestDto} from "../dto/request/update-comment-request.dto";
 import {Comment} from '../entity/comment.entity';
 import {CommentResponseDto, CreateCommentResponseDto, GetCommentsResponseDto} from "../dto/response/comment-response.dto";
 import { JwtRoleGuard } from "../../auth/common/jwt-role.guard";
+import { OptionalJwtAuthGuard } from "../../auth/common/optional-jwt-auth.guard";
 import { Roles } from "../../auth/decorator/auth-role.decorator";
 
 
@@ -80,20 +83,24 @@ export class CommentsController {
 
     @Delete(':commentId')
     @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtRoleGuard)
-    @Roles('admin')
-    @ApiOperation({ summary: '댓글 삭제', description: '댓글을 삭제합니다. 인증이 필요합니다.' })
+    @UseGuards(OptionalJwtAuthGuard)
+    @ApiOperation({ summary: '댓글 삭제', description: '관리자이거나 작성자 이메일이 일치하면 댓글을 삭제합니다.' })
     @ApiParam({ name: 'postId', description: '포스트 ID' })
     @ApiParam({ name: 'commentId', description: '삭제할 댓글 ID' })
+    @ApiBody({ type: DeleteCommentRequestDto, required: false })
     @ApiResponse({ status: 200, description: '댓글이 성공적으로 삭제됨' })
-    @ApiResponse({ status: 401, description: '인증 실패' })
-    @ApiResponse({ status: 403, description: '접근 권한이 없습니다.' })
+    @ApiResponse({ status: 403, description: '본인이 작성한 댓글 또는 관리자만 삭제할 수 있습니다.' })
     @ApiResponse({ status: 404, description: '댓글을 찾을 수 없음' })
     async delete(
         @Param('postId', ParseIntPipe) postId: number,
         @Param('commentId') commentId: string,
+        @Body() dto: DeleteCommentRequestDto,
+        @Req() request: Request & { user?: { roles?: string[] } },
     ): Promise<{success: boolean; message: string}>{
-        await this.commentsService.deleteComment(postId, commentId);
+        await this.commentsService.deleteComment(postId, commentId, {
+            authorEmail: dto?.authorEmail,
+            roles: request.user?.roles,
+        });
         return {success: true, message: '댓글이 삭제되었습니다.'};
     }
 

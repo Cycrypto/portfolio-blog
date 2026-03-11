@@ -36,6 +36,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
             responseMessage = '서버 내부 오류가 발생했습니다.';
         }
 
+        if (!(exception instanceof HttpException) || status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+            console.error('Unhandled request error', {
+                method: request.method,
+                path: request.originalUrl || request.url,
+                statusCode: status,
+                name: exception?.name,
+                message: exception?.message,
+                stack: exception?.stack,
+            });
+        }
+
         response.status(status).json({
             success: false,
             statusCode: status,

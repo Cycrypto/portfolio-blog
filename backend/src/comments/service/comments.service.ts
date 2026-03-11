@@ -1,4 +1,4 @@
-import {Injectable, NotFoundException} from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import {InjectRepository} from "@nestjs/typeorm";
 import {Repository} from "typeorm";
 import {CreateCommnetRequestDto} from "../dto/request/create-commnet-request.dto";
@@ -6,6 +6,10 @@ import {UpdateCommentRequestDto} from "../dto/request/update-comment-request.dto
 import {Comment} from '../entity/comment.entity'
 import { Post } from "../../posts/entity/post.entity";
 
+interface DeleteCommentActor {
+    authorEmail?: string;
+    roles?: string[];
+}
 
 @Injectable()
 export class CommentsService {
@@ -118,7 +122,7 @@ export class CommentsService {
         return await this.commentRepository.save(comment);
     }
 
-    async deleteComment(postId: number, commentId: string): Promise<void> {
+    async deleteComment(postId: number, commentId: string, actor: DeleteCommentActor = {}): Promise<void> {
         const comment = await this.commentRepository.findOne({
             where: { id: commentId, postId }
         });
@@ -132,8 +136,25 @@ export class CommentsService {
             return;
         }
 
+        if (!this.canDeleteComment(comment, actor)) {
+            throw new ForbiddenException('본인이 작성한 댓글 또는 관리자만 삭제할 수 있습니다.');
+        }
+
         // 댓글과 모든 하위 답글들을 재귀적으로 삭제
         await this.deleteCommentRecursively(postId, commentId);
+    }
+
+    private canDeleteComment(comment: Comment, actor: DeleteCommentActor): boolean {
+        const isAdmin = actor.roles?.includes('admin') ?? false;
+        if (isAdmin) {
+            return true;
+        }
+
+        if (!actor.authorEmail?.trim()) {
+            return false;
+        }
+
+        return comment.authorEmail.trim().toLowerCase() === actor.authorEmail.trim().toLowerCase();
     }
 
     private async deleteCommentRecursively(postId: number, commentId: string): Promise<void> {
