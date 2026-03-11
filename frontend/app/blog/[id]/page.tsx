@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Calendar, Clock, Heart, MessageCircle } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, Eye, MessageCircle } from "lucide-react"
 import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,7 @@ import { getPost, Post } from "@/lib/api"
 import { BlogPostAdminActions } from "@/components/blog/blog-post-admin-actions"
 import { TiptapViewer } from "@/components/editor/TiptapViewer"
 import { normalizeImageUrl } from "@/lib/utils/image"
+import { PostLikeCard } from "@/components/blog/post-like-card"
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -96,7 +97,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <p className="text-xl text-neutral-slate-600 mb-6">{post.excerpt}</p>
               )}
 
-              <div className="flex items-center gap-6 text-sm text-neutral-slate-500">
+              <PostLikeCard
+                postId={post.slug && post.slug !== "null" ? post.slug : post.id.toString()}
+                initialLikes={post.likes}
+                commentCount={post.comments}
+              />
+
+              <div className="flex flex-wrap items-center gap-6 text-sm text-neutral-slate-500">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   <span>{new Date(post.publishDate).toLocaleDateString('ko-KR')}</span>
@@ -105,14 +112,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   <Clock className="h-4 w-4" />
                   <span>{post.readTime}분</span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <Button variant="ghost" size="sm" className="text-neutral-slate-500 hover:text-destructive">
-                    <Heart className="h-4 w-4 mr-1" />
-                    {post.views}
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-neutral-slate-500 hover:text-brand-blue-500">
-                    <MessageCircle className="h-4 w-4 mr-1" />{post.comments}
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  <span>{post.views.toLocaleString()} 조회</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4" />
+                  <span>{post.comments.toLocaleString()} 댓글</span>
                 </div>
               </div>
             </div>

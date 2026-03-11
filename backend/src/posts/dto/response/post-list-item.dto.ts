@@ -14,6 +14,7 @@ export class PostListItemDTO {
     category: string;  // 카테고리
     publishDate: string;  // 게시일 (ISO 형식)
     views: number;  // 조회수
+    likes: number;  // 좋아요 수
     comments: number;  // 댓글 수
     readTime: number;  // 읽는 시간 (분)
 }

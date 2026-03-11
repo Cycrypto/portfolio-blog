@@ -1,5 +1,5 @@
 import {Type} from "class-transformer";
-import {IsEmail, IsInt, IsNotEmpty, IsOptional, IsUUID, MaxLength} from "class-validator";
+import {IsInt, IsNotEmpty, IsOptional, IsUUID, MaxLength} from "class-validator";
 
 export class CreateCommnetRequestDto {
     @IsOptional()
@@ -19,7 +19,7 @@ export class CreateCommnetRequestDto {
     @MaxLength(100)
     authorName: string;
 
-    @IsEmail()
-    @MaxLength(200)
-    authorEmail: string;
+    @IsNotEmpty()
+    @MaxLength(100)
+    password: string;
 }

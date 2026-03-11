@@ -38,6 +38,7 @@ export class PostsService {
                 'post.category',
                 'post.publishDate',
                 'post.views',
+                'post.likes',
                 'post.comments',
                 'post.readTime',
                 'tags.id',
@@ -72,6 +73,7 @@ export class PostsService {
             category: post.category,
             publishDate: post.publishDate,
             views: post.views,
+            likes: post.likes,
             comments: post.comments,
             readTime: post.readTime
         }));
@@ -266,6 +268,38 @@ export class PostsService {
         }
 
         return this.ensureRenderedContent(post);
+    }
+
+    async incrementLikes(identifier: string): Promise<number | null> {
+        const normalizedIdentifier = identifier.trim();
+        if (!normalizedIdentifier) {
+            return null;
+        }
+
+        let post: Post | null = null;
+        if (/^\d+$/.test(normalizedIdentifier)) {
+            post = await this.postRepository.findOne({
+                where: { id: Number.parseInt(normalizedIdentifier, 10) },
+            });
+        }
+
+        if (!post) {
+            post = await this.postRepository.findOne({
+                where: { slug: normalizedIdentifier },
+            });
+        }
+
+        if (!post) {
+            return null;
+        }
+
+        await this.postRepository.increment({ id: post.id }, 'likes', 1);
+
+        const updatedPost = await this.postRepository.findOne({
+            where: { id: post.id },
+        });
+
+        return updatedPost?.likes ?? post.likes + 1;
     }
 
     private async ensureRenderedContent(post: Post | null): Promise<Post | null> {
