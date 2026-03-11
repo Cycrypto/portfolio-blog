@@ -1,27 +1,23 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { JSONContent } from "@tiptap/react"
-import { ArrowLeft, Clock3, FileText, Plus, Save, Settings2, Upload, X } from "lucide-react"
+import { ArrowLeft, Clock3, FileText, Save, Settings2 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { AutoResizeTitleTextarea } from "@/components/admin/post-editor/AutoResizeTitleTextarea"
+import { PostSettingsDialog } from "@/components/admin/post-editor/PostSettingsDialog"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import { TiptapEditor } from "@/components/editor/TiptapEditor"
 import { createPost, uploadMedia } from "@/lib/api"
 import { normalizeImageUrl } from "@/lib/utils/image"
 import { calculateEditorMetrics } from "@/lib/posts/editor-metrics"
+import { DEFAULT_POST_CATEGORY } from "@/lib/posts/post-editor-config"
 import { CreatePostRequest } from "@/lib/types/api"
 
 const EMPTY_CONTENT: JSONContent = { type: "doc", content: [{ type: "paragraph" }] }
 const DRAFT_STORAGE_KEY = "blog:new-post-draft-v2"
 const DEFAULT_AUTHOR = "박준하"
-const DEFAULT_CATEGORY = "backend"
 
 type SaveStatus = "draft" | "published"
 
@@ -49,42 +45,30 @@ export default function NewPost() {
 
   const [title, setTitle] = useState("")
   const [contentJson, setContentJson] = useState<JSONContent>(EMPTY_CONTENT)
-  const [category, setCategory] = useState(DEFAULT_CATEGORY)
+  const [category, setCategory] = useState(DEFAULT_POST_CATEGORY)
   const [tags, setTags] = useState<string[]>([])
-  const [newTag, setNewTag] = useState("")
   const [featuredImage, setFeaturedImage] = useState("")
   const [readTime, setReadTime] = useState<number | "">(8)
   const [isReadTimeManual, setIsReadTimeManual] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [isUploadingFeaturedImage, setIsUploadingFeaturedImage] = useState(false)
+  const [isUploadingEditorMedia, setIsUploadingEditorMedia] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [restoredDraft, setRestoredDraft] = useState(false)
   const [lastDraftSavedAt, setLastDraftSavedAt] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const metrics = useMemo(() => calculateEditorMetrics(contentJson), [contentJson])
   const normalizedFeaturedImage = useMemo(() => normalizeImageUrl(featuredImage), [featuredImage])
+  const isUploadingMedia = isUploadingFeaturedImage || isUploadingEditorMedia
 
   const hasUnsavedChanges =
     title.trim().length > 0 ||
     metrics.characterCount > 0 ||
-    category !== DEFAULT_CATEGORY ||
+    category !== DEFAULT_POST_CATEGORY ||
     tags.length > 0 ||
     !!normalizedFeaturedImage ||
     (typeof readTime === "number" && readTime !== metrics.estimatedReadTime)
-
-  const addTag = () => {
-    const trimmed = newTag.trim()
-    if (trimmed && !tags.includes(trimmed)) {
-      setTags((prev) => [...prev, trimmed])
-      setNewTag("")
-    }
-  }
-
-  const removeTag = (tagToRemove: string) => {
-    setTags((prev) => prev.filter((tag) => tag !== tagToRemove))
-  }
 
   const handleExit = () => {
     if (hasUnsavedChanges && !confirm("저장되지 않은 변경사항이 있습니다. 나가시겠습니까?")) {
@@ -92,6 +76,19 @@ export default function NewPost() {
     }
     router.push("/admin/posts")
   }
+
+  const handleFeaturedImageUpload = useCallback(async (file: File) => {
+    try {
+      setIsUploadingFeaturedImage(true)
+      setError(null)
+      const url = await uploadMedia(file)
+      setFeaturedImage(url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "이미지 업로드에 실패했습니다.")
+    } finally {
+      setIsUploadingFeaturedImage(false)
+    }
+  }, [])
 
   const handleSave = useCallback(
     async (saveStatus: SaveStatus) => {
@@ -102,6 +99,11 @@ export default function NewPost() {
 
       if (!category.trim()) {
         setError("카테고리를 선택해주세요.")
+        return
+      }
+
+      if (isUploadingMedia) {
+        setError("이미지 업로드가 끝난 뒤 다시 시도해주세요.")
         return
       }
 
@@ -138,7 +140,7 @@ export default function NewPost() {
         setIsSaving(false)
       }
     },
-    [title, category, contentJson, normalizedFeaturedImage, tags, readTime, metrics.estimatedReadTime, router],
+    [title, category, contentJson, normalizedFeaturedImage, tags, readTime, metrics.estimatedReadTime, router, isUploadingMedia],
   )
 
   useEffect(() => {
@@ -155,7 +157,7 @@ export default function NewPost() {
       const parsed = JSON.parse(raw) as StoredDraft
       setTitle(parsed.title || "")
       setContentJson(parsed.contentJson || EMPTY_CONTENT)
-      setCategory(parsed.category || DEFAULT_CATEGORY)
+      setCategory(parsed.category || DEFAULT_POST_CATEGORY)
       setTags(Array.isArray(parsed.tags) ? parsed.tags : [])
       setFeaturedImage(parsed.featuredImage || "")
       if (typeof parsed.readTime === "number" || parsed.readTime === "") {
@@ -211,7 +213,7 @@ export default function NewPost() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
         event.preventDefault()
-        if (!isSaving && !isUploadingImage) {
+        if (!isSaving && !isUploadingMedia) {
           void handleSave("draft")
         }
       }
@@ -219,7 +221,7 @@ export default function NewPost() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handleSave, isSaving, isUploadingImage])
+  }, [handleSave, isSaving, isUploadingMedia])
 
   return (
     <div className="min-h-screen bg-white">
@@ -245,161 +247,55 @@ export default function NewPost() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button onClick={() => void handleSave("draft")} variant="outline" disabled={isSaving || isUploadingImage}>
+              <Button onClick={() => void handleSave("draft")} variant="outline" disabled={isSaving || isUploadingMedia}>
                 <Save className="mr-2 h-4 w-4" />
                 {getActionLabel("draft", isSaving)}
               </Button>
 
-              <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" disabled={isSaving || isUploadingImage}>
-                    <Settings2 className="mr-2 h-4 w-4" />
-                    게시 설정
+              <Button variant="outline" disabled={isSaving || isUploadingMedia} onClick={() => setSettingsOpen(true)}>
+                <Settings2 className="mr-2 h-4 w-4" />
+                게시 설정
+              </Button>
+              <PostSettingsDialog
+                open={settingsOpen}
+                onOpenChange={setSettingsOpen}
+                authorMessage={
+                  <>
+                    작성자는 <strong>{DEFAULT_AUTHOR}</strong>로 자동 지정됩니다.
+                  </>
+                }
+                readTime={readTime}
+                estimatedReadTime={metrics.estimatedReadTime}
+                isReadTimeManual={isReadTimeManual}
+                onReadTimeChange={(value) => {
+                  setIsReadTimeManual(true)
+                  setReadTime(value)
+                }}
+                onReadTimeReset={() => {
+                  setReadTime(metrics.estimatedReadTime)
+                  setIsReadTimeManual(false)
+                }}
+                category={category}
+                onCategoryChange={setCategory}
+                tags={tags}
+                onTagsChange={setTags}
+                featuredImage={featuredImage}
+                featuredImagePreview={normalizedFeaturedImage}
+                onFeaturedImageChange={setFeaturedImage}
+                onFeaturedImageUpload={handleFeaturedImageUpload}
+                isUploadingImage={isUploadingFeaturedImage}
+                isSaving={isSaving}
+                error={error}
+                footer={
+                  <Button
+                    onClick={() => void handleSave("published")}
+                    className="w-full"
+                    disabled={isSaving || isUploadingMedia}
+                  >
+                    {getActionLabel("published", isSaving)}
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>게시 설정</DialogTitle>
-                  </DialogHeader>
-
-                  <div className="grid gap-6">
-                    <div className="rounded-md border border-brand-blue-100 bg-brand-blue-50 p-3 text-sm text-brand-blue-800">
-                      작성자는 <strong>{DEFAULT_AUTHOR}</strong>로 자동 지정됩니다.
-                    </div>
-
-                    <div>
-                      <Label htmlFor="read-time">예상 읽기 시간(분)</Label>
-                      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                        <Input
-                          id="read-time"
-                          type="number"
-                          min={1}
-                          value={readTime}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            setIsReadTimeManual(true)
-                            setReadTime(value === "" ? "" : Math.max(1, Number.parseInt(value, 10) || 1))
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setReadTime(metrics.estimatedReadTime)
-                            setIsReadTimeManual(false)
-                          }}
-                        >
-                          자동값 {metrics.estimatedReadTime}분
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="category">카테고리</Label>
-                      <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger id="category" className="mt-2">
-                          <SelectValue placeholder="카테고리 선택" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="frontend">Frontend</SelectItem>
-                          <SelectItem value="backend">Backend</SelectItem>
-                          <SelectItem value="devops">DevOps</SelectItem>
-                          <SelectItem value="cloud">Cloud</SelectItem>
-                          <SelectItem value="database">Database</SelectItem>
-                          <SelectItem value="tutorial">Tutorial</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>태그</Label>
-                      <div className="mb-2 mt-2 flex gap-2">
-                        <Input
-                          placeholder="태그 입력"
-                          value={newTag}
-                          onChange={(e) => setNewTag(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault()
-                              addTag()
-                            }
-                          }}
-                        />
-                        <Button type="button" onClick={addTag} size="sm">
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                            {tag}
-                            <X className="h-3 w-3 cursor-pointer" onClick={() => removeTag(tag)} />
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <Label htmlFor="featured-image">대표 이미지 (선택)</Label>
-                      <div className="mt-2 space-y-2">
-                        <Input
-                          id="featured-image"
-                          placeholder="https://example.com/image.jpg"
-                          value={featuredImage}
-                          onChange={(e) => setFeaturedImage(e.target.value)}
-                        />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          ref={fileInputRef}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0]
-                            if (!file) return
-
-                            try {
-                              setIsUploadingImage(true)
-                              const url = await uploadMedia(file)
-                              setFeaturedImage(url)
-                            } catch (err) {
-                              setError("이미지 업로드에 실패했습니다.")
-                            } finally {
-                              setIsUploadingImage(false)
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full bg-transparent"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isSaving || isUploadingImage}
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          {isUploadingImage ? "업로드 중..." : "이미지 업로드"}
-                        </Button>
-                        {normalizedFeaturedImage && (
-                          <div className="rounded-lg border p-2">
-                            <img src={normalizedFeaturedImage} alt="대표 이미지 미리보기" className="h-32 w-full rounded object-cover" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-500">{error}</div>}
-
-                    <Button
-                      onClick={() => void handleSave("published")}
-                      className="w-full"
-                      disabled={isSaving || isUploadingImage}
-                    >
-                      {getActionLabel("published", isSaving)}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                }
+              />
             </div>
           </div>
         </div>
@@ -430,22 +326,15 @@ export default function NewPost() {
             )}
           </div>
 
-          <textarea
-            id="title"
-            placeholder="제목 없음"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            rows={1}
-            className="mb-8 w-full resize-none overflow-hidden border-0 bg-transparent px-0 py-0 text-7xl font-black leading-tight placeholder:text-neutral-slate-700 focus-visible:ring-0 focus-visible:ring-offset-0"
-            style={{ fontSize: "4.5rem" }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement
-              target.style.height = "auto"
-              target.style.height = `${target.scrollHeight}px`
-            }}
-          />
+          <AutoResizeTitleTextarea value={title} onChange={setTitle} />
 
-          <TiptapEditor content={contentJson} onChange={setContentJson} className="notion-fullscreen" />
+          <TiptapEditor
+            content={contentJson}
+            onChange={setContentJson}
+            className="notion-fullscreen"
+            onError={setError}
+            onUploadStateChange={setIsUploadingEditorMedia}
+          />
         </div>
       </div>
     </div>

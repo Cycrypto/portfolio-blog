@@ -7,7 +7,7 @@ import { UpdatePostRequestDTO } from '../dto/request/update-post-request.dto';
 import { PostListItemDTO } from '../dto/response/post-list-item.dto';
 import { TagsService } from './tags.service';
 import { JSONContent } from '@tiptap/core';
-import { RenderedContent, renderMarkdownContent, renderTiptapContent } from '../utils/content-renderer';
+import { convertMarkdownToTiptapJSON, RenderedContent, renderMarkdownContent, renderTiptapContent } from '../utils/content-renderer';
 import { generateSlug } from '../utils/slug-generator';
 
 @Injectable()
@@ -38,6 +38,7 @@ export class PostsService {
                 'post.category',
                 'post.publishDate',
                 'post.views',
+                'post.likes',
                 'post.comments',
                 'post.readTime',
                 'tags.id',
@@ -72,6 +73,7 @@ export class PostsService {
             category: post.category,
             publishDate: post.publishDate,
             views: post.views,
+            likes: post.likes,
             comments: post.comments,
             readTime: post.readTime
         }));
@@ -218,6 +220,46 @@ export class PostsService {
         });
     }
 
+    async convertMarkdownPostToTiptap(id: number, updatePostDTO: UpdatePostRequestDTO = {}): Promise<Post | null> {
+        const post = await this.postRepository.findOne({
+            where: { id },
+            relations: ['tags'],
+        });
+
+        if (!post) {
+            return null;
+        }
+
+        if (post.contentType === PostContentType.TIPTAP) {
+            throw new BadRequestException('이미 Tiptap 형식입니다.');
+        }
+
+        if (!post.contentMarkdown) {
+            throw new BadRequestException('변환할 Markdown 콘텐츠가 없습니다.');
+        }
+
+        const tiptapJson = convertMarkdownToTiptapJSON(post.contentMarkdown);
+        const originalText = renderMarkdownContent(post.contentMarkdown).plainText.replace(/\s+/g, '');
+        const convertedText = renderTiptapContent(tiptapJson).plainText.replace(/\s+/g, '');
+
+        if (originalText.length > 0 && convertedText.length === 0) {
+            throw new BadRequestException('변환 결과가 비어 있습니다.');
+        }
+
+        const {
+            contentType: _contentType,
+            contentJson: _contentJson,
+            contentMarkdown: _contentMarkdown,
+            ...metadataUpdate
+        } = updatePostDTO;
+
+        return this.updatePost(id, {
+            ...metadataUpdate,
+            contentType: PostContentType.TIPTAP,
+            contentJson: tiptapJson,
+        });
+    }
+
     async deletePost(id: number): Promise<boolean> {
         const post = await this.postRepository.findOne({
             where: { id },
@@ -266,6 +308,38 @@ export class PostsService {
         }
 
         return this.ensureRenderedContent(post);
+    }
+
+    async incrementLikes(identifier: string): Promise<number | null> {
+        const normalizedIdentifier = identifier.trim();
+        if (!normalizedIdentifier) {
+            return null;
+        }
+
+        let post: Post | null = null;
+        if (/^\d+$/.test(normalizedIdentifier)) {
+            post = await this.postRepository.findOne({
+                where: { id: Number.parseInt(normalizedIdentifier, 10) },
+            });
+        }
+
+        if (!post) {
+            post = await this.postRepository.findOne({
+                where: { slug: normalizedIdentifier },
+            });
+        }
+
+        if (!post) {
+            return null;
+        }
+
+        await this.postRepository.increment({ id: post.id }, 'likes', 1);
+
+        const updatedPost = await this.postRepository.findOne({
+            where: { id: post.id },
+        });
+
+        return updatedPost?.likes ?? post.likes + 1;
     }
 
     private async ensureRenderedContent(post: Post | null): Promise<Post | null> {

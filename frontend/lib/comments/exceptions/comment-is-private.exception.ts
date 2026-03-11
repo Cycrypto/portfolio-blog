@@ -9,7 +9,6 @@ export class CommentIsPrivateException extends ForbiddenException {
     const resolvedMessage = message ?? (commentId
       ? `ID가 '${commentId}'인 댓글에 접근할 권한이 없습니다.`
       : '댓글에 접근할 권한이 없습니다.');
-
     super(ErrorCode.COMMENT_IS_PRIVATE, resolvedMessage, {
       commentId,
       ...details,

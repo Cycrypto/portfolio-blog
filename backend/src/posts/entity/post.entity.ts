@@ -92,6 +92,9 @@ export class Post {
     views: number;
 
     @Column({ default: 0 })
+    likes: number;
+
+    @Column({ default: 0 })
     comments: number;
 
     @Column({ default: 8 })

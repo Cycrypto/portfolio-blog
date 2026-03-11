@@ -112,7 +112,6 @@ describe("CommentsService", () => {
     expect(updated.authorEmail).not.toBe("$2legacy@example.com");
     await expect(compare("$2legacy@example.com", updated.authorEmail)).resolves.toBe(true);
   });
-
   it("rejects updates when the supplied password does not match", async () => {
     const storedHash = await hash("secret-1234", 10);
     const securedComment = {

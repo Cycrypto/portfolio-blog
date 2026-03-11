@@ -23,6 +23,7 @@ export interface Post {
   category: string;
   publishDate: string;
   views: number;
+  likes: number;
   comments: number;
   readTime: number;
 }
