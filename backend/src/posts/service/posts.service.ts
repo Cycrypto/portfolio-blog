@@ -237,16 +237,11 @@ export class PostsService {
         }
 
         const tiptapJson = convertMarkdownToTiptapJSON(post.contentMarkdown);
-        const originalContent = renderMarkdownContent(post.contentMarkdown);
-        const convertedContent = renderTiptapContent(tiptapJson);
-        const originalLength = originalContent.plainText.length;
-        const convertedLength = convertedContent.plainText.length;
-        const ratio = originalLength === 0 ? 1 : convertedLength / originalLength;
+        const originalText = renderMarkdownContent(post.contentMarkdown).plainText.replace(/\s+/g, '');
+        const convertedText = renderTiptapContent(tiptapJson).plainText.replace(/\s+/g, '');
 
-        if (ratio < 0.8 || ratio > 1.2) {
-            throw new BadRequestException(
-                `변환 손실이 감지되었습니다. 원본 ${originalLength}자, 변환 ${convertedLength}자`,
-            );
+        if (originalText.length > 0 && convertedText.length === 0) {
+            throw new BadRequestException('변환 결과가 비어 있습니다.');
         }
 
         const {
