@@ -10,6 +10,8 @@ import { Post } from "../../posts/entity/post.entity";
 
 @Injectable()
 export class CommentsService {
+    private static readonly BCRYPT_HASH_PATTERN = /^\$2[abxy]\$\d{2}\$[./A-Za-z0-9]{53}$/;
+
     constructor(
         @InjectRepository(Comment)
         private readonly commentRepository: Repository<Comment>,
@@ -178,6 +180,6 @@ export class CommentsService {
     }
 
     private isHashedCredential(value: string): boolean {
-        return value.startsWith('$2');
+        return CommentsService.BCRYPT_HASH_PATTERN.test(value);
     }
 }

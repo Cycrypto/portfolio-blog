@@ -6,6 +6,6 @@ export class UpdateCommentRequestDto {
     content: string;
 
     @IsNotEmpty()
-    @MaxLength(100)
+    @MaxLength(200)
     password: string;
 }
