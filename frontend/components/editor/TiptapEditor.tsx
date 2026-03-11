@@ -3,6 +3,16 @@
 import { useEffect, useRef, useState } from "react"
 import { EditorContent, JSONContent, useEditor } from "@tiptap/react"
 import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { getEditorExtensions } from "@/lib/tiptap/editor-extensions"
 import {
   Bold,
@@ -18,7 +28,6 @@ import {
   Minus,
   Quote,
   Strikethrough,
-  Underline,
   Highlighter,
   Palette,
   Table as TableIcon,
@@ -34,16 +43,75 @@ import { uploadMedia } from "@/lib/api"
 interface TiptapEditorProps {
   content: JSONContent | null
   onChange: (json: JSONContent) => void
+  onError?: (message: string) => void
+  onUploadStateChange?: (isUploading: boolean) => void
   className?: string
 }
 
-export function TiptapEditor({ content, onChange, className = "" }: TiptapEditorProps) {
+type InsertDialogMode = "image" | "link" | "math" | "youtube"
+
+const INSERT_DIALOG_COPY: Record<
+  InsertDialogMode,
+  { title: string; description: string; placeholder: string; submitLabel: string }
+> = {
+  image: {
+    title: "이미지 URL 삽입",
+    description: "이미지 주소를 넣으면 현재 커서 위치에 바로 삽입됩니다.",
+    placeholder: "https://example.com/image.png",
+    submitLabel: "이미지 삽입",
+  },
+  link: {
+    title: "링크 설정",
+    description: "비워두고 적용하면 현재 링크가 제거됩니다.",
+    placeholder: "https://example.com",
+    submitLabel: "링크 적용",
+  },
+  math: {
+    title: "수식 삽입",
+    description: "LaTeX 문법으로 수식을 입력하면 현재 커서 위치에 인라인 수식이 추가됩니다.",
+    placeholder: "E = mc^2",
+    submitLabel: "수식 삽입",
+  },
+  youtube: {
+    title: "YouTube 삽입",
+    description: "YouTube 동영상 URL을 입력하면 임베드 블록이 추가됩니다.",
+    placeholder: "https://www.youtube.com/watch?v=...",
+    submitLabel: "동영상 삽입",
+  },
+}
+
+export function TiptapEditor({
+  content,
+  onChange,
+  onError,
+  onUploadStateChange,
+  className = "",
+}: TiptapEditorProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [showHighlightPicker, setShowHighlightPicker] = useState(false)
+  const [insertDialogMode, setInsertDialogMode] = useState<InsertDialogMode | null>(null)
+  const [insertValue, setInsertValue] = useState("")
+  const [insertError, setInsertError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const colorPickerRef = useRef<HTMLDivElement | null>(null)
   const highlightPickerRef = useRef<HTMLDivElement | null>(null)
+
+  const updateUploadingState = (nextValue: boolean) => {
+    setIsUploading(nextValue)
+    onUploadStateChange?.(nextValue)
+  }
+
+  const reportError = (message: string, error?: unknown) => {
+    console.error(message, error)
+    if (onError) {
+      onError(message)
+      return
+    }
+
+    window.alert(message)
+  }
+
   const editor = useEditor({
     extensions: getEditorExtensions(),
     content: content || undefined,
@@ -52,7 +120,7 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
       attributes: {
         class: "notion-content focus:outline-none",
       },
-      handlePaste: (view, event) => {
+      handlePaste: (_view, event) => {
         const items = Array.from(event.clipboardData?.items || [])
         const imageItem = items.find((item) => item.type.indexOf("image") !== -1)
 
@@ -60,7 +128,7 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
           event.preventDefault()
           const file = imageItem.getAsFile()
           if (file) {
-            addUploadedImage(file)
+            void addUploadedImage(file)
           }
           return true
         }
@@ -72,37 +140,25 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
     },
   })
 
-  const setLink = () => {
-    if (!editor) {
-      return
-    }
-
-    const previousUrl = editor.getAttributes("link").href as string | undefined
-    const url = window.prompt("URL", previousUrl || "")
-
-    if (url === null) {
-      return
-    }
-
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run()
-      return
-    }
-
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
+  const resetInsertDialog = () => {
+    setInsertDialogMode(null)
+    setInsertValue("")
+    setInsertError(null)
   }
 
-  const addImage = () => {
+  const openInsertDialog = (mode: InsertDialogMode) => {
     if (!editor) {
       return
     }
 
-    const url = window.prompt("Image URL")
-    if (!url) {
+    setInsertDialogMode(mode)
+    setInsertError(null)
+    if (mode === "link") {
+      setInsertValue((editor.getAttributes("link").href as string | undefined) || "")
       return
     }
 
-    editor.chain().focus().setImage({ src: url }).run()
+    setInsertValue("")
   }
 
   const addUploadedImage = async (file: File) => {
@@ -111,27 +167,13 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
     }
 
     try {
-      setIsUploading(true)
-
-      // 파일을 base64로 변환하여 에디터에 직접 삽입
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string
-        if (base64) {
-          editor.chain().focus().setImage({ src: base64 }).run()
-        }
-        setIsUploading(false)
-      }
-      reader.onerror = () => {
-        console.error("이미지 읽기 실패")
-        alert("이미지를 읽는데 실패했습니다.")
-        setIsUploading(false)
-      }
-      reader.readAsDataURL(file)
+      updateUploadingState(true)
+      const url = await uploadMedia(file)
+      editor.chain().focus().setImage({ src: url }).run()
     } catch (error) {
-      console.error("이미지 처리 실패", error)
-      alert("이미지 처리에 실패했습니다.")
-      setIsUploading(false)
+      reportError(error instanceof Error ? error.message : "이미지 처리에 실패했습니다.", error)
+    } finally {
+      updateUploadingState(false)
     }
   }
 
@@ -140,18 +182,45 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
     editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
   }
 
-  const addMath = () => {
-    if (!editor) return
-    const latex = window.prompt("LaTeX 수식을 입력하세요 (예: E = mc^2)")
-    if (!latex) return
-    editor.chain().focus().setMathInline({ latex }).run()
-  }
+  const applyInsertDialog = () => {
+    if (!editor || !insertDialogMode) {
+      return
+    }
 
-  const addYoutube = () => {
-    if (!editor) return
-    const url = window.prompt("YouTube URL을 입력하세요")
-    if (!url) return
-    editor.chain().focus().setYoutubeVideo({ src: url }).run()
+    const value = insertValue.trim()
+    setInsertError(null)
+
+    if (insertDialogMode === "link") {
+      if (!value) {
+        editor.chain().focus().extendMarkRange("link").unsetLink().run()
+        resetInsertDialog()
+        return
+      }
+
+      editor.chain().focus().extendMarkRange("link").setLink({ href: value }).run()
+      resetInsertDialog()
+      return
+    }
+
+    if (!value) {
+      setInsertError("값을 입력해주세요.")
+      return
+    }
+
+    if (insertDialogMode === "image") {
+      editor.chain().focus().setImage({ src: value }).run()
+      resetInsertDialog()
+      return
+    }
+
+    if (insertDialogMode === "math") {
+      editor.chain().focus().setMathInline({ latex: value }).run()
+      resetInsertDialog()
+      return
+    }
+
+    editor.chain().focus().setYoutubeVideo({ src: value }).run()
+    resetInsertDialog()
   }
 
   const textColors = [
@@ -304,7 +373,7 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
           type="button"
           className="notion-toolbar-button"
           data-active={editor.isActive("link")}
-          onClick={setLink}
+          onClick={() => openInsertDialog("link")}
           title="링크"
         >
           <Link2 className="h-4 w-4" />
@@ -326,7 +395,7 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
           onChange={(event) => {
             const file = event.target.files?.[0]
             if (file) {
-              addUploadedImage(file)
+              void addUploadedImage(file)
             }
             event.currentTarget.value = ""
           }}
@@ -462,7 +531,7 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
         <button
           type="button"
           className="notion-toolbar-button"
-          onClick={addMath}
+          onClick={() => openInsertDialog("math")}
           title="수식 삽입"
         >
           <PlusSquare className="h-4 w-4" />
@@ -470,12 +539,13 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
         <button
           type="button"
           className="notion-toolbar-button"
-          onClick={addYoutube}
+          onClick={() => openInsertDialog("youtube")}
           title="YouTube 삽입"
         >
           <Video className="h-4 w-4" />
         </button>
         <div className="ml-auto flex items-center gap-2 text-xs text-neutral-slate-500">
+          {isUploading && <span>이미지 업로드 중...</span>}
           <span>마크다운 문법도 사용 가능</span>
         </div>
       </div>
@@ -516,7 +586,7 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
           <button
             type="button"
             data-active={editor.isActive("link")}
-            onClick={setLink}
+            onClick={() => openInsertDialog("link")}
             className="notion-menu-button"
           >
             <Link2 className="h-4 w-4" />
@@ -591,7 +661,7 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
           </button>
           <button
             type="button"
-            onClick={addImage}
+            onClick={() => openInsertDialog("image")}
             className="notion-menu-button"
           >
             <Image className="h-4 w-4" />
@@ -600,6 +670,45 @@ export function TiptapEditor({ content, onChange, className = "" }: TiptapEditor
       </FloatingMenu>
 
       <EditorContent editor={editor} />
+
+      <Dialog
+        open={insertDialogMode !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            resetInsertDialog()
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          {insertDialogMode && (
+            <form
+              className="grid gap-4"
+              onSubmit={(event) => {
+                event.preventDefault()
+                applyInsertDialog()
+              }}
+            >
+              <DialogHeader>
+                <DialogTitle>{INSERT_DIALOG_COPY[insertDialogMode].title}</DialogTitle>
+                <DialogDescription>{INSERT_DIALOG_COPY[insertDialogMode].description}</DialogDescription>
+              </DialogHeader>
+              <Input
+                value={insertValue}
+                onChange={(event) => setInsertValue(event.target.value)}
+                placeholder={INSERT_DIALOG_COPY[insertDialogMode].placeholder}
+                autoFocus
+              />
+              {insertError && <p className="text-sm text-red-500">{insertError}</p>}
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={resetInsertDialog}>
+                  취소
+                </Button>
+                <Button type="submit">{INSERT_DIALOG_COPY[insertDialogMode].submitLabel}</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

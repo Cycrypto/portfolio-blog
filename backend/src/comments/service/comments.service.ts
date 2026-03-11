@@ -1,13 +1,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import {InjectRepository} from "@nestjs/typeorm";
-import {Repository} from "typeorm";
-import {CreateCommnetRequestDto} from "../dto/request/create-commnet-request.dto";
-import {UpdateCommentRequestDto} from "../dto/request/update-comment-request.dto";
-import {Comment} from '../entity/comment.entity'
+import { InjectRepository } from "@nestjs/typeorm";
+import { compare, hash } from "bcrypt";
+import { Repository } from "typeorm";
+
 import { Post } from "../../posts/entity/post.entity";
+import { CreateCommnetRequestDto } from "../dto/request/create-commnet-request.dto";
+import { UpdateCommentRequestDto } from "../dto/request/update-comment-request.dto";
+import { Comment } from "../entity/comment.entity";
 
 interface DeleteCommentActor {
-    authorEmail?: string;
+    password?: string;
     roles?: string[];
 }
 
@@ -20,7 +22,7 @@ export class CommentsService {
         private readonly postRepository: Repository<Post>,
     ) {}
 
-    async createComment(dto: CreateCommnetRequestDto & { postId: number }): Promise<Comment>{
+    async createComment(dto: CreateCommnetRequestDto & { postId: number }): Promise<Comment> {
         const post = await this.postRepository.findOne({
             where: { id: dto.postId },
             select: ['id'],
@@ -30,48 +32,47 @@ export class CommentsService {
             throw new NotFoundException('포스트를 찾을 수 없습니다.');
         }
 
-        // 답글인 경우 상위 댓글이 삭제되지 않았는지 확인
         if (dto.parentId) {
             const parentComment = await this.commentRepository.findOne({
-                where: { id: dto.parentId, postId: dto.postId }
+                where: { id: dto.parentId, postId: dto.postId },
             });
-            
+
             if (!parentComment) {
                 throw new NotFoundException('상위 댓글을 찾을 수 없습니다.');
             }
-            
+
             if (parentComment.isDeleted) {
                 throw new NotFoundException('삭제된 댓글에는 답글을 작성할 수 없습니다.');
             }
         }
 
-        const comment = this.commentRepository.create(dto);
-        return await this.commentRepository.save(comment)
-    }
-
-    async getCommentsByPost(postId: number): Promise<Comment[]>{
-        // 모든 댓글을 한 번에 조회
-        const allComments = await this.commentRepository.find({
-            where: {postId, isDeleted: false},
-            order: {createdAt: 'ASC'}
+        const { password, ...commentData } = dto;
+        const comment = this.commentRepository.create({
+            ...commentData,
+            authorEmail: await hash(password, 10),
         });
 
-        // 최상위 댓글만 필터링
-        const topLevelComments = allComments.filter(comment => !comment.parentId);
-        
-        // 각 최상위 댓글에 대해 답글 트리를 재귀적으로 구성
+        return await this.commentRepository.save(comment);
+    }
+
+    async getCommentsByPost(postId: number): Promise<Comment[]> {
+        const allComments = await this.commentRepository.find({
+            where: { postId, isDeleted: false },
+            order: { createdAt: 'ASC' },
+        });
+
+        const topLevelComments = allComments.filter((comment) => !comment.parentId);
+
         for (const comment of topLevelComments) {
             comment.replies = await this.buildReplyTreeFromList(comment.id, allComments);
         }
 
-        // 최상위 댓글을 생성 시간 역순으로 정렬
         return topLevelComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
     private async buildReplyTreeFromList(parentId: string, allComments: Comment[]): Promise<Comment[]> {
-        // 주어진 parentId를 가진 댓글들을 찾아서 트리 구성
-        const replies = allComments.filter(comment => comment.parentId === parentId);
-        
+        const replies = allComments.filter((comment) => comment.parentId === parentId);
+
         for (const reply of replies) {
             reply.replies = await this.buildReplyTreeFromList(reply.id, allComments);
         }
@@ -79,11 +80,9 @@ export class CommentsService {
         return replies.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }
 
-
-
     async getCommentById(postId: number, commentId: string): Promise<Comment> {
         const comment = await this.commentRepository.findOne({
-            where: { id: commentId, postId, isDeleted: false }
+            where: { id: commentId, postId, isDeleted: false },
         });
 
         if (!comment) {
@@ -91,7 +90,7 @@ export class CommentsService {
         }
 
         const allComments = await this.commentRepository.find({
-            where: { postId: comment.postId, isDeleted: false }
+            where: { postId: comment.postId, isDeleted: false },
         });
         comment.replies = await this.buildReplyTreeFromList(comment.id, allComments);
 
@@ -99,76 +98,94 @@ export class CommentsService {
     }
 
     async updateComment(postId: number, commentId: string, dto: UpdateCommentRequestDto): Promise<Comment> {
-        const comment = await this.commentRepository.findOne({
-            where: { id: commentId, postId, isDeleted: false }
-        });
+        const comment = await this.commentRepository
+            .createQueryBuilder('comment')
+            .addSelect('comment.authorEmail')
+            .where('comment.id = :commentId', { commentId })
+            .andWhere('comment.postId = :postId', { postId })
+            .andWhere('comment.isDeleted = :isDeleted', { isDeleted: false })
+            .getOne();
 
         if (!comment) {
             throw new NotFoundException('댓글을 찾을 수 없습니다.');
         }
 
-        // 상위 댓글이 삭제되었는지 확인
+        await this.verifyCommentPassword(comment, dto.password);
+
         if (comment.parentId) {
             const parentComment = await this.commentRepository.findOne({
-                where: { id: comment.parentId, postId }
+                where: { id: comment.parentId, postId },
             });
-            
+
             if (parentComment && parentComment.isDeleted) {
                 throw new NotFoundException('삭제된 댓글에는 답글을 작성할 수 없습니다.');
             }
         }
 
         comment.content = dto.content;
+
+        if (!this.isHashedCredential(comment.authorEmail)) {
+            comment.authorEmail = await hash(dto.password, 10);
+        }
+
         return await this.commentRepository.save(comment);
     }
 
     async deleteComment(postId: number, commentId: string, actor: DeleteCommentActor = {}): Promise<void> {
-        const comment = await this.commentRepository.findOne({
-            where: { id: commentId, postId }
-        });
+        const isAdmin = actor.roles?.includes('admin') ?? false;
+        const comment = isAdmin
+            ? await this.commentRepository.findOne({
+                where: { id: commentId, postId },
+            })
+            : await this.commentRepository
+                .createQueryBuilder('comment')
+                .addSelect('comment.authorEmail')
+                .where('comment.id = :commentId', { commentId })
+                .andWhere('comment.postId = :postId', { postId })
+                .getOne();
 
         if (!comment) {
             throw new NotFoundException('댓글을 찾을 수 없습니다.');
         }
 
         if (comment.isDeleted) {
-            // 이미 삭제된 댓글인 경우 성공으로 처리
             return;
         }
 
-        if (!this.canDeleteComment(comment, actor)) {
-            throw new ForbiddenException('본인이 작성한 댓글 또는 관리자만 삭제할 수 있습니다.');
+        if (!isAdmin) {
+            if (!actor.password?.trim()) {
+                throw new ForbiddenException('댓글 비밀번호가 일치하지 않습니다.');
+            }
+
+            await this.verifyCommentPassword(comment, actor.password);
         }
 
-        // 댓글과 모든 하위 답글들을 재귀적으로 삭제
         await this.deleteCommentRecursively(postId, commentId);
     }
 
-    private canDeleteComment(comment: Comment, actor: DeleteCommentActor): boolean {
-        const isAdmin = actor.roles?.includes('admin') ?? false;
-        if (isAdmin) {
-            return true;
-        }
-
-        if (!actor.authorEmail?.trim()) {
-            return false;
-        }
-
-        return comment.authorEmail.trim().toLowerCase() === actor.authorEmail.trim().toLowerCase();
-    }
-
     private async deleteCommentRecursively(postId: number, commentId: string): Promise<void> {
-        // 현재 댓글 삭제
         await this.commentRepository.update(commentId, { isDeleted: true });
 
-        // 하위 답글들 조회
         const replies = await this.commentRepository.find({
-            where: { parentId: commentId, postId, isDeleted: false }
+            where: { parentId: commentId, postId, isDeleted: false },
         });
 
-        // 각 하위 답글에 대해 재귀적으로 삭제 실행
         for (const reply of replies) {
             await this.deleteCommentRecursively(postId, reply.id);
         }
+    }
+
+    private async verifyCommentPassword(comment: Comment, password: string): Promise<void> {
+        const isPasswordValid = this.isHashedCredential(comment.authorEmail)
+            ? await compare(password, comment.authorEmail)
+            : Boolean(comment.authorEmail && comment.authorEmail === password);
+
+        if (!isPasswordValid) {
+            throw new ForbiddenException('댓글 비밀번호가 일치하지 않습니다.');
+        }
+    }
+
+    private isHashedCredential(value: string): boolean {
+        return value.startsWith('$2');
     }
 }

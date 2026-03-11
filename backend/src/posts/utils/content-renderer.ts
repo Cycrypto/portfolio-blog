@@ -1,4 +1,4 @@
-import { generateHTML, generateText, JSONContent } from '@tiptap/core';
+import { generateHTML, generateJSON, generateText, JSONContent } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
@@ -195,7 +195,7 @@ export function renderTiptapContent(json: JSONContent): RenderedContent {
         const sanitizedHtml = purify.sanitize(htmlWithIds, PURIFY_CONFIG);
         const plainText = generateText(json, viewerExtensions);
         const wordCount = calculateWordCount(plainText);
-        const readTime = calculateReadTime(wordCount);
+        const readTime = calculateReadTime(plainText);
 
         return {
             html: sanitizedHtml,
@@ -217,7 +217,7 @@ export function renderMarkdownContent(markdown: string): RenderedContent {
     const sanitizedHtml = purify.sanitize(htmlWithIds, PURIFY_CONFIG);
     const plainText = extractPlainText(sanitizedHtml);
     const wordCount = calculateWordCount(plainText);
-    const readTime = calculateReadTime(wordCount);
+    const readTime = calculateReadTime(plainText);
 
     return {
         html: sanitizedHtml,
@@ -228,6 +228,11 @@ export function renderMarkdownContent(markdown: string): RenderedContent {
     };
 }
 
+export function convertMarkdownToTiptapJSON(markdown: string): JSONContent {
+    const html = marked.parse(markdown, { breaks: true, gfm: true }) as string;
+    return generateJSON(html, viewerExtensions);
+}
+
 function extractPlainText(html: string): string {
     return html.replace(/<[^>]*>/g, '').trim();
 }
@@ -236,7 +241,14 @@ function calculateWordCount(text: string): number {
     return text.split(/\s+/).filter((word) => word.length > 0).length;
 }
 
-function calculateReadTime(wordCount: number): number {
-    const wordsPerMinute = 200;
-    return Math.max(1, Math.ceil(wordCount / wordsPerMinute));
+function calculateCharacterCount(text: string): number {
+    return text.replace(/\s/g, '').length;
+}
+
+function calculateReadTime(text: string): number {
+    const wordCount = calculateWordCount(text);
+    const characterCount = calculateCharacterCount(text);
+    const effectiveWordCount = Math.max(wordCount, Math.ceil(characterCount / 4));
+
+    return Math.max(1, Math.ceil(effectiveWordCount / 220));
 }

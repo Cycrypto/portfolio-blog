@@ -28,7 +28,7 @@ export class Comment{
     @Column()
     authorName: string;
 
-    @Column()
+    @Column({ select: false })
     authorEmail: string;
 
     @Column({ type: 'uuid', nullable: true })

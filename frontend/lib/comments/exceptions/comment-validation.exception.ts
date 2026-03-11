@@ -18,9 +18,9 @@ export class CommentValidationException extends BadRequestException {
         message = '댓글 작성자는 필수입니다.';
         code = ErrorCode.COMMENT_AUTHOR_REQUIRED;
         break;
-      case 'authorEmail':
-        message = '댓글 작성자 이메일은 필수입니다.';
-        code = ErrorCode.COMMENT_EMAIL_REQUIRED;
+      case 'password':
+        message = '댓글 비밀번호는 필수입니다.';
+        code = ErrorCode.COMMENT_PASSWORD_REQUIRED;
         break;
       default:
         message = `댓글 ${field} 필드가 올바르지 않습니다.`;

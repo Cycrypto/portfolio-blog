@@ -50,6 +50,9 @@ export class PostResponseDTO {
     @ApiProperty({ description: '조회수', example: 100 })
     views: number;
 
+    @ApiProperty({ description: '좋아요 수', example: 24 })
+    likes: number;
+
     @ApiProperty({ description: '댓글 수', example: 10 })
     comments: number;
 

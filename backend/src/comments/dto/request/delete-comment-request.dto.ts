@@ -1,8 +1,8 @@
-import { IsEmail, IsOptional, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class DeleteCommentRequestDto {
   @IsOptional()
-  @IsEmail()
+  @IsString()
   @MaxLength(200)
-  authorEmail?: string;
+  password?: string;
 }
