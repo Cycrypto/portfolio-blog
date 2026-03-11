@@ -44,6 +44,7 @@ export function FloatingNav() {
   const navItems = [
     { name: "소개", href: "#about" },
     { name: "프로젝트", href: "#projects" },
+    { name: "경력", href: "#experience" },
     { name: "블로그", href: "#blog" },
     { name: "연락", href: "#contact" },
   ]
