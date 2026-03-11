@@ -1,14 +1,13 @@
-import { apiRequest } from '../client/base';
+import { ApiError, apiRequest } from '../client/base';
 import { Comment, CreateCommentRequest, UpdateCommentRequest } from '../../types/api';
-import { 
-  CommentNotFoundException, 
-  CommentCreateException, 
-  CommentUpdateException, 
+import {
+  CommentCreateException,
   CommentDeleteException,
+  CommentIsPrivateException,
+  CommentNotFoundException,
+  CommentUpdateException,
   CommentValidationException,
-  CommentIsPrivateException 
 } from '../../comments/exceptions';
-import { ApiError } from '../client/base';
 
 export async function getComments(postId: string): Promise<{success: boolean, data: {success: boolean, data: Comment[]}}> {
   try {
@@ -23,7 +22,6 @@ export async function getComments(postId: string): Promise<{success: boolean, da
 }
 
 export async function createComment(commentData: CreateCommentRequest): Promise<Comment> {
-  // 입력 데이터 검증
   if (!commentData.content?.trim()) {
     throw new CommentValidationException('content', commentData.content);
   }
@@ -43,20 +41,18 @@ export async function createComment(commentData: CreateCommentRequest): Promise<
         body: JSON.stringify(commentData),
       }
     );
-    
+
     return result.data;
   } catch (error) {
-    if (error instanceof ApiError) {
-      if (error.status === 400) {
-        throw new CommentValidationException('data', commentData);
-      }
+    if (error instanceof ApiError && error.status === 400) {
+      throw new CommentValidationException('data', commentData);
     }
+
     throw new CommentCreateException(commentData.postId, error instanceof Error ? error : undefined, { commentData });
   }
 }
 
 export async function updateComment(postId: string, commentId: string, commentData: UpdateCommentRequest): Promise<Comment> {
-  // 입력 데이터 검증
   if (!commentData.content?.trim()) {
     throw new CommentValidationException('content', commentData.content);
   }
@@ -73,7 +69,7 @@ export async function updateComment(postId: string, commentId: string, commentDa
         body: JSON.stringify(commentData),
       }
     );
-    
+
     return result.data;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -87,14 +83,17 @@ export async function updateComment(postId: string, commentId: string, commentDa
         throw new CommentValidationException('data', commentData);
       }
     }
+
     throw new CommentUpdateException(commentId, error instanceof Error ? error : undefined, { postId, commentData });
   }
 }
 
-export async function deleteComment(postId: string, commentId: string): Promise<void> {
+export async function deleteComment(postId: string, commentId: string, password?: string): Promise<void> {
   try {
     await apiRequest(`/posts/${postId}/comments/${commentId}`, {
       method: 'DELETE',
+      requireAuth: !password,
+      body: JSON.stringify(password ? { password } : {}),
     });
   } catch (error) {
     if (error instanceof ApiError) {
@@ -102,9 +101,16 @@ export async function deleteComment(postId: string, commentId: string): Promise<
         throw new CommentNotFoundException(commentId, postId);
       }
       if (error.status === 403) {
-        throw new CommentIsPrivateException(commentId);
+        throw new CommentIsPrivateException(
+          commentId,
+          password ? '댓글 비밀번호가 일치하지 않습니다.' : '삭제 권한이 없습니다.',
+        );
+      }
+      if (error.status === 400 && password !== undefined) {
+        throw new CommentValidationException('password', password);
       }
     }
+
     throw new CommentDeleteException(commentId, error instanceof Error ? error : undefined, { postId });
   }
 }

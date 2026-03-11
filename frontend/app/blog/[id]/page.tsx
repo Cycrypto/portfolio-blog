@@ -3,19 +3,19 @@ import Image from "next/image"
 import { ArrowLeft, Calendar, Clock, Eye, MessageCircle } from "lucide-react"
 import { notFound } from "next/navigation"
 
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { TableOfContents } from "@/components/blog/table-of-contents"
-import { ShareButtons } from "@/components/common/share-buttons"
-import { RelatedPosts } from "@/components/blog/related-posts"
-import { CommentSection } from "@/components/blog/CommentSection"
 import { AuthorCard } from "@/components/blog/author-card"
-import { getPost, Post } from "@/lib/api"
 import { BlogPostAdminActions } from "@/components/blog/blog-post-admin-actions"
-import { TiptapViewer } from "@/components/editor/TiptapViewer"
-import { normalizeImageUrl } from "@/lib/utils/image"
+import { CommentSection } from "@/components/blog/CommentSection"
+import { RelatedPosts } from "@/components/blog/related-posts"
+import { TableOfContents } from "@/components/blog/table-of-contents"
 import { PostLikeCard } from "@/components/blog/post-like-card"
+import { ShareButtons } from "@/components/common/share-buttons"
+import { TiptapViewer } from "@/components/editor/TiptapViewer"
+import { getPost, Post } from "@/lib/api"
+import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -26,7 +26,7 @@ interface BlogPostPageProps {
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const resolvedParams = await params
   let post: Post
-  
+
   try {
     post = await getPost(resolvedParams.id)
   } catch (error) {
@@ -38,8 +38,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
-      {/* Header */}
-      <header className="border-b border-neutral-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
+      <header className="sticky top-0 z-40 border-b border-neutral-slate-200 bg-white/80 backdrop-blur-sm">
         <div className="container flex items-center justify-between py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" asChild>
@@ -48,7 +47,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </Link>
             </Button>
             <Link href="/" className="font-bold text-xl">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-blue-600 to-brand-blue-900">박준하</span>
+              <span className="bg-gradient-to-r from-brand-blue-600 to-brand-blue-900 bg-clip-text text-transparent">박준하</span>
               <span className="text-neutral-slate-800"> 블로그</span>
             </Link>
           </div>
@@ -60,10 +59,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       </header>
 
       <div className="container py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-          {/* Main Content */}
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-4">
           <div className="lg:col-span-3">
-            {/* Hero Image */}
             {heroImage && (
               <div className="relative mb-8 h-64 overflow-hidden rounded-xl md:h-96">
                 <Image
@@ -78,9 +75,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </div>
             )}
 
-            {/* Post Header */}
             <div className="mb-8">
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="mb-4 flex flex-wrap gap-2">
                 <Badge variant="secondary" className="bg-brand-blue-100 text-brand-blue-700">
                   {post.category}
                 </Badge>
@@ -91,10 +87,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 ))}
               </div>
 
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 text-neutral-slate-800">{post.title}</h1>
+              <h1 className="mb-4 text-4xl font-bold text-neutral-slate-800 md:text-5xl">{post.title}</h1>
 
               {post.excerpt && (
-                <p className="text-xl text-neutral-slate-600 mb-6">{post.excerpt}</p>
+                <p className="mb-6 text-xl text-neutral-slate-600">{post.excerpt}</p>
               )}
 
               <PostLikeCard
@@ -125,16 +121,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
             <Separator className="mb-8" />
 
-            {/* Post Content */}
             <div className="max-w-none">
               {post.contentHtml ? (
-                <div className="bg-white p-8 rounded-lg shadow-sm">
+                <div className="rounded-lg bg-white p-8 shadow-sm">
                   <TiptapViewer contentHtml={post.contentHtml} />
                 </div>
               ) : (
-                <div className="bg-white p-8 rounded-lg shadow-sm">
-                  <h2 className="text-2xl font-bold mb-4">포스트 내용</h2>
-                  <p className="text-neutral-slate-600 mb-4">
+                <div className="rounded-lg bg-white p-8 shadow-sm">
+                  <h2 className="mb-4 text-2xl font-bold">포스트 내용</h2>
+                  <p className="mb-4 text-neutral-slate-600">
                     이 포스트는 ID {post.id}로 생성되었습니다.
                   </p>
                   <div className="space-y-4">
@@ -163,20 +158,19 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
             <Separator className="my-12" />
 
-            {/* Author Card */}
-            <AuthorCard author={{
-              name: post.author,
-              avatar: undefined,
-              bio: "블로그 작성자"
-            }} />
+            <AuthorCard
+              author={{
+                name: post.author,
+                avatar: undefined,
+                bio: "블로그 작성자",
+              }}
+            />
 
             <Separator className="my-12" />
 
-            {/* Comments */}
             <CommentSection postId={post.id.toString()} />
           </div>
 
-          {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-8">
               <TableOfContents headings={post.headings} />

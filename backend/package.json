@@ -21,7 +21,9 @@
     "migration:run": "node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
     "migration:revert": "node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/database/data-source.ts",
     "create-admin": "ts-node -r tsconfig-paths/register src/scripts/create-admin.ts",
-    "seed:prod": "ts-node -r tsconfig-paths/register src/scripts/seed-production.ts"
+    "seed:prod": "ts-node -r tsconfig-paths/register src/scripts/seed-production.ts",
+    "repair:posts-schema": "node dist/scripts/repair-posts-schema.js",
+    "repair:posts-schema:dev": "ts-node -r tsconfig-paths/register src/scripts/repair-posts-schema.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.970.0",

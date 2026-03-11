@@ -4,13 +4,14 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { Edit, MessageCircle, Reply, Trash2 } from "lucide-react"
+import { toast } from "sonner"
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Comment, createComment, deleteComment, getComments, updateComment } from "@/lib/api"
 import { TokenManager } from "@/lib/auth/token-manager"
-import { toast } from "sonner"
 
 interface CommentSectionProps {
   postId: string
@@ -31,9 +32,22 @@ export function CommentSection({ postId }: CommentSectionProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [hasAdminSession, setHasAdminSession] = useState(false)
 
+  const hasAdminRole = (token: string | null) => {
+    if (!token || !TokenManager.isTokenValid(token)) {
+      return false
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]))
+      return Array.isArray(payload.roles) && payload.roles.includes("admin")
+    } catch {
+      return false
+    }
+  }
+
   useEffect(() => {
     void loadComments()
-    setHasAdminSession(Boolean(TokenManager.getToken()))
+    setHasAdminSession(hasAdminRole(TokenManager.getToken()))
   }, [postId])
 
   const loadComments = async () => {
@@ -135,9 +149,34 @@ export function CommentSection({ postId }: CommentSectionProps) {
       return
     }
 
+    let password: string | undefined
+
+    if (!hasAdminSession) {
+      const providedPassword = window.prompt("댓글 작성 시 설정한 비밀번호를 입력해주세요.")
+
+      if (providedPassword === null) {
+        return
+      }
+
+      password = providedPassword.trim()
+      if (!password) {
+        toast.error("비밀번호를 입력해주세요.")
+        return
+      }
+    }
+
     try {
-      await deleteComment(postId, commentId)
+      await deleteComment(postId, commentId, password)
       toast.success(`${label}이 삭제되었습니다.`)
+
+      if (editingComment === commentId) {
+        resetEditor()
+      }
+      if (replyTo === commentId) {
+        setReplyTo(null)
+        setReplyContent("")
+      }
+
       await loadComments()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : `${label} 삭제에 실패했습니다.`)
@@ -221,18 +260,16 @@ export function CommentSection({ postId }: CommentSectionProps) {
                 <Edit className="mr-1 h-4 w-4" />
                 수정
               </Button>
-              {hasAdminSession && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-neutral-slate-500 hover:text-red-500"
-                  onClick={() => void handleDelete(comment.id, depth === 0 ? "댓글" : "답글")}
-                >
-                  <Trash2 className="mr-1 h-4 w-4" />
-                  삭제
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-neutral-slate-500 hover:text-red-500"
+                onClick={() => void handleDelete(comment.id, depth === 0 ? "댓글" : "답글")}
+              >
+                <Trash2 className="mr-1 h-4 w-4" />
+                삭제
+              </Button>
             </div>
 
             {replyTo === comment.id && (
@@ -302,7 +339,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
             onChange={(e) => setAuthorPassword(e.target.value)}
           />
         </div>
-        <p className="text-sm text-neutral-slate-500">작성 시 입력한 비밀번호로만 댓글을 수정할 수 있습니다.</p>
+        <p className="text-sm text-neutral-slate-500">작성 시 입력한 비밀번호로 댓글을 수정하거나 삭제할 수 있습니다.</p>
         <Textarea
           placeholder="댓글을 작성해주세요..."
           value={newComment}

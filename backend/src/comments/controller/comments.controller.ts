@@ -1,13 +1,14 @@
-import {Body, Controller, Get, Param, Post, Patch, Delete, UseGuards, ParseIntPipe, BadRequestException} from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Patch, Delete, UseGuards, ParseIntPipe, BadRequestException, Req } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
-import {CommentsService} from "../service/comments.service";
-import {CreateCommnetRequestDto} from "../dto/request/create-commnet-request.dto";
-import {UpdateCommentRequestDto} from "../dto/request/update-comment-request.dto";
-import {Comment} from '../entity/comment.entity';
-import {CommentResponseDto, CreateCommentResponseDto, GetCommentsResponseDto} from "../dto/response/comment-response.dto";
-import { JwtRoleGuard } from "../../auth/common/jwt-role.guard";
-import { Roles } from "../../auth/decorator/auth-role.decorator";
+import type { Request } from 'express';
 
+import { OptionalJwtAuthGuard } from "../../auth/common/optional-jwt-auth.guard";
+import { Comment } from '../entity/comment.entity';
+import { CommentsService } from "../service/comments.service";
+import { CreateCommnetRequestDto } from "../dto/request/create-commnet-request.dto";
+import { DeleteCommentRequestDto } from "../dto/request/delete-comment-request.dto";
+import { UpdateCommentRequestDto } from "../dto/request/update-comment-request.dto";
+import { CommentResponseDto, CreateCommentResponseDto, GetCommentsResponseDto } from "../dto/response/comment-response.dto";
 
 @ApiTags('Comments')
 @Controller('posts/:postId/comments')
@@ -23,12 +24,13 @@ export class CommentsController {
     async create(
         @Param('postId', ParseIntPipe) postId: number,
         @Body() dto: CreateCommnetRequestDto,
-    ): Promise<CreateCommentResponseDto>{
+    ): Promise<CreateCommentResponseDto> {
         if (dto.postId && dto.postId !== postId) {
             throw new BadRequestException('URL의 postId와 본문 postId가 일치하지 않습니다.');
         }
-        const comment = await this.commentsService.createComment(({...dto, postId}));
-        return {success: true, data: this.mapToResponseDto(comment)};
+
+        const comment = await this.commentsService.createComment({ ...dto, postId });
+        return { success: true, data: this.mapToResponseDto(comment) };
     }
 
     @Get()
@@ -38,9 +40,9 @@ export class CommentsController {
     @ApiResponse({ status: 404, description: '포스트를 찾을 수 없음' })
     async getComments(
         @Param('postId', ParseIntPipe) postId: number,
-    ): Promise<GetCommentsResponseDto>{
+    ): Promise<GetCommentsResponseDto> {
         const comments = await this.commentsService.getCommentsByPost(postId);
-        return {success: true, data: comments.map(comment => this.mapToResponseDto(comment))};
+        return { success: true, data: comments.map((comment) => this.mapToResponseDto(comment)) };
     }
 
     @Get('comment/:commentId')
@@ -52,9 +54,9 @@ export class CommentsController {
     async getComment(
         @Param('postId', ParseIntPipe) postId: number,
         @Param('commentId') commentId: string,
-    ): Promise<CreateCommentResponseDto>{
+    ): Promise<CreateCommentResponseDto> {
         const comment = await this.commentsService.getCommentById(postId, commentId);
-        return {success: true, data: this.mapToResponseDto(comment)};
+        return { success: true, data: this.mapToResponseDto(comment) };
     }
 
     @Patch(':commentId')
@@ -69,28 +71,33 @@ export class CommentsController {
         @Param('postId', ParseIntPipe) postId: number,
         @Param('commentId') commentId: string,
         @Body() dto: UpdateCommentRequestDto,
-    ): Promise<CreateCommentResponseDto>{
+    ): Promise<CreateCommentResponseDto> {
         const comment = await this.commentsService.updateComment(postId, commentId, dto);
-        return {success: true, data: this.mapToResponseDto(comment)};
+        return { success: true, data: this.mapToResponseDto(comment) };
     }
 
     @Delete(':commentId')
     @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtRoleGuard)
-    @Roles('admin')
-    @ApiOperation({ summary: '댓글 삭제', description: '댓글을 삭제합니다. 인증이 필요합니다.' })
+    @UseGuards(OptionalJwtAuthGuard)
+    @ApiOperation({ summary: '댓글 삭제', description: '관리자이거나 댓글 작성 비밀번호가 일치하면 댓글을 삭제합니다.' })
     @ApiParam({ name: 'postId', description: '포스트 ID' })
     @ApiParam({ name: 'commentId', description: '삭제할 댓글 ID' })
+    @ApiBody({ type: DeleteCommentRequestDto, required: false })
     @ApiResponse({ status: 200, description: '댓글이 성공적으로 삭제됨' })
-    @ApiResponse({ status: 401, description: '인증 실패' })
-    @ApiResponse({ status: 403, description: '접근 권한이 없습니다.' })
+    @ApiResponse({ status: 403, description: '비밀번호가 올바르지 않거나 삭제 권한이 없습니다.' })
     @ApiResponse({ status: 404, description: '댓글을 찾을 수 없음' })
     async delete(
         @Param('postId', ParseIntPipe) postId: number,
         @Param('commentId') commentId: string,
-    ): Promise<{success: boolean; message: string}>{
-        await this.commentsService.deleteComment(postId, commentId);
-        return {success: true, message: '댓글이 삭제되었습니다.'};
+        @Body() dto: DeleteCommentRequestDto,
+        @Req() request: Request & { user?: { roles?: string[] } },
+    ): Promise<{ success: boolean; message: string }> {
+        await this.commentsService.deleteComment(postId, commentId, {
+            password: dto?.password,
+            roles: request.user?.roles,
+        });
+
+        return { success: true, message: '댓글이 삭제되었습니다.' };
     }
 
     private mapToResponseDto(comment: Comment): CommentResponseDto {
@@ -103,7 +110,7 @@ export class CommentsController {
             isDeleted: comment.isDeleted,
             createdAt: comment.createdAt,
             updatedAt: comment.updatedAt,
-            replies: comment.replies?.map(reply => this.mapToResponseDto(reply))
+            replies: comment.replies?.map((reply) => this.mapToResponseDto(reply)),
         };
     }
 }

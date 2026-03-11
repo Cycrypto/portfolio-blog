@@ -80,21 +80,21 @@ export function PostLikeCard({ postId, initialLikes, commentCount }: PostLikeCar
   }
 
   return (
-    <section className="mb-8 overflow-hidden rounded-[28px] border border-rose-200/70 bg-[radial-gradient(circle_at_top_left,_rgba(251,113,133,0.18),_transparent_38%),radial-gradient(circle_at_bottom_right,_rgba(251,146,60,0.16),_transparent_42%),linear-gradient(135deg,#fff7f7_0%,#ffffff_56%,#fff8ef_100%)] p-5 shadow-[0_24px_60px_-34px_rgba(225,29,72,0.45)]">
+    <section className="mb-6 rounded-2xl border border-neutral-slate-200 bg-white/85 p-4 shadow-sm">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-500">Reader Reaction</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-slate-500">Reaction</p>
           <div>
-            <h2 className="text-xl font-semibold text-neutral-slate-900">이 글이 유용했다면 좋아요를 남겨주세요.</h2>
+            <h2 className="text-lg font-semibold text-neutral-slate-900">이 글이 괜찮았다면 가볍게 좋아요를 남겨주세요.</h2>
             <p className="mt-1 text-sm text-neutral-slate-600">좋아요는 브라우저 기준으로 한 번만 반영됩니다.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-slate-600">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1">
-              <Heart className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-rose-400")} />
+            <span className="inline-flex items-center gap-2 rounded-full border border-neutral-slate-200 bg-neutral-slate-50 px-3 py-1">
+              <Heart className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-neutral-slate-400")} />
               좋아요 {likes.toLocaleString()}
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1">
-              <MessageCircle className="h-4 w-4 text-brand-blue-500" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-neutral-slate-200 bg-neutral-slate-50 px-3 py-1">
+              <MessageCircle className="h-4 w-4 text-neutral-slate-400" />
               댓글 {commentCount.toLocaleString()}
             </span>
           </div>
@@ -102,12 +102,12 @@ export function PostLikeCard({ postId, initialLikes, commentCount }: PostLikeCar
 
         <Button
           type="button"
-          size="lg"
+          size="sm"
           onClick={handleLike}
           disabled={isSubmitting || liked}
           aria-pressed={liked}
           className={cn(
-            "min-w-40 rounded-full px-6 text-base shadow-sm transition-transform duration-200 md:self-end",
+            "min-w-28 rounded-full px-4 shadow-sm md:self-end",
             liked
               ? "bg-rose-500 text-white hover:bg-rose-500"
               : "bg-white text-rose-600 hover:bg-rose-50 hover:text-rose-700",
@@ -118,7 +118,7 @@ export function PostLikeCard({ postId, initialLikes, commentCount }: PostLikeCar
           ) : (
             <Heart className={cn("h-5 w-5", liked && "fill-current")} />
           )}
-          {liked ? "좋아요 완료" : "좋아요 누르기"}
+          {liked ? "좋아요 완료" : "좋아요"}
         </Button>
       </div>
     </section>
