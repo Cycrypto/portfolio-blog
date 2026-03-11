@@ -164,3 +164,16 @@ export async function getTopTags(limit: number = 5): Promise<{ id: number; name:
     throw error;
   }
 }
+
+export async function likePost(id: string): Promise<{ likes: number }> {
+  try {
+    const result = await apiRequest<{ data: { likes: number } }>(`/posts/${id}/like`, {
+      method: "POST",
+      requireAuth: false,
+    })
+
+    return result.data
+  } catch (error) {
+    throw error
+  }
+}

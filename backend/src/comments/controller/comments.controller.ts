@@ -58,16 +58,12 @@ export class CommentsController {
     }
 
     @Patch(':commentId')
-    @ApiBearerAuth('JWT-auth')
-    @UseGuards(JwtRoleGuard)
-    @Roles('admin')
-    @ApiOperation({ summary: '댓글 수정', description: '기존 댓글을 수정합니다. 인증이 필요합니다.' })
+    @ApiOperation({ summary: '댓글 수정', description: '댓글 작성 시 설정한 비밀번호로 기존 댓글을 수정합니다.' })
     @ApiParam({ name: 'postId', description: '포스트 ID' })
     @ApiParam({ name: 'commentId', description: '수정할 댓글 ID' })
     @ApiBody({ type: UpdateCommentRequestDto })
     @ApiResponse({ status: 200, description: '댓글이 성공적으로 수정됨', type: CreateCommentResponseDto })
-    @ApiResponse({ status: 401, description: '인증 실패' })
-    @ApiResponse({ status: 403, description: '접근 권한이 없습니다.' })
+    @ApiResponse({ status: 403, description: '비밀번호가 올바르지 않습니다.' })
     @ApiResponse({ status: 404, description: '댓글을 찾을 수 없음' })
     async update(
         @Param('postId', ParseIntPipe) postId: number,
@@ -103,21 +99,11 @@ export class CommentsController {
             postId: comment.postId,
             content: comment.content,
             authorName: comment.authorName,
-            authorEmail: this.maskEmail(comment.authorEmail),
             parentId: comment.parentId,
             isDeleted: comment.isDeleted,
             createdAt: comment.createdAt,
             updatedAt: comment.updatedAt,
             replies: comment.replies?.map(reply => this.mapToResponseDto(reply))
         };
-    }
-
-    private maskEmail(email: string): string {
-        const [localPart, domainPart] = email.split('@');
-        if (!localPart || !domainPart || localPart.length <= 2) {
-            return '***';
-        }
-
-        return `${localPart.slice(0, 2)}***@${domainPart}`;
     }
 }

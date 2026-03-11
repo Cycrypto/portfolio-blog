@@ -88,7 +88,6 @@ export default function AdminComments() {
                     <TableRow key={comment.id}>
                       <TableCell>
                         <div className="font-semibold text-neutral-slate-800">{comment.authorName}</div>
-                        <div className="text-xs text-neutral-slate-500">{comment.authorEmail}</div>
                       </TableCell>
                       <TableCell className="max-w-md">
                         <div className="truncate text-neutral-slate-700">{comment.content}</div>

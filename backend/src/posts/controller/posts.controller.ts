@@ -77,6 +77,20 @@ export class PostsController {
         return this.toPostResponseDTO(post);
     }
 
+    @HttpPost(':id/like')
+    @ApiOperation({ summary: '포스트 좋아요 증가' })
+    @ApiParam({ name: 'id', description: '포스트 ID 또는 slug' })
+    @ApiResponse({ status: 200, description: '좋아요가 증가됨' })
+    @ApiResponse({ status: 404, description: '포스트를 찾을 수 없음' })
+    async likePost(@Param('id') id: string): Promise<{ likes: number }> {
+        const likes = await this.postsService.incrementLikes(id);
+        if (likes === null) {
+            throw new NotFoundException(`Post with identifier '${id}' not found`);
+        }
+
+        return { likes };
+    }
+
     @Get(':id/edit')
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtRoleGuard)
@@ -182,6 +196,7 @@ export class PostsController {
         postResponseDTO.category = post.category;
         postResponseDTO.publishDate = post.publishDate;
         postResponseDTO.views = post.views;
+        postResponseDTO.likes = post.likes;
         postResponseDTO.comments = post.comments;
         postResponseDTO.readTime = post.readTime;
 

@@ -29,7 +29,7 @@ export enum ErrorCode {
   COMMENT_IS_PRIVATE = 'COMMENT_IS_PRIVATE',
   COMMENT_CONTENT_REQUIRED = 'COMMENT_CONTENT_REQUIRED',
   COMMENT_AUTHOR_REQUIRED = 'COMMENT_AUTHOR_REQUIRED',
-  COMMENT_EMAIL_REQUIRED = 'COMMENT_EMAIL_REQUIRED',
+  COMMENT_PASSWORD_REQUIRED = 'COMMENT_PASSWORD_REQUIRED',
   COMMENT_UPDATE_FAILED = 'COMMENT_UPDATE_FAILED',
   COMMENT_DELETE_FAILED = 'COMMENT_DELETE_FAILED',
   COMMENT_CREATE_FAILED = 'COMMENT_CREATE_FAILED',
@@ -75,10 +75,10 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
 
   // Comment 도메인 에러 메시지
   [ErrorCode.COMMENT_NOT_FOUND]: '댓글을 찾을 수 없습니다.',
-  [ErrorCode.COMMENT_IS_PRIVATE]: '비공개 댓글입니다.',
+  [ErrorCode.COMMENT_IS_PRIVATE]: '댓글에 접근할 권한이 없습니다.',
   [ErrorCode.COMMENT_CONTENT_REQUIRED]: '댓글 내용은 필수입니다.',
   [ErrorCode.COMMENT_AUTHOR_REQUIRED]: '댓글 작성자는 필수입니다.',
-  [ErrorCode.COMMENT_EMAIL_REQUIRED]: '댓글 작성자 이메일은 필수입니다.',
+  [ErrorCode.COMMENT_PASSWORD_REQUIRED]: '댓글 비밀번호는 필수입니다.',
   [ErrorCode.COMMENT_UPDATE_FAILED]: '댓글 수정에 실패했습니다.',
   [ErrorCode.COMMENT_DELETE_FAILED]: '댓글 삭제에 실패했습니다.',
   [ErrorCode.COMMENT_CREATE_FAILED]: '댓글 생성에 실패했습니다.',
