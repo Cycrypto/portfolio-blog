@@ -127,6 +127,25 @@ export class PostsController {
         return this.toPostResponseDTO(post)
     }
 
+    @Patch(':id/convert-to-tiptap')
+    @ApiBearerAuth('JWT-auth')
+    @UseGuards(JwtRoleGuard)
+    @Roles('admin')
+    @ApiOperation({ summary: 'Markdown 포스트를 Tiptap으로 변환 (Admin Only)' })
+    @ApiParam({ name: 'id', description: '변환할 포스트 ID' })
+    @ApiBody({ type: UpdatePostRequestDTO, required: false })
+    @ApiResponse({ status: 200, description: '성공적으로 변환됨', type: PostEditResponseDTO })
+    async convertPostToTiptap(
+        @Param('id') id: string,
+        @Body() updatePostDTO: UpdatePostRequestDTO = {}
+    ): Promise<PostEditResponseDTO> {
+        const post = await this.postsService.convertMarkdownPostToTiptap(parseInt(id), updatePostDTO);
+        if (!post) {
+            throw new NotFoundException(`Post with id '${id}' not found`);
+        }
+        return this.toPostEditResponseDTO(post);
+    }
+
     @Delete(':id')
     @ApiBearerAuth('JWT-auth')
     @UseGuards(JwtRoleGuard)

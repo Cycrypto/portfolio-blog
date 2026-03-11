@@ -10,14 +10,14 @@ import { PostSettingsDialog } from "@/components/admin/post-editor/PostSettingsD
 import { Button } from "@/components/ui/button"
 import { TiptapEditor } from "@/components/editor/TiptapEditor"
 import { TiptapViewer } from "@/components/editor/TiptapViewer"
-import { getPostForEdit, updatePost, type PostEdit, type UpdatePostRequest, uploadMedia } from "@/lib/api"
+import { convertPostToTiptap, getPostForEdit, updatePost, type PostEdit, type UpdatePostRequest, uploadMedia } from "@/lib/api"
 import { normalizeImageUrl } from "@/lib/utils/image"
 import { calculateEditorMetrics } from "@/lib/posts/editor-metrics"
 
 const EMPTY_CONTENT: JSONContent = { type: "doc", content: [{ type: "paragraph" }] }
 const DEFAULT_AUTHOR = "박준하"
 
-type SaveStatus = "draft" | "published"
+type SaveStatus = "draft" | "published" | "scheduled"
 
 interface EditPostPageProps {
   params: Promise<{
@@ -27,10 +27,26 @@ interface EditPostPageProps {
 
 const getActionLabel = (status: SaveStatus, isSaving: boolean) => {
   if (!isSaving) {
-    return status === "draft" ? "임시저장" : "게시 반영"
+    if (status === "draft") {
+      return "임시저장"
+    }
+
+    if (status === "published") {
+      return "게시 반영"
+    }
+
+    return "저장"
   }
 
-  return status === "draft" ? "저장 중..." : "반영 중..."
+  if (status === "draft") {
+    return "저장 중..."
+  }
+
+  if (status === "published") {
+    return "반영 중..."
+  }
+
+  return "저장 중..."
 }
 
 export default function EditPostPage({ params }: EditPostPageProps) {
@@ -49,6 +65,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingFeaturedImage, setIsUploadingFeaturedImage] = useState(false)
   const [isUploadingEditorMedia, setIsUploadingEditorMedia] = useState(false)
+  const [isConvertingMarkdown, setIsConvertingMarkdown] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -57,6 +74,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   const normalizedFeaturedImage = useMemo(() => normalizeImageUrl(featuredImage), [featuredImage])
   const normalizedOriginalImage = useMemo(() => normalizeImageUrl(post?.image), [post?.image])
   const isUploadingMedia = isUploadingFeaturedImage || isUploadingEditorMedia
+  const isBusy = isSaving || isUploadingMedia || isConvertingMarkdown
 
   const originalTagsKey = useMemo(() => [...(post?.tags || [])].sort().join("|"), [post?.tags])
   const currentTagsKey = useMemo(() => [...tags].sort().join("|"), [tags])
@@ -81,21 +99,26 @@ export default function EditPostPage({ params }: EditPostPageProps) {
       resolvedReadTime !== post.readTime ||
       isContentChanged)
 
+  const applyPostState = useCallback((postData: PostEdit) => {
+    const nextContentJson = (postData.contentJson as JSONContent) || EMPTY_CONTENT
+    const nextMetrics = calculateEditorMetrics(nextContentJson)
+
+    setPost(postData)
+    setTitle(postData.title)
+    setContentType(postData.contentType)
+    setContentJson(nextContentJson)
+    setCategory(postData.category)
+    setTags(postData.tags || [])
+    setFeaturedImage(normalizeImageUrl(postData.image) || "")
+    setReadTime(postData.readTime)
+    setIsReadTimeManual(postData.readTime !== nextMetrics.estimatedReadTime)
+  }, [])
+
   useEffect(() => {
     const fetchPost = async () => {
       try {
         const postData = await getPostForEdit(id)
-        const initialContentJson = (postData.contentJson as JSONContent) || EMPTY_CONTENT
-        const initialMetrics = calculateEditorMetrics(initialContentJson)
-        setPost(postData)
-        setTitle(postData.title)
-        setContentType(postData.contentType)
-        setContentJson(initialContentJson)
-        setCategory(postData.category)
-        setTags(postData.tags || [])
-        setFeaturedImage(normalizeImageUrl(postData.image) || "")
-        setReadTime(postData.readTime)
-        setIsReadTimeManual(postData.readTime !== initialMetrics.estimatedReadTime)
+        applyPostState(postData)
       } catch (err) {
         setError("포스트를 불러오는데 실패했습니다.")
         console.error("Error fetching post:", err)
@@ -103,7 +126,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
     }
 
     fetchPost()
-  }, [id])
+  }, [id, applyPostState])
 
   useEffect(() => {
     if (hasUnsavedChanges && success) {
@@ -233,18 +256,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
 
         await updatePost(id, postData)
         const refreshedPost = await getPostForEdit(id)
-        const refreshedContentJson = (refreshedPost.contentJson as JSONContent) || EMPTY_CONTENT
-        const refreshedMetrics = calculateEditorMetrics(refreshedContentJson)
-
-        setPost(refreshedPost)
-        setTitle(refreshedPost.title)
-        setContentType(refreshedPost.contentType)
-        setContentJson(refreshedContentJson)
-        setCategory(refreshedPost.category)
-        setTags(refreshedPost.tags || [])
-        setFeaturedImage(normalizeImageUrl(refreshedPost.image) || "")
-        setReadTime(refreshedPost.readTime)
-        setIsReadTimeManual(refreshedPost.readTime !== refreshedMetrics.estimatedReadTime)
+        applyPostState(refreshedPost)
 
         setSuccess(saveStatus === "draft" ? "임시저장을 완료했습니다." : "게시 반영을 완료했습니다.")
       } catch (err) {
@@ -261,14 +273,41 @@ export default function EditPostPage({ params }: EditPostPageProps) {
       buildPostUpdatePayload,
       id,
       isUploadingMedia,
+      applyPostState,
     ],
   )
+
+  const handleConvertMarkdown = useCallback(async () => {
+    if (!post || contentType !== "markdown") {
+      return
+    }
+
+    if (!confirm("Markdown 레거시 글을 Tiptap 에디터 형식으로 변환하시겠습니까?")) {
+      return
+    }
+
+    try {
+      setIsConvertingMarkdown(true)
+      setError(null)
+      setSuccess(null)
+
+      const metadataPayload = buildPostUpdatePayload(post.status as SaveStatus)
+      const convertedPost = await convertPostToTiptap(id, metadataPayload)
+      applyPostState(convertedPost)
+      setSuccess("Markdown 글을 Tiptap 에디터 형식으로 변환했습니다.")
+    } catch (err) {
+      console.error("Error converting markdown post:", err)
+      setError(err instanceof Error ? err.message : "Markdown 글 변환에 실패했습니다.")
+    } finally {
+      setIsConvertingMarkdown(false)
+    }
+  }, [post, contentType, buildPostUpdatePayload, id, applyPostState])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
         event.preventDefault()
-        if (!isSaving && !isUploadingMedia) {
+        if (!isSaving && !isUploadingMedia && !isConvertingMarkdown) {
           void handleSave("draft")
         }
       }
@@ -276,7 +315,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handleSave, isSaving, isUploadingMedia])
+  }, [handleSave, isSaving, isUploadingMedia, isConvertingMarkdown])
 
   if (!post) {
     return (
@@ -310,12 +349,12 @@ export default function EditPostPage({ params }: EditPostPageProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button onClick={() => void handleSave("draft")} variant="outline" disabled={isSaving || isUploadingMedia}>
+              <Button onClick={() => void handleSave("draft")} variant="outline" disabled={isBusy}>
                 <Save className="mr-2 h-4 w-4" />
                 {getActionLabel("draft", isSaving)}
               </Button>
 
-              <Button variant="outline" disabled={isSaving || isUploadingMedia} onClick={() => setSettingsOpen(true)}>
+              <Button variant="outline" disabled={isBusy} onClick={() => setSettingsOpen(true)}>
                 <Settings2 className="mr-2 h-4 w-4" />
                 게시 설정
               </Button>
@@ -347,14 +386,14 @@ export default function EditPostPage({ params }: EditPostPageProps) {
                 onFeaturedImageChange={setFeaturedImage}
                 onFeaturedImageUpload={handleFeaturedImageUpload}
                 isUploadingImage={isUploadingFeaturedImage}
-                isSaving={isSaving}
+                isSaving={isBusy}
                 error={error}
                 footer={
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <Button onClick={() => void handleSave("draft")} variant="outline" disabled={isSaving || isUploadingMedia}>
+                    <Button onClick={() => void handleSave("draft")} variant="outline" disabled={isBusy}>
                       {getActionLabel("draft", isSaving)}
                     </Button>
-                    <Button onClick={() => void handleSave("published")} disabled={isSaving || isUploadingMedia}>
+                    <Button onClick={() => void handleSave("published")} disabled={isBusy}>
                       {getActionLabel("published", isSaving)}
                     </Button>
                   </div>
@@ -384,7 +423,17 @@ export default function EditPostPage({ params }: EditPostPageProps) {
 
           {contentType === "markdown" ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-              <p className="text-sm text-amber-800">이 글은 Markdown 레거시 포스트입니다. JSON 변환 후 편집할 수 있습니다.</p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-amber-900">이 글은 Markdown 레거시 포스트입니다.</p>
+                  <p className="text-sm text-amber-800">
+                    현재 화면에서 바로 Tiptap 에디터 형식으로 변환할 수 있습니다. 제목, 태그, 대표 이미지 같은 메타데이터 변경도 함께 반영됩니다.
+                  </p>
+                </div>
+                <Button onClick={() => void handleConvertMarkdown()} disabled={isBusy}>
+                  {isConvertingMarkdown ? "변환 중..." : "변환 후 계속 편집"}
+                </Button>
+              </div>
               {post.contentHtml ? (
                 <div className="mt-4 rounded-lg bg-white p-4">
                   <TiptapViewer contentHtml={post.contentHtml} />
