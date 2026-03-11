@@ -15,7 +15,7 @@ import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
 import { lowlight } from "lowlight"
 import { TextStyle } from "@tiptap/extension-text-style"
 import { Color } from "@tiptap/extension-color"
-import { ResizableImage } from "./resizable-image.tsx"
+import { ResizableImage } from "./resizable-image"
 import Mathematics from "@tiptap/extension-mathematics"
 import Youtube from "@tiptap/extension-youtube"
 import TextAlign from "@tiptap/extension-text-align"
@@ -30,7 +30,9 @@ export function getEditorExtensions() {
       },
     }),
     Underline,
-    Highlight,
+    Highlight.configure({
+      multicolor: true,
+    }),
     Typography,
     HorizontalRule,
     TaskList,
@@ -43,7 +45,7 @@ export function getEditorExtensions() {
     }),
     CodeBlockLowlight.configure({ lowlight }),
     Placeholder.configure({
-      placeholder: "Type / to browse options",
+      placeholder: "/ 를 눌러 블록 메뉴 열기",
     }),
     ResizableImage.configure({
       allowBase64: true,

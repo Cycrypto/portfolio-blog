@@ -202,6 +202,30 @@
   @apply flex items-center gap-1 bg-white border border-brand-indigo-500 rounded-lg shadow-lg p-1;
 }
 
+.notion-slash-menu {
+  @apply w-[22rem] max-h-[26rem] overflow-y-auto rounded-2xl border border-neutral-slate-200 bg-white p-2 shadow-2xl;
+}
+
+.notion-slash-group {
+  @apply p-1;
+}
+
+.notion-slash-group + .notion-slash-group {
+  @apply border-t border-neutral-slate-200 mt-1 pt-3;
+}
+
+.notion-slash-group-title {
+  @apply px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-slate-500;
+}
+
+.notion-slash-item {
+  @apply flex w-full items-center justify-between rounded-xl px-2 py-2 transition-colors;
+}
+
+.notion-slash-item-selected {
+  @apply bg-neutral-slate-50;
+}
+
 .notion-menu-button {
   @apply px-2 py-2 rounded hover:bg-gray-700 text-white transition-colors;
 }
@@ -226,11 +250,45 @@
   @apply text-xs text-gray-600 whitespace-pre-wrap;
 }
 
+.notion-editor-frame {
+  @apply relative;
+}
+
+.notion-block-handle {
+  @apply absolute left-0 z-20 hidden items-center gap-1 md:flex;
+}
+
+.notion-block-handle-button {
+  @apply flex h-8 w-8 items-center justify-center rounded-lg border border-transparent bg-white text-neutral-slate-500 shadow-sm transition-colors;
+}
+
+.notion-block-handle-button:hover {
+  @apply border-neutral-slate-200 bg-neutral-slate-50 text-neutral-slate-700;
+}
+
+.notion-block-menu-content {
+  @apply rounded-2xl border border-neutral-slate-200 bg-white p-1 shadow-2xl;
+}
+
+.notion-block-menu-label {
+  @apply px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-slate-500;
+}
+
+.notion-block-menu-section {
+  @apply px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-slate-500;
+}
+
 /* Tiptap Content Styles */
 .notion-content {
   @apply w-full;
   @apply min-h-screen;
   @apply text-black;
+}
+
+@media (min-width: 768px) {
+  .notion-editor-frame {
+    padding-left: 3.5rem;
+  }
 }
 
 .notion-content h1 {

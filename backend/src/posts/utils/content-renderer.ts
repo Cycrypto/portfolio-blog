@@ -49,11 +49,38 @@ purify.addHook('uponSanitizeAttribute', (node, data) => {
     }
 
     if (attrName === 'style') {
-        const allowed = attrValue.match(/color:\s*(#[0-9a-f]{3,8}|rgba?\([^\)]+\)|hsla?\([^\)]+\))/i);
-        if (!allowed) {
+        const safeDeclarations = attrValue
+            .split(';')
+            .map((declaration) => declaration.trim())
+            .filter(Boolean)
+            .map((declaration) => {
+                const [property, ...valueParts] = declaration.split(':');
+                return {
+                    property: property?.trim().toLowerCase(),
+                    value: valueParts.join(':').trim().toLowerCase(),
+                };
+            })
+            .filter(({ property, value }) => {
+                if (!property || !value) {
+                    return false;
+                }
+
+                if (property === 'text-align') {
+                    return ['left', 'center', 'right', 'justify'].includes(value);
+                }
+
+                if (property === 'color' || property === 'background-color') {
+                    return /^(#[0-9a-f]{3,8}|rgba?\([^\)]+\)|hsla?\([^\)]+\)|transparent|inherit|currentcolor)$/i.test(value);
+                }
+
+                return false;
+            })
+            .map(({ property, value }) => `${property}: ${value}`);
+
+        if (safeDeclarations.length === 0) {
             data.keepAttr = false;
         } else {
-            data.attrValue = allowed[0];
+            data.attrValue = safeDeclarations.join('; ');
         }
         return;
     }
@@ -83,7 +110,9 @@ const viewerExtensions = [
         },
     }),
     Underline,
-    Highlight,
+    Highlight.configure({
+        multicolor: true,
+    }),
     Typography,
     HorizontalRule,
     TaskList,

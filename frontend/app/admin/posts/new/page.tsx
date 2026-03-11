@@ -143,6 +143,14 @@ export default function NewPost() {
     [title, category, contentJson, normalizedFeaturedImage, tags, readTime, metrics.estimatedReadTime, router, isUploadingMedia],
   )
 
+  const editorDocumentActions = useMemo(
+    () => ({
+      openSettings: () => setSettingsOpen(true),
+      saveDraft: () => void handleSave("draft"),
+    }),
+    [handleSave],
+  )
+
   useEffect(() => {
     if (!isReadTimeManual) {
       setReadTime(metrics.estimatedReadTime)
@@ -334,6 +342,7 @@ export default function NewPost() {
             className="notion-fullscreen"
             onError={setError}
             onUploadStateChange={setIsUploadingEditorMedia}
+            documentActions={editorDocumentActions}
           />
         </div>
       </div>
