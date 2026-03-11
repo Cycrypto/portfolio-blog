@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Calendar, Clock, Eye, MessageCircle } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, Eye } from "lucide-react"
 import { notFound } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +11,7 @@ import { BlogPostAdminActions } from "@/components/blog/blog-post-admin-actions"
 import { CommentSection } from "@/components/blog/CommentSection"
 import { RelatedPosts } from "@/components/blog/related-posts"
 import { TableOfContents } from "@/components/blog/table-of-contents"
-import { PostLikeCard } from "@/components/blog/post-like-card"
+import { PostEngagementStats, PostLikeButton } from "@/components/blog/post-like-card"
 import { ShareButtons } from "@/components/common/share-buttons"
 import { TiptapViewer } from "@/components/editor/TiptapViewer"
 import { getPost, Post } from "@/lib/api"
@@ -36,6 +36,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   const heroImage = normalizeImageUrl(post.image)
   const currentPostSlug = post.slug && post.slug !== "null" ? post.slug : undefined
+  const postReactionId = post.slug && post.slug !== "null" ? post.slug : post.id.toString()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
@@ -94,10 +95,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <p className="mb-6 text-xl text-neutral-slate-600">{post.excerpt}</p>
               )}
 
-              <PostLikeCard
-                postId={post.slug && post.slug !== "null" ? post.slug : post.id.toString()}
+              <PostEngagementStats
+                postId={postReactionId}
                 initialLikes={post.likes}
                 commentCount={post.comments}
+                className="mb-6"
               />
 
               <div className="flex flex-wrap items-center gap-6 text-sm text-neutral-slate-500">
@@ -112,10 +114,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4" />
                   <span>{post.views.toLocaleString()} 조회</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4" />
-                  <span>{post.comments.toLocaleString()} 댓글</span>
                 </div>
               </div>
             </div>
@@ -135,6 +133,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   </p>
                 </div>
               )}
+            </div>
+
+            <Separator className="my-12" />
+
+            <div className="flex justify-center">
+              <PostLikeButton
+                postId={postReactionId}
+                initialLikes={post.likes}
+              />
             </div>
 
             <Separator className="my-12" />

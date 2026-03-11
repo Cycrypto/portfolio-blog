@@ -9,11 +9,24 @@ import { likePost } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
 const LIKED_POSTS_STORAGE_KEY = "blog-liked-posts"
+const POST_LIKE_UPDATED_EVENT = "blog-post-like-updated"
 
-interface PostLikeCardProps {
+interface PostLikeStatsProps {
   postId: string
   initialLikes: number
   commentCount: number
+  className?: string
+}
+
+interface PostLikeButtonProps {
+  postId: string
+  initialLikes: number
+  className?: string
+}
+
+interface PostLikeUpdatedDetail {
+  postId: string
+  likes: number
 }
 
 function readLikedPosts(): string[] {
@@ -43,15 +56,87 @@ function persistLikedPost(postId: string) {
   window.localStorage.setItem(LIKED_POSTS_STORAGE_KEY, JSON.stringify([...likedPosts, postId]))
 }
 
-export function PostLikeCard({ postId, initialLikes, commentCount }: PostLikeCardProps) {
+function dispatchLikeUpdated(postId: string, likes: number) {
+  window.dispatchEvent(
+    new CustomEvent<PostLikeUpdatedDetail>(POST_LIKE_UPDATED_EVENT, {
+      detail: { postId, likes },
+    }),
+  )
+}
+
+function usePostLikeState(postId: string, initialLikes: number) {
   const [likes, setLikes] = useState(initialLikes)
   const [liked, setLiked] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
+    const syncLikedState = () => {
+      setLiked(readLikedPosts().includes(postId))
+    }
+
     setLikes(initialLikes)
-    setLiked(readLikedPosts().includes(postId))
+    syncLikedState()
+
+    const handleLikeUpdated = (event: Event) => {
+      const { detail } = event as CustomEvent<PostLikeUpdatedDetail>
+      if (detail.postId !== postId) {
+        return
+      }
+
+      setLikes(detail.likes)
+      syncLikedState()
+    }
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key && event.key !== LIKED_POSTS_STORAGE_KEY) {
+        return
+      }
+
+      syncLikedState()
+    }
+
+    window.addEventListener(POST_LIKE_UPDATED_EVENT, handleLikeUpdated as EventListener)
+    window.addEventListener("storage", handleStorage)
+
+    return () => {
+      window.removeEventListener(POST_LIKE_UPDATED_EVENT, handleLikeUpdated as EventListener)
+      window.removeEventListener("storage", handleStorage)
+    }
   }, [initialLikes, postId])
+
+  return {
+    liked,
+    likes,
+    setLiked,
+    setLikes,
+  }
+}
+
+export function PostEngagementStats({ postId, initialLikes, commentCount, className }: PostLikeStatsProps) {
+  const { liked, likes } = usePostLikeState(postId, initialLikes)
+
+  return (
+    <div className={cn("flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-neutral-slate-600", className)}>
+      <span
+        aria-label={`공감 ${likes.toLocaleString()}개`}
+        className="inline-flex items-center gap-2"
+      >
+        <Heart className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-neutral-slate-400")} />
+        <span className="text-neutral-slate-700">{likes.toLocaleString()}</span>
+      </span>
+      <span
+        aria-label={`댓글 ${commentCount.toLocaleString()}개`}
+        className="inline-flex items-center gap-2"
+      >
+        <MessageCircle className="h-4 w-4 text-neutral-slate-400" />
+        <span className="text-neutral-slate-700">{commentCount.toLocaleString()}</span>
+      </span>
+    </div>
+  )
+}
+
+export function PostLikeButton({ postId, initialLikes, className }: PostLikeButtonProps) {
+  const { likes, liked, setLiked, setLikes } = usePostLikeState(postId, initialLikes)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleLike = async () => {
     if (liked) {
@@ -67,8 +152,9 @@ export function PostLikeCard({ postId, initialLikes, commentCount }: PostLikeCar
 
     try {
       const result = await likePost(postId)
-      setLikes(result.likes)
       persistLikedPost(postId)
+      setLikes(result.likes)
+      dispatchLikeUpdated(postId, result.likes)
       toast.success("좋아요가 반영되었습니다.")
     } catch {
       setLiked(false)
@@ -80,47 +166,26 @@ export function PostLikeCard({ postId, initialLikes, commentCount }: PostLikeCar
   }
 
   return (
-    <section className="mb-6 rounded-2xl border border-neutral-slate-200 bg-white/85 p-4 shadow-sm">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold tracking-[0.2em] text-neutral-slate-500">공감</p>
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-slate-900">이 글이 도움이 됐다면 좋아요를 남겨주세요.</h2>
-            <p className="mt-1 text-sm text-neutral-slate-600">좋아요는 같은 브라우저에서 한 번만 반영됩니다.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-slate-600">
-            <span className="inline-flex items-center gap-2 rounded-full border border-neutral-slate-200 bg-neutral-slate-50 px-3 py-1">
-              <Heart className={cn("h-4 w-4", liked ? "fill-rose-500 text-rose-500" : "text-neutral-slate-400")} />
-              좋아요 {likes.toLocaleString()}
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-neutral-slate-200 bg-neutral-slate-50 px-3 py-1">
-              <MessageCircle className="h-4 w-4 text-neutral-slate-400" />
-              댓글 {commentCount.toLocaleString()}
-            </span>
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          size="sm"
-          onClick={handleLike}
-          disabled={isSubmitting || liked}
-          aria-pressed={liked}
-          className={cn(
-            "min-w-28 rounded-full px-4 shadow-sm md:self-end",
-            liked
-              ? "bg-rose-500 text-white hover:bg-rose-500"
-              : "bg-white text-rose-600 hover:bg-rose-50 hover:text-rose-700",
-          )}
-        >
-          {isSubmitting ? (
-            <LoaderCircle className="h-5 w-5 animate-spin" />
-          ) : (
-            <Heart className={cn("h-5 w-5", liked && "fill-current")} />
-          )}
-          {liked ? "좋아요 남김" : "좋아요 남기기"}
-        </Button>
-      </div>
-    </section>
+    <Button
+      type="button"
+      size="lg"
+      onClick={handleLike}
+      disabled={isSubmitting || liked}
+      aria-pressed={liked}
+      className={cn(
+        "min-w-36 rounded-full px-6 shadow-sm",
+        liked
+          ? "bg-rose-500 text-white hover:bg-rose-500"
+          : "bg-white text-rose-600 hover:bg-rose-50 hover:text-rose-700",
+        className,
+      )}
+    >
+      {isSubmitting ? (
+        <LoaderCircle className="h-5 w-5 animate-spin" />
+      ) : (
+        <Heart className={cn("h-5 w-5", liked && "fill-current")} />
+      )}
+      {liked ? "공감 완료" : "공감하기"}
+    </Button>
   )
 }
