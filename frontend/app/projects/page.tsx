@@ -34,7 +34,7 @@ export default async function ProjectsPage() {
       </header>
 
       <div className="container py-10 md:py-12">
-        <SectionHeading title="프로젝트" subtitle="제가 작업한 프로젝트들을 소개합니다" />
+        <SectionHeading title="프로젝트" subtitle="문제와 해결 과정을 한눈에" />
 
         {projects.length > 0 ? (
           <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -52,7 +52,7 @@ export default async function ProjectsPage() {
             ))}
           </div>
         ) : (
-          <div className="surface-default mt-12 py-10 text-center text-neutral-slate-500">표시할 프로젝트가 없습니다.</div>
+          <div className="surface-default mt-12 py-10 text-center text-neutral-slate-500">공개할 프로젝트를 준비 중입니다.</div>
         )}
       </div>
     </div>

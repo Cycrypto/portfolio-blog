@@ -132,7 +132,7 @@ export default function Portfolio() {
             <div className="flex flex-wrap gap-3 pt-2">
               <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
                 <Link href="/blog">
-                  블로그 보기 <BookOpen className="ml-2 h-4 w-4" />
+                  최근 글 보기 <BookOpen className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button
@@ -140,7 +140,7 @@ export default function Portfolio() {
                 className="border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
                 asChild
               >
-                <Link href="#contact">연락하기</Link>
+                <Link href="#contact">문의 남기기</Link>
               </Button>
             </div>
 
@@ -191,7 +191,7 @@ export default function Portfolio() {
 
             {hasPartialDataError && (
               <div className="surface-default flex flex-wrap items-center justify-between gap-3 p-4 text-sm md:max-w-[620px]">
-                <p className="text-neutral-slate-700">데이터 연결 상태가 불안정해 일부 정보가 기본값으로 표시됩니다.</p>
+                <p className="text-neutral-slate-700">일부 정보를 불러오지 못해 기본 정보로 표시하고 있습니다.</p>
                 <Button
                   variant="outline"
                   size="sm"
@@ -222,7 +222,7 @@ export default function Portfolio() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-blue-600">Snapshot</p>
+                    <p className="text-xs font-semibold tracking-[0.16em] text-brand-blue-600">한눈에 보기</p>
                     <p className="mt-1 text-xl font-bold text-neutral-slate-800">{profile.name}</p>
                     <p className="mt-1 text-sm text-neutral-slate-600">{profile.title}</p>
                   </div>
@@ -248,7 +248,7 @@ export default function Portfolio() {
                 </div>
 
                 <div className="mt-6">
-                  <p className="text-xs font-semibold text-neutral-slate-500">최근 글 미리보기</p>
+                  <p className="text-xs font-semibold text-neutral-slate-500">최근 글</p>
                   <div className="mt-3 space-y-2">
                     {heroRecentPosts.length > 0 ? (
                       heroRecentPosts.map((post) => (
@@ -273,7 +273,7 @@ export default function Portfolio() {
                       ))
                     ) : (
                       <div className="rounded-lg border border-brand-blue-200/70 bg-white px-3 py-3 text-sm text-neutral-slate-500">
-                        아직 게시된 글이 없습니다. 곧 업데이트됩니다.
+                        새 글을 준비 중입니다.
                       </div>
                     )}
                   </div>
@@ -291,7 +291,7 @@ export default function Portfolio() {
                     ))
                   ) : (
                     <span className="rounded-full border border-brand-blue-200/80 bg-brand-blue-50 px-3 py-1 text-xs font-medium text-brand-blue-700">
-                      핵심 기술 준비 중
+                      기술 스택 정리 중
                     </span>
                   )}
                 </div>
@@ -303,7 +303,7 @@ export default function Portfolio() {
 
       <section id="about" className="section-spacing">
         <div className="container">
-          <SectionHeading title="소개" subtitle="저를 빠르게 파악할 수 있도록" />
+          <SectionHeading title="소개" subtitle="핵심 정보만 빠르게" />
 
           <div className="mt-14 grid grid-cols-1 items-start gap-10 lg:grid-cols-2">
             <div className="surface-default relative aspect-square overflow-hidden">
@@ -320,7 +320,7 @@ export default function Portfolio() {
                 <div className="flex h-full w-full items-center justify-center bg-brand-blue-50 text-center">
                   <div>
                     <p className="text-lg font-semibold text-brand-blue-700">{profile.name}</p>
-                    <p className="mt-1 text-sm text-brand-blue-600">프로필 이미지를 설정하면 여기에 표시됩니다.</p>
+                    <p className="mt-1 text-sm text-brand-blue-600">프로필 이미지를 준비 중입니다.</p>
                   </div>
                 </div>
               )}
@@ -360,7 +360,7 @@ export default function Portfolio() {
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-neutral-slate-500">아직 등록된 기술 정보가 없습니다.</p>
+              <p className="mt-3 text-neutral-slate-500">기술 스택을 정리 중입니다.</p>
             )}
           </div>
         </div>
@@ -368,7 +368,7 @@ export default function Portfolio() {
 
       <section id="projects" className="section-spacing">
         <div className="container">
-          <SectionHeading title="대표 프로젝트" subtitle="핵심 결과 중심으로" />
+          <SectionHeading title="대표 프로젝트" subtitle="무엇을 만들었고 어떤 결과를 냈는지" />
 
           {featuredProjects.length > 0 ? (
             <>
@@ -389,16 +389,16 @@ export default function Portfolio() {
               <div className="mt-10 text-center">
                 <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
                   <Link href="/projects">
-                    모든 프로젝트 보기 <ArrowRight className="ml-2 h-4 w-4" />
+                    프로젝트 전체 보기 <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </div>
             </>
           ) : (
             <GlassmorphicCard className="mt-12 text-center">
-              <p className="text-neutral-slate-600">표시할 프로젝트가 아직 없습니다.</p>
+              <p className="text-neutral-slate-600">공개할 프로젝트를 준비 중입니다.</p>
               <Button className="mt-4 bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
-                <Link href="/projects">프로젝트 페이지로 이동</Link>
+                <Link href="/projects">프로젝트 목록 보기</Link>
               </Button>
             </GlassmorphicCard>
           )}
@@ -407,7 +407,7 @@ export default function Portfolio() {
 
       <section id="experience" className="section-spacing">
         <div className="container">
-          <SectionHeading title="경험" subtitle="경력과 성취" />
+          <SectionHeading title="경험" subtitle="어떤 역할을 맡아왔는지" />
 
           <div className="mt-12">
             <Timeline />
@@ -417,7 +417,7 @@ export default function Portfolio() {
 
       <section id="blog" className="section-spacing">
         <div className="container">
-          <SectionHeading title="최신 글" subtitle="핵심 주제만 먼저" />
+          <SectionHeading title="최신 글" subtitle="문제 해결 과정과 구현 기록" />
 
           {latestPosts.length > 0 ? (
             <>
@@ -429,16 +429,16 @@ export default function Portfolio() {
               <div className="mt-10 text-center">
                 <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
                   <Link href="/blog">
-                    모든 포스트 보기 <ArrowRight className="ml-2 h-4 w-4" />
+                    글 전체 보기 <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               </div>
             </>
           ) : (
             <GlassmorphicCard className="mt-12 text-center">
-              <p className="text-neutral-slate-600">아직 게시된 글이 없습니다.</p>
+              <p className="text-neutral-slate-600">새 글을 준비 중입니다.</p>
               <Button className="mt-4 bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
-                <Link href="/blog">블로그로 이동</Link>
+                <Link href="/blog">글 목록 보기</Link>
               </Button>
             </GlassmorphicCard>
           )}
@@ -447,12 +447,12 @@ export default function Portfolio() {
 
       <section id="contact" className="section-spacing">
         <div className="container">
-          <SectionHeading title="연락하기" subtitle="프로젝트/협업 문의" />
+          <SectionHeading title="연락하기" subtitle="협업 문의는 여기서" />
 
           <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-2">
             <GlassmorphicCard>
               <h3 className="mb-4 text-xl font-bold text-neutral-slate-800">연락처</h3>
-              <p className="mb-6 text-neutral-slate-600">프로젝트 제안, 협업, 채용 문의를 언제든 남겨주세요.</p>
+              <p className="mb-6 text-neutral-slate-600">협업이나 채용 관련 문의를 남겨주시면 확인 후 답변드리겠습니다.</p>
 
               <div className="space-y-4">
                 <div className="flex items-center gap-3">

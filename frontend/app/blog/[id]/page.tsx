@@ -35,6 +35,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const heroImage = normalizeImageUrl(post.image)
+  const currentPostSlug = post.slug && post.slug !== "null" ? post.slug : undefined
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
@@ -127,31 +128,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   <TiptapViewer contentHtml={post.contentHtml} />
                 </div>
               ) : (
-                <div className="rounded-lg bg-white p-8 shadow-sm">
-                  <h2 className="mb-4 text-2xl font-bold">포스트 내용</h2>
-                  <p className="mb-4 text-neutral-slate-600">
-                    이 포스트는 ID {post.id}로 생성되었습니다.
+                <div className="rounded-lg border border-neutral-slate-200 bg-white p-8 shadow-sm">
+                  <h2 className="mb-3 text-2xl font-bold text-neutral-slate-800">본문 준비 중</h2>
+                  <p className="text-neutral-slate-600">
+                    이 글의 본문을 아직 불러오지 못했습니다. 잠시 후 다시 확인해주세요.
                   </p>
-                  <div className="space-y-4">
-                    <div>
-                      <strong>제목:</strong> {post.title}
-                    </div>
-                    <div>
-                      <strong>작성자:</strong> {post.author}
-                    </div>
-                    <div>
-                      <strong>카테고리:</strong> {post.category}
-                    </div>
-                    <div>
-                      <strong>상태:</strong> {post.status}
-                    </div>
-                    <div>
-                      <strong>조회수:</strong> {post.views}
-                    </div>
-                    <div>
-                      <strong>댓글수:</strong> {post.comments}
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -162,7 +143,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               author={{
                 name: post.author,
                 avatar: undefined,
-                bio: "블로그 작성자",
+                bio: "개발 과정에서 확인한 내용과 구현 경험을 기록합니다.",
               }}
             />
 
@@ -174,7 +155,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-8">
               <TableOfContents headings={post.headings} />
-              <RelatedPosts currentSlug={resolvedParams.id} />
+              <RelatedPosts currentPostId={post.id} currentPostSlug={currentPostSlug} />
             </div>
           </div>
         </div>
