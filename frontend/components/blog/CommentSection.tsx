@@ -32,9 +32,22 @@ export function CommentSection({ postId }: CommentSectionProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [hasAdminSession, setHasAdminSession] = useState(false)
 
+  const hasAdminRole = (token: string | null) => {
+    if (!token || !TokenManager.isTokenValid(token)) {
+      return false
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]))
+      return Array.isArray(payload.roles) && payload.roles.includes("admin")
+    } catch {
+      return false
+    }
+  }
+
   useEffect(() => {
     void loadComments()
-    setHasAdminSession(Boolean(TokenManager.getToken()))
+    setHasAdminSession(hasAdminRole(TokenManager.getToken()))
   }, [postId])
 
   const loadComments = async () => {
