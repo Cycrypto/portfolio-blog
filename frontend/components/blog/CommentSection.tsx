@@ -211,13 +211,13 @@ export function CommentSection({ postId }: CommentSectionProps) {
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   className="min-h-[96px]"
-                  placeholder="수정할 내용을 입력해주세요..."
+                  placeholder="수정할 내용을 입력해주세요."
                 />
                 <Input
                   type="password"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
-                  placeholder="댓글 작성 시 설정한 비밀번호"
+                  placeholder="댓글 작성 때 입력한 비밀번호"
                 />
                 <div className="flex gap-2">
                   <Button type="button" size="sm" onClick={() => void handleEditSave(comment.id)} disabled={isSavingEdit}>
@@ -281,14 +281,14 @@ export function CommentSection({ postId }: CommentSectionProps) {
                 className="space-y-3 rounded-xl border border-brand-blue-100 bg-white/70 p-4"
               >
                 <Textarea
-                  placeholder="답글을 작성해주세요..."
+                  placeholder="답글을 남겨보세요."
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
                   className="min-h-[88px] bg-white/50 border-brand-blue-200 focus:border-brand-indigo-600"
                 />
                 <div className="flex gap-2">
                   <Button type="submit" size="sm" disabled={isSubmitting}>
-                    {isSubmitting ? "등록 중..." : "답글 등록"}
+                    {isSubmitting ? "등록 중..." : "답글 남기기"}
                   </Button>
                   <Button
                     type="button"
@@ -331,17 +331,17 @@ export function CommentSection({ postId }: CommentSectionProps) {
         className="space-y-4"
       >
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Input placeholder="이름" value={authorName} onChange={(e) => setAuthorName(e.target.value)} />
+          <Input placeholder="표시할 이름" value={authorName} onChange={(e) => setAuthorName(e.target.value)} />
           <Input
-            placeholder="비밀번호"
+            placeholder="수정/삭제용 비밀번호"
             type="password"
             value={authorPassword}
             onChange={(e) => setAuthorPassword(e.target.value)}
           />
         </div>
-        <p className="text-sm text-neutral-slate-500">작성 시 입력한 비밀번호로 댓글을 수정하거나 삭제할 수 있습니다.</p>
+        <p className="text-sm text-neutral-slate-500">입력한 비밀번호는 댓글을 수정하거나 삭제할 때 다시 사용됩니다.</p>
         <Textarea
-          placeholder="댓글을 작성해주세요..."
+          placeholder="의견을 남겨보세요."
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           className="min-h-[100px] border-brand-blue-200 bg-white/50 focus:border-brand-indigo-600"
@@ -352,7 +352,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
             disabled={!newComment.trim() || !authorName.trim() || !authorPassword.trim() || isSubmitting}
             className="bg-brand-blue-500 hover:bg-brand-blue-600"
           >
-            {isSubmitting ? "등록 중..." : "댓글 등록"}
+            {isSubmitting ? "등록 중..." : "댓글 남기기"}
           </Button>
         </div>
       </form>
@@ -360,13 +360,13 @@ export function CommentSection({ postId }: CommentSectionProps) {
       <div className="space-y-6">
         {isLoading ? (
           <div className="py-8 text-center">
-            <div className="text-neutral-slate-500">댓글을 불러오는 중...</div>
+            <div className="text-neutral-slate-500">댓글을 불러오는 중입니다...</div>
           </div>
         ) : comments.length > 0 ? (
           comments.map((comment) => renderComment(comment))
         ) : (
           <div className="py-8 text-center">
-            <div className="text-neutral-slate-500">아직 댓글이 없습니다. 첫 번째 댓글을 작성해보세요!</div>
+            <div className="text-neutral-slate-500">아직 댓글이 없습니다. 첫 댓글을 남겨보세요.</div>
           </div>
         )}
       </div>

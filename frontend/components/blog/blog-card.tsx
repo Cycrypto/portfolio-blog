@@ -80,7 +80,7 @@ export function BlogCard({ title, excerpt, date, readTime, tags, image, slug }: 
                 asChild
               >
                 <Link href={`/blog/${slug}`}>
-                  더 읽기
+                  글 보기
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </Button>

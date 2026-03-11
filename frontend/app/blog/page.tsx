@@ -159,7 +159,7 @@ export default function BlogPage() {
                 setCurrentPage(1)
                 setSelectedTag(value)
               }}
-              placeholder="제목, 내용, 요약에서 검색..."
+              placeholder="제목, 내용, 태그로 검색"
               className="w-full sm:w-80"
             />
             {isAdmin && (
@@ -180,7 +180,7 @@ export default function BlogPage() {
       </header>
 
       <div className="container py-10 md:py-12">
-        <SectionHeading title="블로그" subtitle="개발 경험과 지식을 공유합니다" />
+        <SectionHeading title="블로그" subtitle="문제 해결 과정과 구현 기록" />
 
         <div className="mb-6 mt-10">
           <BlogFilter
@@ -208,14 +208,14 @@ export default function BlogPage() {
               <span className="text-sm text-brand-blue-600">{posts.length}개</span>
             </div>
             <Button variant="ghost" size="sm" onClick={clearSearchState} className="w-fit text-brand-blue-700 hover:bg-brand-blue-50">
-              검색 초기화
+              필터 해제
             </Button>
           </div>
         )}
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-            <div className="col-span-full py-14 text-center text-neutral-slate-500">게시물을 불러오는 중...</div>
+            <div className="col-span-full py-14 text-center text-neutral-slate-500">글을 불러오는 중입니다...</div>
           ) : error ? (
             <div className="col-span-full">
               <div className="surface-default py-10 text-center">
@@ -233,7 +233,7 @@ export default function BlogPage() {
           ) : posts.length === 0 ? (
             <div className="col-span-full">
               <div className="surface-default py-10 text-center text-neutral-slate-500">
-                {searchKeyword || selectedTag ? "검색 결과가 없습니다." : "등록된 게시물이 없습니다."}
+                {searchKeyword || selectedTag ? "조건에 맞는 글이 없습니다." : "아직 공개한 글이 없습니다."}
               </div>
             </div>
           ) : (

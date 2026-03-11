@@ -14,6 +14,31 @@ interface ProjectPageProps {
   params: Promise<{ slug: string }>
 }
 
+function formatProjectDate(date?: string) {
+  if (!date) return ""
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "short",
+  }).format(new Date(date))
+}
+
+function formatProjectPeriod(startDate?: string, endDate?: string) {
+  if (!startDate && !endDate) {
+    return "일정 조율 중"
+  }
+
+  if (startDate && endDate) {
+    return `${formatProjectDate(startDate)} - ${formatProjectDate(endDate)}`
+  }
+
+  if (startDate) {
+    return `${formatProjectDate(startDate)}부터 진행`
+  }
+
+  return `${formatProjectDate(endDate)} 종료`
+}
+
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { slug } = await params
   let project: any = null
@@ -61,7 +86,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               <Button size="sm" className="bg-brand-blue-500 hover:bg-brand-blue-600" asChild>
                 <Link href={project.liveUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  라이브 데모
+                  서비스 보기
                 </Link>
               </Button>
             )}
@@ -87,9 +112,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               <div className="flex items-center gap-6 text-sm text-neutral-slate-500 mb-8">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  <span>
-                    {project.startDate || '시작일 미정'} {project.endDate && `- ${project.endDate}`}
-                  </span>
+                  <span>{formatProjectPeriod(project.startDate, project.endDate)}</span>
                 </div>
               </div>
             </div>
@@ -101,7 +124,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             {project.longDescription && (
               <div className="prose prose-lg max-w-none">
                 <div className="bg-white p-8 rounded-lg shadow-sm">
-                  <h2 className="text-2xl font-bold mb-4">프로젝트 개요</h2>
+                  <h2 className="text-2xl font-bold mb-4">프로젝트 소개</h2>
                   <p className="text-neutral-slate-600 leading-relaxed whitespace-pre-line">{project.longDescription}</p>
                 </div>
               </div>
@@ -113,15 +136,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               <div className="relative overflow-hidden rounded-xl bg-white/80 backdrop-blur-sm border border-brand-blue-200/50 p-6">
                 <div className="absolute -inset-1 bg-gradient-to-r from-brand-blue-500/10 to-brand-blue-700/10 rounded-xl blur opacity-25"></div>
                 <div className="relative space-y-4">
-                  <h3 className="text-lg font-semibold text-neutral-slate-800">프로젝트 정보</h3>
+                  <h3 className="text-lg font-semibold text-neutral-slate-800">한눈에 보기</h3>
                   <div className="space-y-3 text-sm">
                     <div>
-                      <span className="text-neutral-slate-500">상태:</span>
-                      <span className="ml-2 font-medium text-brand-blue-700">{project.status || '정보 없음'}</span>
+                      <span className="text-neutral-slate-500">진행 상태:</span>
+                      <span className="ml-2 font-medium text-brand-blue-700">{project.status || '정리 중'}</span>
                     </div>
                     <div>
-                      <span className="text-neutral-slate-500">기술 스택:</span>
-                      <span className="ml-2 font-medium">{(project.techStack || []).join(', ') || '없음'}</span>
+                      <span className="text-neutral-slate-500">사용 기술:</span>
+                      <span className="ml-2 font-medium">{(project.techStack || []).join(', ') || '기술 정보 정리 중'}</span>
                     </div>
                   </div>
                 </div>

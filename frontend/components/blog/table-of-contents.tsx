@@ -40,7 +40,7 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
         <div className="absolute -inset-1 bg-gradient-to-r from-brand-blue-500/10 to-brand-blue-700/10 rounded-xl blur opacity-25"></div>
         <div className="relative">
           <h3 className="text-lg font-semibold mb-4 text-neutral-slate-800">목차</h3>
-          <p className="text-neutral-slate-500 text-sm">목차가 없습니다.</p>
+          <p className="text-neutral-slate-500 text-sm">짧은 글이라 목차 없이 읽을 수 있습니다.</p>
         </div>
       </div>
     )

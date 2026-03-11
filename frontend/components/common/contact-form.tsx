@@ -36,13 +36,13 @@ export function ContactForm() {
 
     try {
       await submitContact(payload)
-      toast.success("메시지가 전송되었습니다!", {
-        description: "연락해 주셔서 감사합니다. 빠른 시일 내에 답변드리겠습니다.",
+      toast.success("문의가 접수되었습니다.", {
+        description: "내용을 확인한 뒤 답변드리겠습니다.",
       })
       form.reset()
     } catch (error) {
       console.error('Failed to submit contact form', error)
-      toast.error("메시지 전송에 실패했습니다.", {
+      toast.error("문의 전송에 실패했습니다.", {
         description: "잠시 후 다시 시도해주세요.",
       })
     } finally {
@@ -59,7 +59,7 @@ export function ContactForm() {
     >
       <div className="surface-elevated p-6">
         <div>
-          <h3 className="text-2xl font-bold mb-6 text-neutral-slate-800">메시지 보내기</h3>
+          <h3 className="text-2xl font-bold mb-6 text-neutral-slate-800">문의 남기기</h3>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
@@ -74,7 +74,7 @@ export function ContactForm() {
               <Input
                 name="email"
                 type="email"
-                placeholder="이메일"
+                placeholder="답변 받을 이메일"
                 required
                 className="bg-white/50 border-brand-blue-200 focus:border-brand-indigo-600 focus:ring-brand-indigo-600/20"
               />
@@ -82,7 +82,7 @@ export function ContactForm() {
             <div className="space-y-2">
               <Input
                 name="subject"
-                placeholder="제목"
+                placeholder="문의 주제"
                 required
                 className="bg-white/50 border-brand-blue-200 focus:border-brand-indigo-600 focus:ring-brand-indigo-600/20"
               />
@@ -90,7 +90,7 @@ export function ContactForm() {
             <div className="space-y-2">
               <Textarea
                 name="message"
-                placeholder="메시지"
+                placeholder="문의 내용을 적어주세요"
                 rows={5}
                 required
                 className="bg-white/50 border-brand-blue-200 focus:border-brand-indigo-600 focus:ring-brand-indigo-600/20"
@@ -105,7 +105,7 @@ export function ContactForm() {
                 <>전송 중...</>
               ) : (
                 <>
-                  메시지 전송 <Send className="ml-2 h-4 w-4" />
+                  문의 보내기 <Send className="ml-2 h-4 w-4" />
                 </>
               )}
             </Button>

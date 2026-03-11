@@ -21,6 +21,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ id, title, description = "", tags = [], image, demoUrl = "", repoUrl = "" }: ProjectCardProps) {
   const normalizedImage = normalizeImageUrl(image)
+  const projectDescription = description.trim() || "프로젝트 요약을 준비 중입니다."
 
   return (
     <motion.div
@@ -50,7 +51,7 @@ export function ProjectCard({ id, title, description = "", tags = [], image, dem
                 {title}
               </h3>
             </Link>
-            <p className="text-neutral-slate-600 mb-4">{description}</p>
+            <p className="text-neutral-slate-600 mb-4 line-clamp-3">{projectDescription}</p>
 
             <div className="flex flex-wrap gap-2 mb-6">
               {tags.map((tag, index) => (
@@ -65,24 +66,28 @@ export function ProjectCard({ id, title, description = "", tags = [], image, dem
             </div>
 
             <div className="flex justify-between mt-auto pt-4 border-t border-neutral-slate-200">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-neutral-slate-600 hover:text-neutral-slate-800 hover:bg-slate-100"
-                asChild
-              >
-                <Link href={repoUrl || '#'} target="_blank" rel="noopener noreferrer">
-                  <Github className="mr-2 h-4 w-4" />
-                  코드
-                </Link>
-              </Button>
+              {repoUrl ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-neutral-slate-600 hover:text-neutral-slate-800 hover:bg-slate-100"
+                  asChild
+                >
+                  <Link href={repoUrl} target="_blank" rel="noopener noreferrer">
+                    <Github className="mr-2 h-4 w-4" />
+                    코드 보기
+                  </Link>
+                </Button>
+              ) : (
+                <span className="inline-flex items-center text-sm text-neutral-slate-400">코드 비공개</span>
+              )}
               <Button
                 size="sm"
                 className="bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 hover:from-brand-blue-600 hover:to-brand-blue-900 border-0"
                 asChild
               >
                 <Link href={demoUrl || `/projects/${id}`} target={demoUrl ? "_blank" : undefined} rel={demoUrl ? "noopener noreferrer" : undefined}>
-                  {demoUrl ? "라이브 데모" : "자세히 보기"}
+                  {demoUrl ? "서비스 보기" : "자세히 보기"}
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

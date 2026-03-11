@@ -83,10 +83,10 @@ export function PostLikeCard({ postId, initialLikes, commentCount }: PostLikeCar
     <section className="mb-6 rounded-2xl border border-neutral-slate-200 bg-white/85 p-4 shadow-sm">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-slate-500">Reaction</p>
+          <p className="text-xs font-semibold tracking-[0.2em] text-neutral-slate-500">공감</p>
           <div>
-            <h2 className="text-lg font-semibold text-neutral-slate-900">이 글이 괜찮았다면 가볍게 좋아요를 남겨주세요.</h2>
-            <p className="mt-1 text-sm text-neutral-slate-600">좋아요는 브라우저 기준으로 한 번만 반영됩니다.</p>
+            <h2 className="text-lg font-semibold text-neutral-slate-900">이 글이 도움이 됐다면 좋아요를 남겨주세요.</h2>
+            <p className="mt-1 text-sm text-neutral-slate-600">좋아요는 같은 브라우저에서 한 번만 반영됩니다.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-slate-600">
             <span className="inline-flex items-center gap-2 rounded-full border border-neutral-slate-200 bg-neutral-slate-50 px-3 py-1">
@@ -118,7 +118,7 @@ export function PostLikeCard({ postId, initialLikes, commentCount }: PostLikeCar
           ) : (
             <Heart className={cn("h-5 w-5", liked && "fill-current")} />
           )}
-          {liked ? "좋아요 완료" : "좋아요"}
+          {liked ? "좋아요 남김" : "좋아요 남기기"}
         </Button>
       </div>
     </section>
