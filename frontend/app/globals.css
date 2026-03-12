@@ -198,6 +198,46 @@
   @apply flex items-center gap-1 bg-gray-900 rounded-lg shadow-lg p-1;
 }
 
+.notion-table-menu {
+  @apply flex flex-wrap items-center gap-2 bg-white border border-brand-indigo-500 rounded-xl shadow-lg p-2;
+  max-width: min(90vw, 860px);
+}
+
+.notion-table-group {
+  @apply flex items-center gap-1 rounded-lg bg-gray-50 border border-gray-200 px-2 py-1;
+}
+
+.notion-table-label {
+  @apply text-[11px] font-semibold text-gray-500;
+}
+
+.notion-table-action,
+.notion-table-stepper {
+  @apply h-8 px-2 rounded-md border border-transparent bg-white text-sm text-gray-700 transition-colors;
+}
+
+.notion-table-action:hover,
+.notion-table-stepper:hover {
+  @apply bg-blue-50 text-blue-700 border-blue-200;
+}
+
+.notion-table-action[data-active="true"] {
+  @apply bg-gray-900 text-white border-gray-900;
+}
+
+.notion-table-action.destructive:hover {
+  @apply bg-red-50 text-red-600 border-red-200;
+}
+
+.notion-table-action:disabled,
+.notion-table-stepper:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.notion-table-input {
+  @apply h-8 w-20 rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-700;
+}
+
 .notion-floating-menu {
   @apply flex items-center gap-1 bg-white border border-brand-indigo-500 rounded-lg shadow-lg p-1;
 }
@@ -334,13 +374,40 @@
   @apply w-full border-collapse my-4 text-black;
 }
 
+.notion-content .tableWrapper {
+  @apply relative my-4 overflow-x-auto rounded-lg;
+}
+
 .notion-content th,
 .notion-content td {
-  @apply border border-brand-indigo-500 px-4 py-2 text-black;
+  @apply border border-brand-indigo-500 px-4 py-2 text-black align-top;
+  position: relative;
 }
 
 .notion-content th {
   @apply bg-gray-100 font-bold text-black;
+}
+
+.notion-content .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(37, 99, 235, 0.5);
+  pointer-events: none;
+}
+
+.notion-content .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 6px;
+  background: rgba(37, 99, 235, 0.18);
+  pointer-events: none;
+}
+
+.notion-content.resize-cursor {
+  cursor: col-resize;
 }
 
 /* Highlight (형광펜) styles */

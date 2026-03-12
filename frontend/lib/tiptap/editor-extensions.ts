@@ -10,16 +10,15 @@ import HorizontalRule from "@tiptap/extension-horizontal-rule"
 import Placeholder from "@tiptap/extension-placeholder"
 import { Table } from "@tiptap/extension-table"
 import TableRow from "@tiptap/extension-table-row"
-import TableCell from "@tiptap/extension-table-cell"
-import TableHeader from "@tiptap/extension-table-header"
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
 import { lowlight } from "lowlight"
 import { TextStyle } from "@tiptap/extension-text-style"
 import { Color } from "@tiptap/extension-color"
-import { ResizableImage } from "./resizable-image.tsx"
+import { ResizableImage } from "./resizable-image"
 import Mathematics from "@tiptap/extension-mathematics"
 import Youtube from "@tiptap/extension-youtube"
 import TextAlign from "@tiptap/extension-text-align"
+import { TableCell, TableHeader } from "./table-extensions"
 
 const taskItemInputRegex = /^\s*(\[( |x|X)\])\s$/
 

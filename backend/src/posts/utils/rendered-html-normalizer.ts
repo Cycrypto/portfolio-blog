@@ -5,6 +5,9 @@ export function sanitizeStyleAttribute(styleValue: string): string | null {
     const colorMatch = styleValue.match(/color:\s*(#[0-9a-f]{3,8}|rgba?\([^\)]+\)|hsla?\([^\)]+\))/i);
     const alignMatch = styleValue.match(/text-align:\s*(left|center|right|justify)/i);
     const declarations: string[] = [];
+    const sizeMatches = Array.from(
+        styleValue.matchAll(/(?:^|;)\s*(width|min-width|height)\s*:\s*(\d+(?:\.\d+)?(?:px|%))/gi),
+    );
 
     if (colorMatch) {
         declarations.push(colorMatch[0]);
@@ -13,6 +16,13 @@ export function sanitizeStyleAttribute(styleValue: string): string | null {
     if (alignMatch) {
         declarations.push(`text-align: ${alignMatch[1].toLowerCase()}`);
     }
+
+    sizeMatches.forEach((match) => {
+        const declaration = `${match[1].toLowerCase()}: ${match[2]}`;
+        if (!declarations.includes(declaration)) {
+            declarations.push(declaration);
+        }
+    });
 
     return declarations.length > 0 ? declarations.join('; ') : null;
 }

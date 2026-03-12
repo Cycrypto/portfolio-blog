@@ -3,10 +3,14 @@ import { normalizeRenderedHtml, sanitizeStyleAttribute } from './rendered-html-n
 describe('rendered-html-normalizer', () => {
     describe('sanitizeStyleAttribute', () => {
         it('preserves allowed alignment styles', () => {
-            const style = sanitizeStyleAttribute('text-align: center; color: rgb(255, 0, 0); position: absolute');
+            const style = sanitizeStyleAttribute(
+                'text-align: center; color: rgb(255, 0, 0); min-width: 180px; height: 72px; position: absolute',
+            );
 
             expect(style).toContain('text-align: center');
             expect(style).toContain('color: rgb(255, 0, 0)');
+            expect(style).toContain('min-width: 180px');
+            expect(style).toContain('height: 72px');
             expect(style).not.toContain('position: absolute');
         });
     });

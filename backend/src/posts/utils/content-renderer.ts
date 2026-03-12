@@ -13,8 +13,6 @@ import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
 import Mathematics from '@tiptap/extension-mathematics';
 import Youtube from '@tiptap/extension-youtube';
 import TextAlign from '@tiptap/extension-text-align';
@@ -24,6 +22,7 @@ import { HeadingItem, injectHeadingIds } from './heading-processor';
 import { JSDOM } from 'jsdom';
 import { normalizeUrl } from '../../common/utils/url.util';
 import { normalizeRenderedHtml, sanitizeStyleAttribute } from './rendered-html-normalizer';
+import { TableCell, TableHeader } from './table-extensions';
 
 // Setup DOM environment for Tiptap in Node.js
 if (typeof window === 'undefined') {
@@ -170,7 +169,7 @@ const PURIFY_CONFIG = {
         'a', 'img', 'iframe',
         'ul', 'ol', 'li',
         'blockquote', 'code', 'pre',
-        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td', 'colgroup', 'col',
         'div', 'span', 'hr', 'mark', 'input', 'label',
         'math', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'annotation',
     ],
