@@ -180,7 +180,25 @@ export function TiptapEditor({
 
   const insertTable = () => {
     if (!editor) return
-    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    const rowsInput = window.prompt("표 행 수를 입력하세요 (헤더 포함, 1-10)", "3")
+    if (rowsInput === null) {
+      return
+    }
+
+    const colsInput = window.prompt("표 열 수를 입력하세요 (1-10)", "3")
+    if (colsInput === null) {
+      return
+    }
+
+    const rows = Number.parseInt(rowsInput, 10)
+    const cols = Number.parseInt(colsInput, 10)
+
+    if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows < 1 || cols < 1 || rows > 10 || cols > 10) {
+      reportError("표 크기는 1에서 10 사이의 숫자로 입력해주세요.")
+      return
+    }
+
+    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
   }
 
   const applyInsertDialog = () => {
@@ -331,6 +349,24 @@ export function TiptapEditor({
           title="제목 2"
         >
           <Heading2 className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          className="notion-toolbar-button"
+          data-active={editor.isActive("heading", { level: 3 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          title="제목 3"
+        >
+          <span className="text-xs font-semibold">H3</span>
+        </button>
+        <button
+          type="button"
+          className="notion-toolbar-button"
+          data-active={editor.isActive("heading", { level: 4 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+          title="제목 4"
+        >
+          <span className="text-xs font-semibold">H4</span>
         </button>
         <div className="w-px h-6 bg-gray-300 mx-1" />
         <button
@@ -617,6 +653,20 @@ export function TiptapEditor({
             className="notion-menu-button"
           >
             <Heading2 className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            className="notion-menu-button"
+          >
+            <span className="text-xs font-semibold">H3</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+            className="notion-menu-button"
+          >
+            <span className="text-xs font-semibold">H4</span>
           </button>
           <button
             type="button"

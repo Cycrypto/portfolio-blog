@@ -23,6 +23,7 @@ import { marked } from 'marked';
 import { HeadingItem, injectHeadingIds } from './heading-processor';
 import { JSDOM } from 'jsdom';
 import { normalizeUrl } from '../../common/utils/url.util';
+import { normalizeRenderedHtml, sanitizeStyleAttribute } from './rendered-html-normalizer';
 
 // Setup DOM environment for Tiptap in Node.js
 if (typeof window === 'undefined') {
@@ -53,11 +54,11 @@ purify.addHook('uponSanitizeAttribute', (node, data) => {
     }
 
     if (attrName === 'style') {
-        const allowed = normalizedAttrValue.match(/color:\s*(#[0-9a-f]{3,8}|rgba?\([^\)]+\)|hsla?\([^\)]+\))/i);
-        if (!allowed) {
+        const sanitizedStyle = sanitizeStyleAttribute(rawAttrValue);
+        if (!sanitizedStyle) {
             data.keepAttr = false;
         } else {
-            data.attrValue = allowed[0];
+            data.attrValue = sanitizedStyle;
         }
         return;
     }
@@ -83,7 +84,7 @@ const viewerExtensions = [
         codeBlock: false,
         horizontalRule: false,
         heading: {
-            levels: [1, 2, 3],
+            levels: [1, 2, 3, 4],
         },
     }),
     Underline,
@@ -238,7 +239,8 @@ export function convertMarkdownToTiptapJSON(markdown: string): JSONContent {
 }
 
 export function sanitizeContentHtml(html: string): string {
-    return purify.sanitize(html, PURIFY_CONFIG);
+    const sanitizedHtml = purify.sanitize(html, PURIFY_CONFIG);
+    return normalizeRenderedHtml(sanitizedHtml);
 }
 
 function extractPlainText(html: string): string {

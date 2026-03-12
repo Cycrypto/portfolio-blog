@@ -245,6 +245,10 @@
   @apply text-3xl font-bold mb-2 mt-4 text-black;
 }
 
+.notion-content h4 {
+  @apply text-2xl font-semibold mb-2 mt-4 text-black;
+}
+
 .notion-content p {
   @apply text-base leading-relaxed mb-4 text-black;
 }
