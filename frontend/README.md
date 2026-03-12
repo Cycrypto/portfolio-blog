@@ -43,12 +43,26 @@ To run this project locally, follow these steps:
    npm install
    \`\`\`
 
-4. Run the development server:
+4. Configure environment variables:
+   \`\`\`bash
+   cp .env.example .env.local
+   \`\`\`
+
+5. Run the development server:
    \`\`\`bash
    npm run dev
    \`\`\`
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser to view the portfolio.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser to view the portfolio.
+
+## Analytics
+
+Umami is optional and only loads when both variables below are set.
+
+- `NEXT_PUBLIC_UMAMI_SCRIPT_URL`
+- `NEXT_PUBLIC_UMAMI_WEBSITE_ID`
+
+Use `NEXT_PUBLIC_UMAMI_DOMAINS` when you want Umami to accept only specific production domains.
 
 ## Customization
 

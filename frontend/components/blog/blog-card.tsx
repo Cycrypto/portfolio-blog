@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { trackEvent } from "@/lib/analytics/track"
 import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface BlogCardProps {
@@ -17,9 +18,19 @@ interface BlogCardProps {
   tags: string[]
   image?: string
   slug: string
+  trackingLocation?: string
 }
 
-export function BlogCard({ title, excerpt, date, readTime, tags, image, slug }: BlogCardProps) {
+export function BlogCard({
+  title,
+  excerpt,
+  date,
+  readTime,
+  tags,
+  image,
+  slug,
+  trackingLocation = "blog_list_card",
+}: BlogCardProps) {
   const normalizedImage = normalizeImageUrl(image)
 
   return (
@@ -79,7 +90,16 @@ export function BlogCard({ title, excerpt, date, readTime, tags, image, slug }: 
                 className="text-brand-blue-600 hover:text-brand-blue-700 hover:bg-brand-blue-50 p-0 h-auto font-medium"
                 asChild
               >
-                <Link href={`/blog/${slug}`}>
+                <Link
+                  href={`/blog/${slug}`}
+                  onClick={() => {
+                    trackEvent("cta_click", {
+                      location: trackingLocation,
+                      target: "blog",
+                      content_id: slug,
+                    })
+                  }}
+                >
                   글 보기
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
