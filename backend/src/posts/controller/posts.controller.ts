@@ -150,6 +150,20 @@ export class PostsController {
     return { likes };
   }
 
+  @HttpPost(':id/view')
+  @ApiOperation({ summary: '포스트 조회수 증가' })
+  @ApiParam({ name: 'id', description: '포스트 ID 또는 slug' })
+  @ApiResponse({ status: 200, description: '조회수가 증가됨' })
+  @ApiResponse({ status: 404, description: '포스트를 찾을 수 없음' })
+  async viewPost(@Param('id') id: string): Promise<{ views: number }> {
+    const views = await this.postsService.incrementViews(id);
+    if (views === null) {
+      throw new NotFoundException(`Post with identifier '${id}' not found`);
+    }
+
+    return { views };
+  }
+
   @Get(':id/edit')
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtRoleGuard)

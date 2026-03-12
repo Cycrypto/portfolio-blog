@@ -239,3 +239,19 @@ export async function likePost(id: string): Promise<{ likes: number }> {
     throw error;
   }
 }
+
+export async function viewPost(id: string): Promise<{ views: number }> {
+  try {
+    const result = await apiRequest<{ data: { views: number } }>(
+      `/posts/${id}/view`,
+      {
+        method: 'POST',
+        requireAuth: false,
+      },
+    );
+
+    return result.data;
+  } catch (error) {
+    throw error;
+  }
+}

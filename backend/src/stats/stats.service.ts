@@ -19,13 +19,22 @@ export class StatsService {
   ) {}
 
   async getTotals() {
-    const [posts, projects, comments] = await Promise.all([
+    const [posts, projects, comments, viewsResult] = await Promise.all([
       this.postRepository.count(),
       this.projectRepository.count(),
       this.commentRepository.count({ where: { isDeleted: false } }),
+      this.postRepository
+        .createQueryBuilder('post')
+        .select('COALESCE(SUM(post.views), 0)', 'totalViews')
+        .getRawOne<{ totalViews: string | null }>(),
     ]);
 
-    return { posts, projects, comments };
+    return {
+      posts,
+      projects,
+      comments,
+      views: Number(viewsResult?.totalViews ?? 0),
+    };
   }
 
   async getRecentPosts(limit = 5) {

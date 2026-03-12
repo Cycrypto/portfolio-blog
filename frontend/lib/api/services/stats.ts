@@ -6,6 +6,7 @@ export interface StatsData {
     posts: number;
     projects: number;
     comments: number;
+    views: number;
   };
   recentPosts: Post[];
   recentProjects: Project[];

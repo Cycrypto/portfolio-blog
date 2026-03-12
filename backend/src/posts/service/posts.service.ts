@@ -329,6 +329,38 @@ export class PostsService {
     return updatedPost?.likes ?? post.likes + 1;
   }
 
+  async incrementViews(identifier: string): Promise<number | null> {
+    const normalizedIdentifier = identifier.trim();
+    if (!normalizedIdentifier) {
+      return null;
+    }
+
+    let post: Post | null = null;
+    if (/^\d+$/.test(normalizedIdentifier)) {
+      post = await this.postRepository.findOne({
+        where: { id: Number.parseInt(normalizedIdentifier, 10) },
+      });
+    }
+
+    if (!post) {
+      post = await this.postRepository.findOne({
+        where: { slug: normalizedIdentifier },
+      });
+    }
+
+    if (!post) {
+      return null;
+    }
+
+    await this.postRepository.increment({ id: post.id }, 'views', 1);
+
+    const updatedPost = await this.postRepository.findOne({
+      where: { id: post.id },
+    });
+
+    return updatedPost?.views ?? post.views + 1;
+  }
+
   private async ensureRenderedContent(post: Post | null): Promise<Post | null> {
     if (!post) {
       return null;
