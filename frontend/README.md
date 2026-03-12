@@ -61,8 +61,20 @@ Umami is optional and only loads when both variables below are set.
 
 - `NEXT_PUBLIC_UMAMI_SCRIPT_URL`
 - `NEXT_PUBLIC_UMAMI_WEBSITE_ID`
+- `NEXT_PUBLIC_UMAMI_DASHBOARD_URL`
 
 Use `NEXT_PUBLIC_UMAMI_DOMAINS` when you want Umami to accept only specific production domains.
+
+For the internal admin analytics page, also configure the server-side variables below:
+
+- `UMAMI_API_BASE_URL`
+- `UMAMI_WEBSITE_ID`
+- `UMAMI_API_KEY` or `UMAMI_API_TOKEN`
+
+Examples:
+
+- Umami Cloud: `UMAMI_API_BASE_URL=https://api.umami.is/v1` and `UMAMI_API_KEY=...`
+- Self-hosted: `UMAMI_API_BASE_URL=https://your-umami.example.com/api` and `UMAMI_API_TOKEN=...`
 
 ## Customization
 

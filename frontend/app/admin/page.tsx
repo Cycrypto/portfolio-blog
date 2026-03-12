@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowUpRight,
+  BarChart3,
   Calendar,
   Eye,
   FileText,
@@ -125,6 +126,60 @@ export default function AdminDashboard() {
           </Link>
         ))}
       </div>
+
+      <Card className="surface-default mb-6 shadow-none">
+        <CardHeader className="border-b border-brand-blue-100">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-xl text-neutral-slate-800">행동 통계</CardTitle>
+              <CardDescription>Umami에서 프로젝트 관심, 글 몰입, 문의 전환 퍼널을 확인합니다.</CardDescription>
+            </div>
+            <Button asChild variant="outline" className="border-brand-blue-200 text-brand-blue-700">
+              <Link href="/admin/analytics">
+                열기
+                <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-5">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-brand-blue-50 p-2">
+                  <BarChart3 className="h-4 w-4 text-brand-blue-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-neutral-slate-800">프로젝트 관심</p>
+                  <p className="mt-1 text-xs text-neutral-slate-500">카드 클릭, 상세 진입, 서비스/코드 보기</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-brand-blue-50 p-2">
+                  <Eye className="h-4 w-4 text-brand-blue-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-neutral-slate-800">콘텐츠 몰입</p>
+                  <p className="mt-1 text-xs text-neutral-slate-500">검색, 태그 필터, 읽기 완료, 공유, 좋아요</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-brand-blue-50 p-2">
+                  <MessageSquare className="h-4 w-4 text-brand-blue-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-neutral-slate-800">리드 전환</p>
+                  <p className="mt-1 text-xs text-neutral-slate-500">문의 폼 시작과 실제 문의 성공 분리 추적</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <Card className="surface-default shadow-none">
