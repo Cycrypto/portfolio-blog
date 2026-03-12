@@ -22,6 +22,7 @@ import * as DOMPurify from 'isomorphic-dompurify';
 import { marked } from 'marked';
 import { HeadingItem, injectHeadingIds } from './heading-processor';
 import { JSDOM } from 'jsdom';
+import { normalizeUrl } from '../../common/utils/url.util';
 
 // Setup DOM environment for Tiptap in Node.js
 if (typeof window === 'undefined') {
@@ -34,7 +35,8 @@ const purify = (DOMPurify as any).default ?? DOMPurify;
 
 purify.addHook('uponSanitizeAttribute', (node, data) => {
     const attrName = data.attrName;
-    const attrValue = String(data.attrValue || '').trim().toLowerCase();
+    const rawAttrValue = String(data.attrValue || '').trim();
+    const normalizedAttrValue = rawAttrValue.toLowerCase();
 
     if (attrName === 'srcset') {
         data.keepAttr = false;
@@ -42,14 +44,16 @@ purify.addHook('uponSanitizeAttribute', (node, data) => {
     }
 
     if (attrName === 'href') {
-        if (attrValue.startsWith('javascript:') || attrValue.startsWith('data:')) {
+        if (normalizedAttrValue.startsWith('javascript:') || normalizedAttrValue.startsWith('data:')) {
             data.keepAttr = false;
+            return;
         }
+        data.attrValue = normalizeUrl(rawAttrValue);
         return;
     }
 
     if (attrName === 'style') {
-        const allowed = attrValue.match(/color:\s*(#[0-9a-f]{3,8}|rgba?\([^\)]+\)|hsla?\([^\)]+\))/i);
+        const allowed = normalizedAttrValue.match(/color:\s*(#[0-9a-f]{3,8}|rgba?\([^\)]+\)|hsla?\([^\)]+\))/i);
         if (!allowed) {
             data.keepAttr = false;
         } else {
@@ -59,7 +63,7 @@ purify.addHook('uponSanitizeAttribute', (node, data) => {
     }
 
     if (attrName === 'src') {
-        if (attrValue.startsWith('javascript:')) {
+        if (normalizedAttrValue.startsWith('javascript:')) {
             data.keepAttr = false;
             return;
         }
@@ -67,7 +71,7 @@ purify.addHook('uponSanitizeAttribute', (node, data) => {
 
     if (node.tagName === 'IMG' && attrName === 'src') {
         const allowedPrefixes = ['http://', 'https://', '/', './', '../', 'data:image/'];
-        const isAllowed = allowedPrefixes.some((prefix) => attrValue.startsWith(prefix));
+        const isAllowed = allowedPrefixes.some((prefix) => normalizedAttrValue.startsWith(prefix));
         if (!isAllowed) {
             data.keepAttr = false;
         }
@@ -192,7 +196,7 @@ export function renderTiptapContent(json: JSONContent): RenderedContent {
     try {
         const rawHtml = generateHTML(json, viewerExtensions);
         const { html: htmlWithIds, headings } = injectHeadingIds(rawHtml);
-        const sanitizedHtml = purify.sanitize(htmlWithIds, PURIFY_CONFIG);
+        const sanitizedHtml = sanitizeContentHtml(htmlWithIds);
         const plainText = generateText(json, viewerExtensions);
         const wordCount = calculateWordCount(plainText);
         const readTime = calculateReadTime(plainText);
@@ -214,7 +218,7 @@ export function renderTiptapContent(json: JSONContent): RenderedContent {
 export function renderMarkdownContent(markdown: string): RenderedContent {
     const rawHtml = marked.parse(markdown, { breaks: true, gfm: true }) as string;
     const { html: htmlWithIds, headings } = injectHeadingIds(rawHtml);
-    const sanitizedHtml = purify.sanitize(htmlWithIds, PURIFY_CONFIG);
+    const sanitizedHtml = sanitizeContentHtml(htmlWithIds);
     const plainText = extractPlainText(sanitizedHtml);
     const wordCount = calculateWordCount(plainText);
     const readTime = calculateReadTime(plainText);
@@ -231,6 +235,10 @@ export function renderMarkdownContent(markdown: string): RenderedContent {
 export function convertMarkdownToTiptapJSON(markdown: string): JSONContent {
     const html = marked.parse(markdown, { breaks: true, gfm: true }) as string;
     return generateJSON(html, viewerExtensions);
+}
+
+export function sanitizeContentHtml(html: string): string {
+    return purify.sanitize(html, PURIFY_CONFIG);
 }
 
 function extractPlainText(html: string): string {

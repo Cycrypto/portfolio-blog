@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { getEditorExtensions } from "@/lib/tiptap/editor-extensions"
+import { normalizeUrl } from "@/lib/utils/url"
 import {
   Bold,
   Code2,
@@ -197,7 +198,7 @@ export function TiptapEditor({
         return
       }
 
-      editor.chain().focus().extendMarkRange("link").setLink({ href: value }).run()
+      editor.chain().focus().extendMarkRange("link").setLink({ href: normalizeUrl(value) }).run()
       resetInsertDialog()
       return
     }

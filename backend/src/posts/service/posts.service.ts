@@ -7,7 +7,7 @@ import { UpdatePostRequestDTO } from '../dto/request/update-post-request.dto';
 import { PostListItemDTO } from '../dto/response/post-list-item.dto';
 import { TagsService } from './tags.service';
 import { JSONContent } from '@tiptap/core';
-import { convertMarkdownToTiptapJSON, RenderedContent, renderMarkdownContent, renderTiptapContent } from '../utils/content-renderer';
+import { convertMarkdownToTiptapJSON, RenderedContent, renderMarkdownContent, renderTiptapContent, sanitizeContentHtml } from '../utils/content-renderer';
 import { generateSlug } from '../utils/slug-generator';
 
 @Injectable()
@@ -347,6 +347,16 @@ export class PostsService {
             return null;
         }
 
+        let shouldSave = false;
+
+        if (post.contentHtml) {
+            const normalizedHtml = sanitizeContentHtml(post.contentHtml);
+            if (normalizedHtml !== post.contentHtml) {
+                post.contentHtml = normalizedHtml;
+                shouldSave = true;
+            }
+        }
+
         if (!post.contentHtml || !post.plainText || !post.headings || !post.wordCount) {
             try {
                 const renderedContent = this.renderContentOrThrow(
@@ -359,7 +369,7 @@ export class PostsService {
                 post.headings = renderedContent.headings;
                 post.wordCount = renderedContent.wordCount;
                 post.readTime = post.readTime ?? renderedContent.readTime;
-                await this.postRepository.save(post);
+                shouldSave = true;
             } catch (error) {
                 console.error('Failed to backfill content cache:', error);
                 post.contentHtml = post.contentHtml ?? '<p class="text-red-500">콘텐츠를 불러올 수 없습니다.</p>';
@@ -367,6 +377,10 @@ export class PostsService {
                 post.plainText = post.plainText ?? '';
                 post.wordCount = post.wordCount ?? 0;
             }
+        }
+
+        if (shouldSave) {
+            await this.postRepository.save(post);
         }
 
         return post;

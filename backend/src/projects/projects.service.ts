@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Project } from './project.entity';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { normalizeUrlFieldsInPlace } from '../common/utils/url.util';
 
 @Injectable()
 export class ProjectsService {
@@ -13,6 +14,7 @@ export class ProjectsService {
   ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
+    normalizeUrlFieldsInPlace(createProjectDto, ['githubUrl', 'liveUrl']);
     const project = this.projectRepository.create({
       ...createProjectDto,
       techStack: createProjectDto.techStack || [],
@@ -23,17 +25,37 @@ export class ProjectsService {
   }
 
   async findAll(): Promise<Project[]> {
-    return this.projectRepository.find();
+    const projects = await this.projectRepository.find();
+    return Promise.all(
+      projects.map(async (project) => {
+        if (normalizeUrlFieldsInPlace(project, ['githubUrl', 'liveUrl'])) {
+          return this.projectRepository.save(project);
+        }
+
+        return project;
+      }),
+    );
   }
 
   async findOne(id: number): Promise<Project | null> {
-    return this.projectRepository.findOne({ where: { id } });
+    const project = await this.projectRepository.findOne({ where: { id } });
+
+    if (!project) {
+      return null;
+    }
+
+    if (normalizeUrlFieldsInPlace(project, ['githubUrl', 'liveUrl'])) {
+      return this.projectRepository.save(project);
+    }
+
+    return project;
   }
 
   async update(id: number, updateProjectDto: UpdateProjectDto): Promise<Project | null> {
     const project = await this.findOne(id);
     if (!project) return null;
 
+    normalizeUrlFieldsInPlace(updateProjectDto, ['githubUrl', 'liveUrl']);
     const merged = this.projectRepository.merge(project, updateProjectDto);
     return this.projectRepository.save(merged);
   }
