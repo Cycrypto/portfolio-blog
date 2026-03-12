@@ -1,87 +1,143 @@
-"use client"
+'use client';
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Calendar, Edit, Eye, FileText, PlusCircle, RefreshCw, Search, Trash2, User } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getPosts, deletePost, Post } from "@/lib/api"
-import { useToast } from "@/hooks/use-toast"
-import { AdminShell } from "@/components/admin/AdminShell"
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import {
+  Calendar,
+  Edit,
+  Eye,
+  FileText,
+  PlusCircle,
+  RefreshCw,
+  Search,
+  Trash2,
+  User,
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { getAdminPosts, deletePost, Post } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import { AdminShell } from '@/components/admin/AdminShell';
 
 export default function AdminPosts() {
-  const [posts, setPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const { toast } = useToast()
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { toast } = useToast();
 
   const fetchPosts = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      const { posts: list } = await getPosts()
-      setPosts(list)
+      setLoading(true);
+      setError(null);
+
+      const pageSize = 100;
+      let page = 1;
+      let mergedPosts: Post[] = [];
+      let nextTotalCount = 0;
+
+      while (true) {
+        const { posts: list, totalCount } = await getAdminPosts(page, pageSize);
+        mergedPosts = [...mergedPosts, ...list];
+        nextTotalCount = totalCount;
+
+        if (mergedPosts.length >= totalCount || list.length < pageSize) {
+          break;
+        }
+
+        page += 1;
+      }
+
+      setPosts(mergedPosts);
+      setTotalCount(nextTotalCount);
     } catch (err) {
-      setError("게시물을 불러오는데 실패했습니다.")
-      console.error("Error fetching posts:", err)
+      setError('게시물을 불러오는데 실패했습니다.');
+      console.error('Error fetching posts:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDelete = async (postId: number, postTitle: string) => {
     if (!confirm(`"${postTitle}" 포스트를 정말 삭제하시겠습니까?`)) {
-      return
+      return;
     }
 
     try {
-      setDeletingId(postId)
-      await deletePost(postId.toString())
+      setDeletingId(postId);
+      await deletePost(postId.toString());
 
       toast({
-        title: "삭제 성공",
-        description: "포스트가 성공적으로 삭제되었습니다.",
-      })
+        title: '삭제 성공',
+        description: '포스트가 성공적으로 삭제되었습니다.',
+      });
 
-      await fetchPosts()
+      await fetchPosts();
     } catch (err) {
       toast({
-        title: "삭제 실패",
-        description: "포스트 삭제 중 오류가 발생했습니다.",
-        variant: "destructive",
-      })
-      console.error("Error deleting post:", err)
+        title: '삭제 실패',
+        description: '포스트 삭제 중 오류가 발생했습니다.',
+        variant: 'destructive',
+      });
+      console.error('Error deleting post:', err);
     } finally {
-      setDeletingId(null)
+      setDeletingId(null);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchPosts()
-  }, [])
+    fetchPosts();
+  }, []);
 
   useEffect(() => {
     const handleFocus = () => {
-      fetchPosts()
-    }
+      fetchPosts();
+    };
 
-    window.addEventListener("focus", handleFocus)
-    return () => window.removeEventListener("focus", handleFocus)
-  }, [])
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   const filteredPosts = posts.filter((post) => {
-    const matchSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchStatus = statusFilter === "all" ? true : post.status === statusFilter
-    return matchSearch && matchStatus
-  })
+    const matchSearch = post.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchStatus =
+      statusFilter === 'all' ? true : post.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
 
   return (
     <AdminShell
@@ -90,14 +146,23 @@ export default function AdminPosts() {
       description="포스트 생성, 수정, 삭제를 관리합니다"
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={fetchPosts} disabled={loading} className="border-brand-blue-200">
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <Button
+            variant="outline"
+            onClick={fetchPosts}
+            disabled={loading}
+            className="border-brand-blue-200"
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
+            />
             새로고침
           </Button>
-          <Button asChild className="bg-brand-blue-600 text-white hover:bg-brand-blue-700">
+          <Button
+            asChild
+            className="bg-brand-blue-600 text-white hover:bg-brand-blue-700"
+          >
             <Link href="/admin/posts/new">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              새 포스트 작성
+              <PlusCircle className="mr-2 h-4 w-4" />새 포스트 작성
             </Link>
           </Button>
         </div>
@@ -107,8 +172,12 @@ export default function AdminPosts() {
         <CardHeader className="border-b border-brand-blue-100">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-              <CardTitle className="text-xl text-neutral-slate-800">포스트 목록</CardTitle>
-              <CardDescription>총 {filteredPosts.length}개의 포스트</CardDescription>
+              <CardTitle className="text-xl text-neutral-slate-800">
+                포스트 목록
+              </CardTitle>
+              <CardDescription>
+                전체 {totalCount}개 중 {filteredPosts.length}개 표시
+              </CardDescription>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <div className="relative sm:w-64">
@@ -139,7 +208,9 @@ export default function AdminPosts() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="mb-4 h-10 w-10 animate-spin rounded-full border-b-2 border-brand-blue-600" />
-              <div className="text-neutral-slate-500">게시물을 불러오는 중...</div>
+              <div className="text-neutral-slate-500">
+                게시물을 불러오는 중...
+              </div>
             </div>
           ) : error ? (
             <div className="py-12 text-center text-red-500">{error}</div>
@@ -167,7 +238,9 @@ export default function AdminPosts() {
                     <TableRow key={post.id}>
                       <TableCell>
                         <div>
-                          <div className="font-semibold text-neutral-slate-800">{post.title}</div>
+                          <div className="font-semibold text-neutral-slate-800">
+                            {post.title}
+                          </div>
                           <div className="mt-1 flex items-center text-xs text-neutral-slate-500">
                             <User className="mr-1 h-3 w-3" />
                             {post.author}
@@ -175,8 +248,20 @@ export default function AdminPosts() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={post.status === "published" ? "default" : post.status === "draft" ? "secondary" : "outline"}>
-                          {post.status === "published" ? "게시됨" : post.status === "draft" ? "임시저장" : "예약"}
+                        <Badge
+                          variant={
+                            post.status === 'published'
+                              ? 'default'
+                              : post.status === 'draft'
+                                ? 'secondary'
+                                : 'outline'
+                          }
+                        >
+                          {post.status === 'published'
+                            ? '게시됨'
+                            : post.status === 'draft'
+                              ? '임시저장'
+                              : '예약'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -236,12 +321,14 @@ export default function AdminPosts() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleDelete(post.id, post.title)}
+                                  onClick={() =>
+                                    handleDelete(post.id, post.title)
+                                  }
                                   disabled={deletingId === post.id}
                                   className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                                 >
                                   {deletingId === post.id ? (
-                                    "삭제 중..."
+                                    '삭제 중...'
                                   ) : (
                                     <>
                                       <Trash2 className="mr-1 h-3 w-3" />
@@ -266,5 +353,5 @@ export default function AdminPosts() {
         </CardContent>
       </Card>
     </AdminShell>
-  )
+  );
 }

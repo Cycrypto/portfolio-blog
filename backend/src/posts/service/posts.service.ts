@@ -1,407 +1,530 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post, PostContentType, PostStatus } from '../entity/post.entity';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { CreatePostRequestDTO } from '../dto/request/create-post-request.dto';
 import { UpdatePostRequestDTO } from '../dto/request/update-post-request.dto';
 import { PostListItemDTO } from '../dto/response/post-list-item.dto';
 import { TagsService } from './tags.service';
 import { JSONContent } from '@tiptap/core';
-import { convertMarkdownToTiptapJSON, RenderedContent, renderMarkdownContent, renderTiptapContent, sanitizeContentHtml } from '../utils/content-renderer';
+import { Comment } from '../../comments/entity/comment.entity';
+import {
+  convertMarkdownToTiptapJSON,
+  RenderedContent,
+  renderMarkdownContent,
+  renderTiptapContent,
+  sanitizeContentHtml,
+} from '../utils/content-renderer';
 import { generateSlug } from '../utils/slug-generator';
 
 @Injectable()
 export class PostsService {
-    constructor(
-        @InjectRepository(Post)
-        private postRepository: Repository<Post>,
-        private tagsService: TagsService,
-    ) {}
+  constructor(
+    @InjectRepository(Post)
+    private postRepository: Repository<Post>,
+    @InjectRepository(Comment)
+    private commentRepository: Repository<Comment>,
+    private tagsService: TagsService,
+  ) {}
 
-    async getPosts(
-        keyword: string = '',
-        tag: string = '',
-        page: number = 1,
-        pageSize: number = 10): Promise<PostListItemDTO[]> {
+  async getPosts(
+    keyword: string = '',
+    tag: string = '',
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<PostListItemDTO[]> {
+    return this.getPostList({
+      keyword,
+      tag,
+      page,
+      pageSize,
+      includeAllStatuses: false,
+    });
+  }
 
-        const queryBuilder = this.postRepository.createQueryBuilder('post')
-            .leftJoinAndSelect('post.tags', 'tags')
-            .select([
-                'post.id',
-                'post.title',
-                'post.slug',
-                'post.excerpt',
-                'post.contentType',
-                'post.image',
-                'post.status',
-                'post.author',
-                'post.category',
-                'post.publishDate',
-                'post.views',
-                'post.likes',
-                'post.comments',
-                'post.readTime',
-                'tags.id',
-                'tags.name',
-            ])
-            .where('post.status = :status', { status: PostStatus.PUBLISHED });
+  async getAdminPosts(
+    keyword: string = '',
+    tag: string = '',
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<PostListItemDTO[]> {
+    return this.getPostList({
+      keyword,
+      tag,
+      page,
+      pageSize,
+      includeAllStatuses: true,
+    });
+  }
 
-        if (keyword) {
-            queryBuilder.andWhere(
-                '(post.title LIKE :keyword OR post.plainText LIKE :keyword OR post.contentMarkdown LIKE :keyword OR post.excerpt LIKE :keyword)',
-                { keyword: `%${keyword}%` }
-            );
-        }
+  async getPostsCount(
+    keyword: string = '',
+    tag: string = '',
+    includeAllStatuses = false,
+  ): Promise<number> {
+    const queryBuilder = this.postRepository
+      .createQueryBuilder('post')
+      .leftJoin('post.tags', 'tags');
 
-        if (tag) {
-            queryBuilder.andWhere('tags.name = :tagName', { tagName: tag });
-        }
+    this.applyPostListFilters(queryBuilder, keyword, tag, includeAllStatuses);
 
-        queryBuilder.skip((page - 1) * pageSize).take(pageSize);
-        const posts = await queryBuilder.getMany();
+    return queryBuilder.select('post.id').distinct(true).getCount();
+  }
 
-        return posts.map(post => ({
-            id: post.id,
-            title: post.title,
-            slug: post.slug,
-            excerpt: post.excerpt,
-            contentType: post.contentType,
-            image: post.image,
-            tags: post.tags ? post.tags.map(tag => tag.name) : [],
-            status: post.status,
-            author: post.author,
-            category: post.category,
-            publishDate: post.publishDate,
-            views: post.views,
-            likes: post.likes,
-            comments: post.comments,
-            readTime: post.readTime
-        }));
+  async createPost(createPostDTO: CreatePostRequestDTO): Promise<Post> {
+    if (createPostDTO.contentType !== PostContentType.TIPTAP) {
+      throw new BadRequestException(
+        'Only tiptap contentType is allowed for new posts',
+      );
     }
 
-    async getPostsCount(keyword: string = '', tag: string = ''): Promise<number> {
-        const queryBuilder = this.postRepository.createQueryBuilder('post')
-            .leftJoin('post.tags', 'tags')
-            .where('post.status = :status', { status: PostStatus.PUBLISHED });
-
-        if (keyword) {
-            queryBuilder.andWhere(
-                '(post.title LIKE :keyword OR post.plainText LIKE :keyword OR post.contentMarkdown LIKE :keyword OR post.excerpt LIKE :keyword)',
-                { keyword: `%${keyword}%` }
-            );
-        }
-
-        if (tag) {
-            queryBuilder.andWhere('tags.name = :tagName', { tagName: tag });
-        }
-
-        return queryBuilder.select('post.id').distinct(true).getCount();
+    let tags: any[] = [];
+    if (createPostDTO.tags && createPostDTO.tags.length > 0) {
+      tags = await this.tagsService.findOrCreateTags(createPostDTO.tags);
     }
 
-    async createPost(createPostDTO: CreatePostRequestDTO): Promise<Post> {
-        if (createPostDTO.contentType !== PostContentType.TIPTAP) {
-            throw new BadRequestException('Only tiptap contentType is allowed for new posts');
-        }
+    const renderedContent = this.renderContentOrThrow(
+      createPostDTO.contentType,
+      createPostDTO.contentJson,
+      createPostDTO.contentMarkdown,
+    );
 
-        let tags: any[] = [];
-        if (createPostDTO.tags && createPostDTO.tags.length > 0) {
-            tags = await this.tagsService.findOrCreateTags(createPostDTO.tags);
-        }
+    // slug가 없으면 title에서 자동 생성
+    const slug = createPostDTO.slug || generateSlug(createPostDTO.title);
 
+    const postData = {
+      ...createPostDTO,
+      slug,
+      status: createPostDTO.status as PostStatus,
+      tags: tags,
+      contentJson: createPostDTO.contentJson as JSONContent,
+      contentMarkdown: null,
+      contentHtml: renderedContent.html,
+      plainText: renderedContent.plainText,
+      headings: renderedContent.headings,
+      wordCount: renderedContent.wordCount,
+      readTime: createPostDTO.readTime ?? renderedContent.readTime,
+    };
+    const post = this.postRepository.create(postData);
+    return this.postRepository.save(post);
+  }
+
+  async updatePost(
+    id: number,
+    updatePostDTO: UpdatePostRequestDTO,
+  ): Promise<Post | null> {
+    const post = await this.postRepository.findOne({
+      where: { id },
+      relations: ['tags'],
+    });
+
+    if (!post) {
+      console.log('Post not found');
+      return null;
+    }
+
+    console.log('Original post:', post);
+
+    if (post.tags && post.tags.length > 0) {
+      await this.tagsService.updateTagUsage(post.tags.map((tag) => tag.name));
+    }
+
+    let tags: any[] = [];
+    if (updatePostDTO.tags) {
+      tags =
+        updatePostDTO.tags.length > 0
+          ? await this.tagsService.findOrCreateTags(updatePostDTO.tags)
+          : [];
+    }
+
+    const { tags: _, ...updateData } = updatePostDTO;
+
+    if (updateData.status) {
+      updateData.status = updateData.status as PostStatus;
+    }
+
+    // slug가 없고 title이 변경되면 새로운 slug 생성
+    if (!post.slug && updatePostDTO.title) {
+      updateData.slug = generateSlug(updatePostDTO.title);
+    }
+
+    const shouldUpdateContent =
+      updatePostDTO.contentType !== undefined ||
+      updatePostDTO.contentJson !== undefined ||
+      updatePostDTO.contentMarkdown !== undefined;
+
+    let renderedContent: RenderedContent | null = null;
+    let contentType = post.contentType;
+    let contentJson = post.contentJson;
+    let contentMarkdown = post.contentMarkdown;
+
+    if (shouldUpdateContent) {
+      contentType = updatePostDTO.contentType ?? post.contentType;
+      contentJson = updatePostDTO.contentJson ?? post.contentJson;
+      contentMarkdown = updatePostDTO.contentMarkdown ?? post.contentMarkdown;
+
+      renderedContent = this.renderContentOrThrow(
+        contentType,
+        contentJson,
+        contentMarkdown,
+      );
+    }
+
+    const mergedPost = this.postRepository.merge(post, updateData);
+
+    if (shouldUpdateContent && renderedContent) {
+      mergedPost.contentType = contentType;
+      mergedPost.contentJson =
+        contentType === PostContentType.TIPTAP
+          ? (contentJson as JSONContent)
+          : null;
+      mergedPost.contentMarkdown =
+        contentType === PostContentType.MARKDOWN ? contentMarkdown : null;
+      mergedPost.contentHtml = renderedContent.html;
+      mergedPost.plainText = renderedContent.plainText;
+      mergedPost.headings = renderedContent.headings;
+      mergedPost.wordCount = renderedContent.wordCount;
+      mergedPost.readTime = updatePostDTO.readTime ?? renderedContent.readTime;
+    }
+
+    if (updatePostDTO.tags) {
+      mergedPost.tags = tags;
+    }
+
+    await this.postRepository.save(mergedPost);
+
+    return this.postRepository.findOne({
+      where: { id },
+      relations: ['tags'],
+    });
+  }
+
+  async convertMarkdownPostToTiptap(
+    id: number,
+    updatePostDTO: UpdatePostRequestDTO = {},
+  ): Promise<Post | null> {
+    const post = await this.postRepository.findOne({
+      where: { id },
+      relations: ['tags'],
+    });
+
+    if (!post) {
+      return null;
+    }
+
+    if (post.contentType === PostContentType.TIPTAP) {
+      throw new BadRequestException('이미 Tiptap 형식입니다.');
+    }
+
+    if (!post.contentMarkdown) {
+      throw new BadRequestException('변환할 Markdown 콘텐츠가 없습니다.');
+    }
+
+    const tiptapJson = convertMarkdownToTiptapJSON(post.contentMarkdown);
+    const originalText = renderMarkdownContent(
+      post.contentMarkdown,
+    ).plainText.replace(/\s+/g, '');
+    const convertedText = renderTiptapContent(tiptapJson).plainText.replace(
+      /\s+/g,
+      '',
+    );
+
+    if (originalText.length > 0 && convertedText.length === 0) {
+      throw new BadRequestException('변환 결과가 비어 있습니다.');
+    }
+
+    const {
+      contentType: _contentType,
+      contentJson: _contentJson,
+      contentMarkdown: _contentMarkdown,
+      ...metadataUpdate
+    } = updatePostDTO;
+
+    return this.updatePost(id, {
+      ...metadataUpdate,
+      contentType: PostContentType.TIPTAP,
+      contentJson: tiptapJson,
+    });
+  }
+
+  async deletePost(id: number): Promise<boolean> {
+    const post = await this.postRepository.findOne({
+      where: { id },
+      relations: ['tags'],
+    });
+    if (!post) {
+      return false;
+    }
+
+    if (post.tags && post.tags.length > 0) {
+      await this.tagsService.handleTagCleanupForDeletedPost(post.tags);
+    }
+
+    await this.postRepository.remove(post);
+    return true;
+  }
+
+  async getPostById(id: number): Promise<Post | null> {
+    const post = await this.postRepository.findOne({
+      where: { id },
+      relations: ['tags'],
+    });
+
+    return this.attachLiveCommentCount(await this.ensureRenderedContent(post));
+  }
+
+  async getPostByIdentifier(identifier: string): Promise<Post | null> {
+    const normalizedIdentifier = identifier.trim();
+    if (!normalizedIdentifier) {
+      return null;
+    }
+
+    let post: Post | null = null;
+    if (/^\d+$/.test(normalizedIdentifier)) {
+      post = await this.postRepository.findOne({
+        where: { id: Number.parseInt(normalizedIdentifier, 10) },
+        relations: ['tags'],
+      });
+    }
+
+    if (!post) {
+      post = await this.postRepository.findOne({
+        where: { slug: normalizedIdentifier },
+        relations: ['tags'],
+      });
+    }
+
+    return this.attachLiveCommentCount(await this.ensureRenderedContent(post));
+  }
+
+  async incrementLikes(identifier: string): Promise<number | null> {
+    const normalizedIdentifier = identifier.trim();
+    if (!normalizedIdentifier) {
+      return null;
+    }
+
+    let post: Post | null = null;
+    if (/^\d+$/.test(normalizedIdentifier)) {
+      post = await this.postRepository.findOne({
+        where: { id: Number.parseInt(normalizedIdentifier, 10) },
+      });
+    }
+
+    if (!post) {
+      post = await this.postRepository.findOne({
+        where: { slug: normalizedIdentifier },
+      });
+    }
+
+    if (!post) {
+      return null;
+    }
+
+    await this.postRepository.increment({ id: post.id }, 'likes', 1);
+
+    const updatedPost = await this.postRepository.findOne({
+      where: { id: post.id },
+    });
+
+    return updatedPost?.likes ?? post.likes + 1;
+  }
+
+  private async ensureRenderedContent(post: Post | null): Promise<Post | null> {
+    if (!post) {
+      return null;
+    }
+
+    let shouldSave = false;
+
+    if (post.contentHtml) {
+      const normalizedHtml = sanitizeContentHtml(post.contentHtml);
+      if (normalizedHtml !== post.contentHtml) {
+        post.contentHtml = normalizedHtml;
+        shouldSave = true;
+      }
+    }
+
+    if (
+      !post.contentHtml ||
+      !post.plainText ||
+      !post.headings ||
+      !post.wordCount
+    ) {
+      try {
         const renderedContent = this.renderContentOrThrow(
-            createPostDTO.contentType,
-            createPostDTO.contentJson,
-            createPostDTO.contentMarkdown
+          post.contentType,
+          post.contentJson,
+          post.contentMarkdown,
         );
-
-        // slug가 없으면 title에서 자동 생성
-        const slug = createPostDTO.slug || generateSlug(createPostDTO.title);
-
-        const postData = {
-            ...createPostDTO,
-            slug,
-            status: createPostDTO.status as PostStatus,
-            tags: tags,
-            contentJson: createPostDTO.contentJson as JSONContent,
-            contentMarkdown: null,
-            contentHtml: renderedContent.html,
-            plainText: renderedContent.plainText,
-            headings: renderedContent.headings,
-            wordCount: renderedContent.wordCount,
-            readTime: createPostDTO.readTime ?? renderedContent.readTime,
-        };
-        const post = this.postRepository.create(postData);
-        return this.postRepository.save(post);
+        post.contentHtml = renderedContent.html;
+        post.plainText = renderedContent.plainText;
+        post.headings = renderedContent.headings;
+        post.wordCount = renderedContent.wordCount;
+        post.readTime = post.readTime ?? renderedContent.readTime;
+        shouldSave = true;
+      } catch (error) {
+        console.error('Failed to backfill content cache:', error);
+        post.contentHtml =
+          post.contentHtml ??
+          '<p class="text-red-500">콘텐츠를 불러올 수 없습니다.</p>';
+        post.headings = post.headings ?? [];
+        post.plainText = post.plainText ?? '';
+        post.wordCount = post.wordCount ?? 0;
+      }
     }
 
-    async updatePost(id: number, updatePostDTO: UpdatePostRequestDTO): Promise<Post | null> {
-        const post = await this.postRepository.findOne({
-            where: { id },
-            relations: ['tags']
-        });
-
-        if (!post) {
-            console.log('Post not found');
-            return null;
-        }
-
-        console.log('Original post:', post);
-
-        if (post.tags && post.tags.length > 0) {
-            await this.tagsService.updateTagUsage(post.tags.map(tag => tag.name));
-        }
-
-        let tags: any[] = [];
-        if (updatePostDTO.tags) {
-            tags = updatePostDTO.tags.length > 0
-                ? await this.tagsService.findOrCreateTags(updatePostDTO.tags)
-                : [];
-        }
-
-        const { tags: _, ...updateData } = updatePostDTO;
-
-        if (updateData.status) {
-            updateData.status = updateData.status as PostStatus;
-        }
-
-        // slug가 없고 title이 변경되면 새로운 slug 생성
-        if (!post.slug && updatePostDTO.title) {
-            updateData.slug = generateSlug(updatePostDTO.title);
-        }
-
-        const shouldUpdateContent =
-            updatePostDTO.contentType !== undefined ||
-            updatePostDTO.contentJson !== undefined ||
-            updatePostDTO.contentMarkdown !== undefined;
-
-        let renderedContent: RenderedContent | null = null;
-        let contentType = post.contentType;
-        let contentJson = post.contentJson;
-        let contentMarkdown = post.contentMarkdown;
-
-        if (shouldUpdateContent) {
-            contentType = updatePostDTO.contentType ?? post.contentType;
-            contentJson = updatePostDTO.contentJson ?? post.contentJson;
-            contentMarkdown = updatePostDTO.contentMarkdown ?? post.contentMarkdown;
-
-            renderedContent = this.renderContentOrThrow(
-                contentType,
-                contentJson,
-                contentMarkdown
-            );
-        }
-
-        const mergedPost = this.postRepository.merge(post, updateData);
-
-        if (shouldUpdateContent && renderedContent) {
-            mergedPost.contentType = contentType;
-            mergedPost.contentJson = contentType === PostContentType.TIPTAP
-                ? (contentJson as JSONContent)
-                : null;
-            mergedPost.contentMarkdown = contentType === PostContentType.MARKDOWN
-                ? contentMarkdown
-                : null;
-            mergedPost.contentHtml = renderedContent.html;
-            mergedPost.plainText = renderedContent.plainText;
-            mergedPost.headings = renderedContent.headings;
-            mergedPost.wordCount = renderedContent.wordCount;
-            mergedPost.readTime = updatePostDTO.readTime ?? renderedContent.readTime;
-        }
-
-        if (updatePostDTO.tags) {
-            mergedPost.tags = tags;
-        }
-
-        await this.postRepository.save(mergedPost);
-
-        return this.postRepository.findOne({
-            where: { id },
-            relations: ['tags']
-        });
+    if (shouldSave) {
+      await this.postRepository.save(post);
     }
 
-    async convertMarkdownPostToTiptap(id: number, updatePostDTO: UpdatePostRequestDTO = {}): Promise<Post | null> {
-        const post = await this.postRepository.findOne({
-            where: { id },
-            relations: ['tags'],
-        });
+    return post;
+  }
 
-        if (!post) {
-            return null;
-        }
+  private async getPostList(options: {
+    keyword?: string;
+    tag?: string;
+    page: number;
+    pageSize: number;
+    includeAllStatuses: boolean;
+  }): Promise<PostListItemDTO[]> {
+    const {
+      keyword = '',
+      tag = '',
+      page,
+      pageSize,
+      includeAllStatuses,
+    } = options;
 
-        if (post.contentType === PostContentType.TIPTAP) {
-            throw new BadRequestException('이미 Tiptap 형식입니다.');
-        }
+    const queryBuilder = this.postRepository
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.tags', 'tags')
+      .select([
+        'post.id',
+        'post.title',
+        'post.slug',
+        'post.excerpt',
+        'post.contentType',
+        'post.image',
+        'post.status',
+        'post.author',
+        'post.category',
+        'post.publishDate',
+        'post.views',
+        'post.likes',
+        'post.comments',
+        'post.readTime',
+        'tags.id',
+        'tags.name',
+      ])
+      .loadRelationCountAndMap(
+        'post.liveCommentsCount',
+        'post.commentEntries',
+        'liveComment',
+        (commentQueryBuilder) =>
+          commentQueryBuilder.andWhere('liveComment.isDeleted = :isDeleted', {
+            isDeleted: false,
+          }),
+      );
 
-        if (!post.contentMarkdown) {
-            throw new BadRequestException('변환할 Markdown 콘텐츠가 없습니다.');
-        }
+    this.applyPostListFilters(queryBuilder, keyword, tag, includeAllStatuses);
 
-        const tiptapJson = convertMarkdownToTiptapJSON(post.contentMarkdown);
-        const originalText = renderMarkdownContent(post.contentMarkdown).plainText.replace(/\s+/g, '');
-        const convertedText = renderTiptapContent(tiptapJson).plainText.replace(/\s+/g, '');
+    queryBuilder
+      .orderBy('post.publishDate', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
 
-        if (originalText.length > 0 && convertedText.length === 0) {
-            throw new BadRequestException('변환 결과가 비어 있습니다.');
-        }
+    const posts = await queryBuilder.getMany();
 
-        const {
-            contentType: _contentType,
-            contentJson: _contentJson,
-            contentMarkdown: _contentMarkdown,
-            ...metadataUpdate
-        } = updatePostDTO;
+    return posts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      contentType: post.contentType,
+      image: post.image,
+      tags: post.tags ? post.tags.map((currentTag) => currentTag.name) : [],
+      status: post.status,
+      author: post.author,
+      category: post.category,
+      publishDate: post.publishDate,
+      views: post.views,
+      likes: post.likes,
+      comments: post.liveCommentsCount ?? post.comments,
+      readTime: post.readTime,
+    }));
+  }
 
-        return this.updatePost(id, {
-            ...metadataUpdate,
-            contentType: PostContentType.TIPTAP,
-            contentJson: tiptapJson,
-        });
+  private applyPostListFilters(
+    queryBuilder: SelectQueryBuilder<Post>,
+    keyword: string,
+    tag: string,
+    includeAllStatuses: boolean,
+  ): void {
+    if (!includeAllStatuses) {
+      queryBuilder.where('post.status = :status', {
+        status: PostStatus.PUBLISHED,
+      });
     }
 
-    async deletePost(id: number): Promise<boolean> {
-        const post = await this.postRepository.findOne({
-            where: { id },
-            relations: ['tags'],
-        });
-        if (!post) {
-            return false;
-        }
+    if (keyword) {
+      const normalizedKeyword = `%${keyword}%`;
+      const condition =
+        '(post.title LIKE :keyword OR post.plainText LIKE :keyword OR post.contentMarkdown LIKE :keyword OR post.excerpt LIKE :keyword)';
 
-        if (post.tags && post.tags.length > 0) {
-            await this.tagsService.handleTagCleanupForDeletedPost(post.tags);
-        }
-
-        await this.postRepository.remove(post);
-        return true;
+      if (includeAllStatuses) {
+        queryBuilder.where(condition, { keyword: normalizedKeyword });
+      } else {
+        queryBuilder.andWhere(condition, { keyword: normalizedKeyword });
+      }
     }
 
-    async getPostById(id: number): Promise<Post | null> {
-        const post = await this.postRepository.findOne({
-            where: { id },
-            relations: ['tags']
-        });
+    if (tag) {
+      if (includeAllStatuses && !keyword) {
+        queryBuilder.where('tags.name = :tagName', { tagName: tag });
+        return;
+      }
 
-        return this.ensureRenderedContent(post);
+      queryBuilder.andWhere('tags.name = :tagName', { tagName: tag });
+    }
+  }
+
+  private async attachLiveCommentCount(
+    post: Post | null,
+  ): Promise<Post | null> {
+    if (!post) {
+      return null;
     }
 
-    async getPostByIdentifier(identifier: string): Promise<Post | null> {
-        const normalizedIdentifier = identifier.trim();
-        if (!normalizedIdentifier) {
-            return null;
-        }
+    post.comments = await this.commentRepository.count({
+      where: {
+        postId: post.id,
+        isDeleted: false,
+      },
+    });
 
-        let post: Post | null = null;
-        if (/^\d+$/.test(normalizedIdentifier)) {
-            post = await this.postRepository.findOne({
-                where: { id: Number.parseInt(normalizedIdentifier, 10) },
-                relations: ['tags'],
-            });
-        }
+    return post;
+  }
 
-        if (!post) {
-            post = await this.postRepository.findOne({
-                where: { slug: normalizedIdentifier },
-                relations: ['tags'],
-            });
-        }
-
-        return this.ensureRenderedContent(post);
+  private renderContentOrThrow(
+    contentType: PostContentType,
+    contentJson?: Record<string, unknown> | null,
+    contentMarkdown?: string | null,
+  ): RenderedContent {
+    if (contentType === PostContentType.TIPTAP) {
+      if (!contentJson) {
+        throw new BadRequestException(
+          'contentJson is required for tiptap content',
+        );
+      }
+      return renderTiptapContent(contentJson as JSONContent);
     }
 
-    async incrementLikes(identifier: string): Promise<number | null> {
-        const normalizedIdentifier = identifier.trim();
-        if (!normalizedIdentifier) {
-            return null;
-        }
-
-        let post: Post | null = null;
-        if (/^\d+$/.test(normalizedIdentifier)) {
-            post = await this.postRepository.findOne({
-                where: { id: Number.parseInt(normalizedIdentifier, 10) },
-            });
-        }
-
-        if (!post) {
-            post = await this.postRepository.findOne({
-                where: { slug: normalizedIdentifier },
-            });
-        }
-
-        if (!post) {
-            return null;
-        }
-
-        await this.postRepository.increment({ id: post.id }, 'likes', 1);
-
-        const updatedPost = await this.postRepository.findOne({
-            where: { id: post.id },
-        });
-
-        return updatedPost?.likes ?? post.likes + 1;
+    if (!contentMarkdown) {
+      throw new BadRequestException(
+        'contentMarkdown is required for markdown content',
+      );
     }
 
-    private async ensureRenderedContent(post: Post | null): Promise<Post | null> {
-        if (!post) {
-            return null;
-        }
-
-        let shouldSave = false;
-
-        if (post.contentHtml) {
-            const normalizedHtml = sanitizeContentHtml(post.contentHtml);
-            if (normalizedHtml !== post.contentHtml) {
-                post.contentHtml = normalizedHtml;
-                shouldSave = true;
-            }
-        }
-
-        if (!post.contentHtml || !post.plainText || !post.headings || !post.wordCount) {
-            try {
-                const renderedContent = this.renderContentOrThrow(
-                    post.contentType,
-                    post.contentJson,
-                    post.contentMarkdown
-                );
-                post.contentHtml = renderedContent.html;
-                post.plainText = renderedContent.plainText;
-                post.headings = renderedContent.headings;
-                post.wordCount = renderedContent.wordCount;
-                post.readTime = post.readTime ?? renderedContent.readTime;
-                shouldSave = true;
-            } catch (error) {
-                console.error('Failed to backfill content cache:', error);
-                post.contentHtml = post.contentHtml ?? '<p class="text-red-500">콘텐츠를 불러올 수 없습니다.</p>';
-                post.headings = post.headings ?? [];
-                post.plainText = post.plainText ?? '';
-                post.wordCount = post.wordCount ?? 0;
-            }
-        }
-
-        if (shouldSave) {
-            await this.postRepository.save(post);
-        }
-
-        return post;
-    }
-
-    private renderContentOrThrow(
-        contentType: PostContentType,
-        contentJson?: Record<string, unknown> | null,
-        contentMarkdown?: string | null
-    ): RenderedContent {
-        if (contentType === PostContentType.TIPTAP) {
-            if (!contentJson) {
-                throw new BadRequestException('contentJson is required for tiptap content');
-            }
-            return renderTiptapContent(contentJson as JSONContent);
-        }
-
-        if (!contentMarkdown) {
-            throw new BadRequestException('contentMarkdown is required for markdown content');
-        }
-
-        return renderMarkdownContent(contentMarkdown);
-    }
+    return renderMarkdownContent(contentMarkdown);
+  }
 }

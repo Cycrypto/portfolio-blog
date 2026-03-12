@@ -1,25 +1,55 @@
 import { apiRequest } from '../client/base';
-import { Post, PostEdit, CreatePostRequest, UpdatePostRequest } from '../../types/api';
-import { 
-  PostNotFoundException, 
+import {
+  Post,
+  PostEdit,
+  CreatePostRequest,
+  UpdatePostRequest,
+} from '../../types/api';
+import {
+  PostNotFoundException,
   PostAlreadyExistsException,
-  PostCreateException, 
-  PostUpdateException, 
+  PostCreateException,
+  PostUpdateException,
   PostDeleteException,
-  PostValidationException 
+  PostValidationException,
 } from '../../posts/exceptions';
 import { ApiError } from '../client/base';
 
-export async function getPosts(page: number = 1, pageSize: number = 9): Promise<{ posts: Post[], totalCount: number }> {
+export async function getPosts(
+  page: number = 1,
+  pageSize: number = 9,
+): Promise<{ posts: Post[]; totalCount: number }> {
   try {
-    const result = await apiRequest<{ data: { data: Post[], totalCount: number } }>(
-      `/posts?page=${page}&pageSize=${pageSize}`,
-      { requireAuth: false }
-    );
-    
+    const result = await apiRequest<{
+      data: { data: Post[]; totalCount: number };
+    }>(`/posts?page=${page}&pageSize=${pageSize}`, { requireAuth: false });
+
     return {
       posts: result.data?.data || [],
-      totalCount: result.data?.totalCount || 0
+      totalCount: result.data?.totalCount || 0,
+    };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.status === 404) {
+        throw new PostNotFoundException();
+      }
+    }
+    throw error;
+  }
+}
+
+export async function getAdminPosts(
+  page: number = 1,
+  pageSize: number = 100,
+): Promise<{ posts: Post[]; totalCount: number }> {
+  try {
+    const result = await apiRequest<{
+      data: { data: Post[]; totalCount: number };
+    }>(`/posts/admin/list?page=${page}&pageSize=${pageSize}`);
+
+    return {
+      posts: result.data?.data || [],
+      totalCount: result.data?.totalCount || 0,
     };
   } catch (error) {
     if (error instanceof ApiError) {
@@ -46,7 +76,10 @@ export async function createPost(postData: CreatePostRequest): Promise<Post> {
     throw new PostValidationException('contentJson', postData.contentJson);
   }
   if (postData.contentType === 'markdown' && !postData.contentMarkdown) {
-    throw new PostValidationException('contentMarkdown', postData.contentMarkdown);
+    throw new PostValidationException(
+      'contentMarkdown',
+      postData.contentMarkdown,
+    );
   }
 
   try {
@@ -54,7 +87,7 @@ export async function createPost(postData: CreatePostRequest): Promise<Post> {
       method: 'POST',
       body: JSON.stringify(postData),
     });
-    
+
     return result.data;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -65,13 +98,17 @@ export async function createPost(postData: CreatePostRequest): Promise<Post> {
         throw new PostValidationException('data', postData);
       }
     }
-    throw new PostCreateException(error instanceof Error ? error : undefined, { postData });
+    throw new PostCreateException(error instanceof Error ? error : undefined, {
+      postData,
+    });
   }
 }
 
 export async function getPost(id: string): Promise<Post> {
   try {
-    const result = await apiRequest<{ data: Post }>(`/posts/${id}`, { requireAuth: false });
+    const result = await apiRequest<{ data: Post }>(`/posts/${id}`, {
+      requireAuth: false,
+    });
     return result.data;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -97,13 +134,16 @@ export async function getPostForEdit(id: string): Promise<PostEdit> {
   }
 }
 
-export async function updatePost(id: string, postData: UpdatePostRequest): Promise<Post> {
+export async function updatePost(
+  id: string,
+  postData: UpdatePostRequest,
+): Promise<Post> {
   try {
     const result = await apiRequest<{ data: Post }>(`/posts/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(postData),
     });
-    
+
     return result.data;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -114,16 +154,26 @@ export async function updatePost(id: string, postData: UpdatePostRequest): Promi
         throw new PostValidationException('data', postData);
       }
     }
-    throw new PostUpdateException(id, error instanceof Error ? error : undefined, { postData });
+    throw new PostUpdateException(
+      id,
+      error instanceof Error ? error : undefined,
+      { postData },
+    );
   }
 }
 
-export async function convertPostToTiptap(id: string, postData: UpdatePostRequest = {}): Promise<PostEdit> {
+export async function convertPostToTiptap(
+  id: string,
+  postData: UpdatePostRequest = {},
+): Promise<PostEdit> {
   try {
-    const result = await apiRequest<{ data: PostEdit }>(`/posts/${id}/convert-to-tiptap`, {
-      method: 'PATCH',
-      body: JSON.stringify(postData),
-    });
+    const result = await apiRequest<{ data: PostEdit }>(
+      `/posts/${id}/convert-to-tiptap`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(postData),
+      },
+    );
 
     return result.data;
   } catch (error) {
@@ -135,7 +185,11 @@ export async function convertPostToTiptap(id: string, postData: UpdatePostReques
         throw new PostValidationException('data', postData);
       }
     }
-    throw new PostUpdateException(id, error instanceof Error ? error : undefined, { postData });
+    throw new PostUpdateException(
+      id,
+      error instanceof Error ? error : undefined,
+      { postData },
+    );
   }
 }
 
@@ -150,15 +204,20 @@ export async function deletePost(id: string): Promise<void> {
         throw new PostNotFoundException(id);
       }
     }
-    throw new PostDeleteException(id, error instanceof Error ? error : undefined);
+    throw new PostDeleteException(
+      id,
+      error instanceof Error ? error : undefined,
+    );
   }
 }
 
-export async function getTopTags(limit: number = 5): Promise<{ id: number; name: string; usageCount: number }[]> {
+export async function getTopTags(
+  limit: number = 5,
+): Promise<{ id: number; name: string; usageCount: number }[]> {
   try {
-    const result = await apiRequest<{ data: { id: number; name: string; usageCount: number }[] }>(
-      `/tags/top?limit=${limit}`
-    );
+    const result = await apiRequest<{
+      data: { id: number; name: string; usageCount: number }[];
+    }>(`/tags/top?limit=${limit}`);
     return result.data || [];
   } catch (error) {
     throw error;
@@ -167,13 +226,16 @@ export async function getTopTags(limit: number = 5): Promise<{ id: number; name:
 
 export async function likePost(id: string): Promise<{ likes: number }> {
   try {
-    const result = await apiRequest<{ data: { likes: number } }>(`/posts/${id}/like`, {
-      method: "POST",
-      requireAuth: false,
-    })
+    const result = await apiRequest<{ data: { likes: number } }>(
+      `/posts/${id}/like`,
+      {
+        method: 'POST',
+        requireAuth: false,
+      },
+    );
 
-    return result.data
+    return result.data;
   } catch (error) {
-    throw error
+    throw error;
   }
 }
