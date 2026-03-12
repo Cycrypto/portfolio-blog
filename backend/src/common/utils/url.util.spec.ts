@@ -15,6 +15,11 @@ describe('url.util', () => {
       expect(normalizeUrl('/blog/post')).toBe('/blog/post');
     });
 
+    it('repairs malformed http and https prefixes', () => {
+      expect(normalizeUrl('https:/www.naver.com')).toBe('https://www.naver.com');
+      expect(normalizeUrl('http:example.com/docs')).toBe('http://example.com/docs');
+    });
+
     it('drops dangerous protocols', () => {
       expect(normalizeUrl('javascript:alert(1)')).toBe('');
       expect(normalizeUrl('data:text/html;base64,abc')).toBe('');

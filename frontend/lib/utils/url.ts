@@ -23,6 +23,12 @@ export function normalizeUrl(value?: string | null): string {
     return trimmed
   }
 
+  const malformedHttpMatch = trimmed.match(/^(https?):(.*)$/i)
+  if (malformedHttpMatch && !trimmed.startsWith(`${malformedHttpMatch[1]}://`)) {
+    const remainder = malformedHttpMatch[2].replace(/^\/+/, "")
+    return remainder ? `${malformedHttpMatch[1]}://${remainder}` : ""
+  }
+
   if (DOMAIN_LIKE_PATTERN.test(trimmed)) {
     return `https://${trimmed}`
   }
