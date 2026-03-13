@@ -43,15 +43,21 @@ function isAdminPath(pathname: string) {
 
 export function trackEvent(eventName: AnalyticsEventName, payload: AnalyticsPayload = {}) {
   if (typeof window === "undefined" || isAdminPath(window.location.pathname)) {
-    return
+    return false
+  }
+
+  if (typeof window.umami?.track !== "function") {
+    return false
   }
 
   const normalizedPayload = sanitizePayload(payload)
 
   try {
-    window.umami?.track(eventName, normalizedPayload)
+    window.umami.track(eventName, normalizedPayload)
+    return true
   } catch (error) {
     console.error(`Failed to track analytics event "${eventName}"`, error)
+    return false
   }
 }
 
@@ -84,7 +90,11 @@ export function trackEventOncePerSession(eventName: AnalyticsEventName, key: str
     return false
   }
 
-  trackEvent(eventName, payload)
+  const didTrack = trackEvent(eventName, payload)
+  if (!didTrack) {
+    return false
+  }
+
   markTrackedInSession(key)
   return true
 }

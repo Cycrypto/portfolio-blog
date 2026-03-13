@@ -72,9 +72,36 @@ export default function BlogPage() {
 
         const result = await response.json()
         const { data: nextPosts, totalCount } = result.data
+        const normalizedKeyword = searchKeyword.trim()
+        const normalizedTag = selectedTag.trim()
+        const nextPostList = Array.isArray(nextPosts) ? nextPosts : []
+        const resultCount = typeof totalCount === "number" ? totalCount : nextPostList.length
 
-        setPosts(Array.isArray(nextPosts) ? nextPosts : [])
-        setTotalPages(Math.max(1, Math.ceil((totalCount || 0) / postsPerPage)))
+        setPosts(nextPostList)
+        setTotalPages(Math.max(1, Math.ceil(resultCount / postsPerPage)))
+
+        if (normalizedKeyword && currentPage === 1) {
+          const trackingKey = `${normalizedKeyword.toLowerCase()}:${resultCount}`
+          if (lastTrackedSearchKeyRef.current !== trackingKey) {
+            trackEvent("blog_search", {
+              query_length: normalizedKeyword.length,
+              result_count: resultCount,
+            })
+            lastTrackedSearchKeyRef.current = trackingKey
+          }
+        }
+
+        if (normalizedTag && currentPage === 1) {
+          const trackingKey = `${normalizedTag.toLowerCase()}:${resultCount}`
+          if (lastTrackedFilterKeyRef.current !== trackingKey) {
+            trackEvent("blog_filter", {
+              filter_type: "tag",
+              filter_value: normalizedTag,
+              result_count: resultCount,
+            })
+            lastTrackedFilterKeyRef.current = trackingKey
+          }
+        }
       } catch (err) {
         if (controller.signal.aborted) {
           return
@@ -95,43 +122,16 @@ export default function BlogPage() {
   }, [currentPage, selectedTag, searchKeyword, refreshKey])
 
   useEffect(() => {
-    const normalizedKeyword = searchKeyword.trim()
-
-    if (!normalizedKeyword || loading || error || currentPage !== 1) {
-      return
+    if (!searchKeyword.trim()) {
+      lastTrackedSearchKeyRef.current = ""
     }
-
-    const trackingKey = `${normalizedKeyword.toLowerCase()}:${posts.length}`
-    if (lastTrackedSearchKeyRef.current === trackingKey) {
-      return
-    }
-
-    trackEvent("blog_search", {
-      query_length: normalizedKeyword.length,
-      result_count: posts.length,
-    })
-    lastTrackedSearchKeyRef.current = trackingKey
-  }, [currentPage, error, loading, posts.length, searchKeyword])
+  }, [searchKeyword])
 
   useEffect(() => {
-    const normalizedTag = selectedTag.trim()
-
-    if (!normalizedTag || loading || error || currentPage !== 1) {
-      return
+    if (!selectedTag.trim()) {
+      lastTrackedFilterKeyRef.current = ""
     }
-
-    const trackingKey = `${normalizedTag}:${posts.length}`
-    if (lastTrackedFilterKeyRef.current === trackingKey) {
-      return
-    }
-
-    trackEvent("blog_filter", {
-      filter_type: "tag",
-      filter_value: normalizedTag,
-      result_count: posts.length,
-    })
-    lastTrackedFilterKeyRef.current = trackingKey
-  }, [currentPage, error, loading, posts.length, selectedTag])
+  }, [selectedTag])
 
   const transformToBlogPost = (post: Post): BlogPost => {
     const slug = post.slug && post.slug !== "null" ? post.slug : post.id.toString()
