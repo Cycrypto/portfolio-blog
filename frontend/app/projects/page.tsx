@@ -48,6 +48,7 @@ export default async function ProjectsPage() {
                 image={getPrimaryImage(project.images)}
                 demoUrl={project.liveUrl}
                 repoUrl={project.githubUrl}
+                trackingLocation="projects_list_card"
               />
             ))}
           </div>

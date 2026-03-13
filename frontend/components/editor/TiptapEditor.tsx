@@ -1,9 +1,10 @@
 "use client"
 
+import type { Editor } from "@tiptap/core"
 import { type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from "react"
-import type { Editor as CoreEditor } from "@tiptap/core"
 import { EditorContent, JSONContent, useEditor } from "@tiptap/react"
 import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus"
+import { CellSelection } from "@tiptap/pm/tables"
 import { Button } from "@/components/ui/button"
 import { BlockHandleMenu } from "@/components/editor/BlockHandleMenu"
 import {
@@ -37,6 +38,18 @@ import {
 } from "@/lib/tiptap/block-helpers"
 import type { TopLevelBlockRange } from "@/lib/tiptap/block-helpers"
 import { getEditorExtensions } from "@/lib/tiptap/editor-extensions"
+import {
+  COLUMN_WIDTH_STEP,
+  MAX_COLUMN_WIDTH,
+  MAX_ROW_HEIGHT,
+  MIN_COLUMN_WIDTH,
+  MIN_ROW_HEIGHT,
+  ROW_HEIGHT_STEP,
+  getTableSelectionState,
+  setCurrentColumnWidth,
+  setCurrentRowHeight,
+} from "@/lib/tiptap/table-controls"
+import { normalizeUrl } from "@/lib/utils/url"
 import {
   AlignCenter,
   AlignJustify,
@@ -127,7 +140,7 @@ const INSERT_DIALOG_COPY: Record<
   },
 }
 
-function getSlashCommandState(editor: CoreEditor | null): SlashCommandState | null {
+function getSlashCommandState(editor: Editor | null): SlashCommandState | null {
   if (!editor || !editor.isEditable) {
     return null
   }
@@ -177,6 +190,10 @@ export function TiptapEditor({
   const [dismissedSlashText, setDismissedSlashText] = useState<string | null>(null)
   const [hoveredBlock, setHoveredBlock] = useState<HoveredBlockState | null>(null)
   const editorFrameRef = useRef<HTMLDivElement | null>(null)
+  const [hasTextSelection, setHasTextSelection] = useState(false)
+  const [tableSelection, setTableSelection] = useState<ReturnType<typeof getTableSelectionState>>(null)
+  const [rowHeightInput, setRowHeightInput] = useState("")
+  const [columnWidthInput, setColumnWidthInput] = useState("")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const colorPickerRef = useRef<HTMLDivElement | null>(null)
   const highlightPickerRef = useRef<HTMLDivElement | null>(null)
@@ -198,6 +215,11 @@ export function TiptapEditor({
     }
 
     window.alert(message)
+  }
+
+  const syncEditorUiState = (activeEditor: Editor) => {
+    setTableSelection(getTableSelectionState(activeEditor))
+    setHasTextSelection(!activeEditor.state.selection.empty && !(activeEditor.state.selection instanceof CellSelection))
   }
 
   const editor = useEditor({
@@ -262,8 +284,18 @@ export function TiptapEditor({
         return false
       },
     },
+    onCreate: ({ editor: activeEditor }) => {
+      syncEditorUiState(activeEditor)
+      setEditorVersion((currentVersion) => currentVersion + 1)
+    },
+    onSelectionUpdate: ({ editor: activeEditor }) => {
+      syncEditorUiState(activeEditor)
+      setEditorVersion((currentVersion) => currentVersion + 1)
+    },
     onUpdate: ({ editor: activeEditor }) => {
       onChange(activeEditor.getJSON())
+      syncEditorUiState(activeEditor)
+      setEditorVersion((currentVersion) => currentVersion + 1)
     },
   })
 
@@ -306,11 +338,26 @@ export function TiptapEditor({
   }
 
   const insertTable = () => {
-    if (!editor) {
+    if (!editor) return
+    const rowsInput = window.prompt("표 행 수를 입력하세요 (헤더 포함, 1-10)", "3")
+    if (rowsInput === null) {
       return
     }
 
-    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+    const colsInput = window.prompt("표 열 수를 입력하세요 (1-10)", "3")
+    if (colsInput === null) {
+      return
+    }
+
+    const rows = Number.parseInt(rowsInput, 10)
+    const cols = Number.parseInt(colsInput, 10)
+
+    if (!Number.isInteger(rows) || !Number.isInteger(cols) || rows < 1 || cols < 1 || rows > 10 || cols > 10) {
+      reportError("표 크기는 1에서 10 사이의 숫자로 입력해주세요.")
+      return
+    }
+
+    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
   }
 
   const clearSlashCommand = () => {
@@ -342,7 +389,7 @@ export function TiptapEditor({
         return
       }
 
-      editor.chain().focus().extendMarkRange("link").setLink({ href: value }).run()
+      editor.chain().focus().extendMarkRange("link").setLink({ href: normalizeUrl(value) }).run()
       resetInsertDialog()
       return
     }
@@ -366,6 +413,60 @@ export function TiptapEditor({
 
     editor.chain().focus().setYoutubeVideo({ src: value }).run()
     resetInsertDialog()
+  }
+
+  const applyRowHeight = (nextValue: number) => {
+    if (!editor) {
+      return
+    }
+
+    if (!setCurrentRowHeight(editor, nextValue)) {
+      reportError("행 높이를 조절하지 못했습니다.")
+      return
+    }
+
+    syncEditorUiState(editor)
+  }
+
+  const applyColumnWidth = (nextValue: number) => {
+    if (!editor) {
+      return
+    }
+
+    if (!setCurrentColumnWidth(editor, nextValue)) {
+      reportError("열 너비를 조절하지 못했습니다.")
+      return
+    }
+
+    syncEditorUiState(editor)
+  }
+
+  const commitRowHeightInput = () => {
+    if (!tableSelection) {
+      return
+    }
+
+    const parsed = Number.parseInt(rowHeightInput, 10)
+    if (Number.isFinite(parsed)) {
+      applyRowHeight(parsed)
+      return
+    }
+
+    setRowHeightInput(String(tableSelection.rowHeight))
+  }
+
+  const commitColumnWidthInput = () => {
+    if (!tableSelection) {
+      return
+    }
+
+    const parsed = Number.parseInt(columnWidthInput, 10)
+    if (Number.isFinite(parsed)) {
+      applyColumnWidth(parsed)
+      return
+    }
+
+    setColumnWidthInput(String(tableSelection.columnWidth))
   }
 
   const textColors = [
@@ -565,22 +666,15 @@ export function TiptapEditor({
   }, [content, editor])
 
   useEffect(() => {
-    if (!editor) {
+    if (!tableSelection) {
+      setRowHeightInput("")
+      setColumnWidthInput("")
       return
     }
 
-    const handleEditorChange = () => {
-      setEditorVersion((currentVersion) => currentVersion + 1)
-    }
-
-    editor.on("selectionUpdate", handleEditorChange)
-    editor.on("update", handleEditorChange)
-
-    return () => {
-      editor.off("selectionUpdate", handleEditorChange)
-      editor.off("update", handleEditorChange)
-    }
-  }, [editor])
+    setRowHeightInput(String(tableSelection.rowHeight))
+    setColumnWidthInput(String(tableSelection.columnWidth))
+  }, [tableSelection])
 
   useEffect(() => {
     setSelectedSlashIndex(0)
@@ -697,6 +791,24 @@ export function TiptapEditor({
           title="제목 2"
         >
           <Heading2 className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          className="notion-toolbar-button"
+          data-active={editor.isActive("heading", { level: 3 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          title="제목 3"
+        >
+          <span className="text-xs font-semibold">H3</span>
+        </button>
+        <button
+          type="button"
+          className="notion-toolbar-button"
+          data-active={editor.isActive("heading", { level: 4 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+          title="제목 4"
+        >
+          <span className="text-xs font-semibold">H4</span>
         </button>
         <div className="w-px h-6 bg-gray-300 mx-1" />
         <button
@@ -918,50 +1030,209 @@ export function TiptapEditor({
           <span>Cmd/Ctrl+K</span>
         </div>
       </div>
-
-      <BubbleMenu editor={editor}>
-        <div className="notion-bubble-menu">
-          <button
-            type="button"
-            data-active={editor.isActive("bold")}
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            className="notion-menu-button"
-          >
-            <Bold className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            data-active={editor.isActive("italic")}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            className="notion-menu-button"
-          >
-            <Italic className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            data-active={editor.isActive("strike")}
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            className="notion-menu-button"
-          >
-            <Strikethrough className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            data-active={editor.isActive("code")}
-            onClick={() => editor.chain().focus().toggleCode().run()}
-            className="notion-menu-button"
-          >
-            <Code2 className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            data-active={editor.isActive("link")}
-            onClick={() => openInsertDialog("link")}
-            className="notion-menu-button"
-          >
-            <Link2 className="h-4 w-4" />
-          </button>
-        </div>
+      <BubbleMenu
+        editor={editor}
+        shouldShow={({ editor: activeEditor }) => activeEditor.isEditable && (hasTextSelection || tableSelection !== null)}
+        options={{
+          placement: tableSelection ? "top-start" : "top",
+        }}
+      >
+        {(hasTextSelection || tableSelection) && (
+          <div className="notion-table-menu">
+            {hasTextSelection && (
+              <div className="notion-table-group">
+                <span className="notion-table-label">서식</span>
+                <button
+                  type="button"
+                  data-active={editor.isActive("bold")}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => editor.chain().focus().toggleBold().run()}
+                  className="notion-table-action"
+                >
+                  <Bold className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  data-active={editor.isActive("italic")}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => editor.chain().focus().toggleItalic().run()}
+                  className="notion-table-action"
+                >
+                  <Italic className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  data-active={editor.isActive("strike")}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => editor.chain().focus().toggleStrike().run()}
+                  className="notion-table-action"
+                >
+                  <Strikethrough className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  data-active={editor.isActive("code")}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => editor.chain().focus().toggleCode().run()}
+                  className="notion-table-action"
+                >
+                  <Code2 className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  data-active={editor.isActive("link")}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => openInsertDialog("link")}
+                  className="notion-table-action"
+                >
+                  <Link2 className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            {tableSelection && (
+              <>
+            <div className="notion-table-group">
+              <span className="notion-table-label">
+                행 {tableSelection.row + 1}/{tableSelection.rowCount}
+              </span>
+              <button
+                type="button"
+                className="notion-table-action"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => editor.chain().focus().addRowBefore().run()}
+              >
+                위 +
+              </button>
+              <button
+                type="button"
+                className="notion-table-action"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => editor.chain().focus().addRowAfter().run()}
+              >
+                아래 +
+              </button>
+              <button
+                type="button"
+                className="notion-table-action destructive"
+                disabled={tableSelection.rowCount <= 1}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => editor.chain().focus().deleteRow().run()}
+              >
+                행 삭제
+              </button>
+            </div>
+            <div className="notion-table-group">
+              <span className="notion-table-label">행 높이</span>
+              <button
+                type="button"
+                className="notion-table-stepper"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applyRowHeight(tableSelection.rowHeight - ROW_HEIGHT_STEP)}
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min={MIN_ROW_HEIGHT}
+                max={MAX_ROW_HEIGHT}
+                value={rowHeightInput}
+                onChange={(event) => setRowHeightInput(event.target.value)}
+                onBlur={commitRowHeightInput}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault()
+                    commitRowHeightInput()
+                  }
+                }}
+                className="notion-table-input"
+              />
+              <button
+                type="button"
+                className="notion-table-stepper"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applyRowHeight(tableSelection.rowHeight + ROW_HEIGHT_STEP)}
+              >
+                +
+              </button>
+            </div>
+            <div className="notion-table-group">
+              <span className="notion-table-label">
+                열 {tableSelection.column + 1}/{tableSelection.columnCount}
+              </span>
+              <button
+                type="button"
+                className="notion-table-action"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => editor.chain().focus().addColumnBefore().run()}
+              >
+                왼쪽 +
+              </button>
+              <button
+                type="button"
+                className="notion-table-action"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => editor.chain().focus().addColumnAfter().run()}
+              >
+                오른쪽 +
+              </button>
+              <button
+                type="button"
+                className="notion-table-action destructive"
+                disabled={tableSelection.columnCount <= 1}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => editor.chain().focus().deleteColumn().run()}
+              >
+                열 삭제
+              </button>
+            </div>
+            <div className="notion-table-group">
+              <span className="notion-table-label">열 너비</span>
+              <button
+                type="button"
+                className="notion-table-stepper"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applyColumnWidth(tableSelection.columnWidth - COLUMN_WIDTH_STEP)}
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min={MIN_COLUMN_WIDTH}
+                max={MAX_COLUMN_WIDTH}
+                value={columnWidthInput}
+                onChange={(event) => setColumnWidthInput(event.target.value)}
+                onBlur={commitColumnWidthInput}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault()
+                    commitColumnWidthInput()
+                  }
+                }}
+                className="notion-table-input"
+              />
+              <button
+                type="button"
+                className="notion-table-stepper"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applyColumnWidth(tableSelection.columnWidth + COLUMN_WIDTH_STEP)}
+              >
+                +
+              </button>
+            </div>
+            <div className="notion-table-group">
+              <button
+                type="button"
+                className="notion-table-action destructive"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => editor.chain().focus().deleteTable().run()}
+              >
+                표 삭제
+              </button>
+            </div>
+              </>
+            )}
+          </div>
+        )}
       </BubbleMenu>
 
       <FloatingMenu

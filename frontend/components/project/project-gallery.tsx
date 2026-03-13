@@ -4,14 +4,16 @@ import { useState } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { trackEventOncePerSession } from "@/lib/analytics/track"
 import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface ProjectGalleryProps {
+  projectId: string
   images: string[]
   title: string
 }
 
-export function ProjectGallery({ images, title }: ProjectGalleryProps) {
+export function ProjectGallery({ projectId, images, title }: ProjectGalleryProps) {
   const [currentImage, setCurrentImage] = useState(0)
   const validImages = images.map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image))
 
@@ -19,11 +21,19 @@ export function ProjectGallery({ images, title }: ProjectGalleryProps) {
     return null
   }
 
+  const trackGalleryInteraction = () => {
+    trackEventOncePerSession("project_gallery_interaction", `project-gallery:${projectId}`, {
+      project_id: projectId,
+    })
+  }
+
   const nextImage = () => {
+    trackGalleryInteraction()
     setCurrentImage((prev) => (prev + 1) % validImages.length)
   }
 
   const prevImage = () => {
+    trackGalleryInteraction()
     setCurrentImage((prev) => (prev - 1 + validImages.length) % validImages.length)
   }
 
@@ -72,7 +82,10 @@ export function ProjectGallery({ images, title }: ProjectGalleryProps) {
                 className={`w-3 h-3 rounded-full transition-colors ${
                   index === currentImage ? "bg-brand-blue-500" : "bg-neutral-slate-300"
                 }`}
-                onClick={() => setCurrentImage(index)}
+                onClick={() => {
+                  trackGalleryInteraction()
+                  setCurrentImage(index)
+                }}
               />
             ))}
           </div>

@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { trackEvent } from "@/lib/analytics/track"
 import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface ProjectCardProps {
@@ -17,11 +18,22 @@ interface ProjectCardProps {
   image?: string
   demoUrl?: string
   repoUrl?: string
+  trackingLocation?: string
 }
 
-export function ProjectCard({ id, title, description = "", tags = [], image, demoUrl = "", repoUrl = "" }: ProjectCardProps) {
+export function ProjectCard({
+  id,
+  title,
+  description = "",
+  tags = [],
+  image,
+  demoUrl = "",
+  repoUrl = "",
+  trackingLocation = "project_list_card",
+}: ProjectCardProps) {
   const normalizedImage = normalizeImageUrl(image)
   const projectDescription = description.trim() || "프로젝트 요약을 준비 중입니다."
+  const contentId = String(id)
 
   return (
     <motion.div
@@ -46,7 +58,16 @@ export function ProjectCard({ id, title, description = "", tags = [], image, dem
           )}
 
           <div className="p-6 flex-grow">
-            <Link href={`/projects/${id}`}>
+            <Link
+              href={`/projects/${id}`}
+              onClick={() => {
+                trackEvent("cta_click", {
+                  location: trackingLocation,
+                  target: "project",
+                  content_id: contentId,
+                })
+              }}
+            >
               <h3 className="text-xl font-bold mb-2 text-neutral-slate-800 hover:text-brand-blue-600 transition-colors cursor-pointer">
                 {title}
               </h3>
@@ -73,7 +94,18 @@ export function ProjectCard({ id, title, description = "", tags = [], image, dem
                   className="text-neutral-slate-600 hover:text-neutral-slate-800 hover:bg-slate-100"
                   asChild
                 >
-                  <Link href={repoUrl} target="_blank" rel="noopener noreferrer">
+                  <Link
+                    href={repoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      trackEvent("project_outbound_click", {
+                        project_id: contentId,
+                        target: "repo",
+                        location: trackingLocation,
+                      })
+                    }}
+                  >
                     <Github className="mr-2 h-4 w-4" />
                     코드 보기
                   </Link>
@@ -86,7 +118,27 @@ export function ProjectCard({ id, title, description = "", tags = [], image, dem
                 className="bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 hover:from-brand-blue-600 hover:to-brand-blue-900 border-0"
                 asChild
               >
-                <Link href={demoUrl || `/projects/${id}`} target={demoUrl ? "_blank" : undefined} rel={demoUrl ? "noopener noreferrer" : undefined}>
+                <Link
+                  href={demoUrl || `/projects/${id}`}
+                  target={demoUrl ? "_blank" : undefined}
+                  rel={demoUrl ? "noopener noreferrer" : undefined}
+                  onClick={() => {
+                    if (demoUrl) {
+                      trackEvent("project_outbound_click", {
+                        project_id: contentId,
+                        target: "demo",
+                        location: trackingLocation,
+                      })
+                      return
+                    }
+
+                    trackEvent("cta_click", {
+                      location: trackingLocation,
+                      target: "project",
+                      content_id: contentId,
+                    })
+                  }}
+                >
                   {demoUrl ? "서비스 보기" : "자세히 보기"}
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Link>

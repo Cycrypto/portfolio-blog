@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Post, PostStatus } from '../posts/entity/post.entity';
+import { Post } from '../posts/entity/post.entity';
 import { Project } from '../projects/project.entity';
 import { Comment } from '../comments/entity/comment.entity';
+import { PostsService } from '../posts/service/posts.service';
 
 @Injectable()
 export class StatsService {
@@ -14,38 +15,30 @@ export class StatsService {
     private readonly projectRepository: Repository<Project>,
     @InjectRepository(Comment)
     private readonly commentRepository: Repository<Comment>,
+    private readonly postsService: PostsService,
   ) {}
 
   async getTotals() {
-    const [posts, projects, comments] = await Promise.all([
+    const [posts, projects, comments, viewsResult] = await Promise.all([
       this.postRepository.count(),
       this.projectRepository.count(),
       this.commentRepository.count({ where: { isDeleted: false } }),
+      this.postRepository
+        .createQueryBuilder('post')
+        .select('COALESCE(SUM(post.views), 0)', 'totalViews')
+        .getRawOne<{ totalViews: string | null }>(),
     ]);
 
-    return { posts, projects, comments };
+    return {
+      posts,
+      projects,
+      comments,
+      views: Number(viewsResult?.totalViews ?? 0),
+    };
   }
 
   async getRecentPosts(limit = 5) {
-    return this.postRepository.find({
-      where: { status: PostStatus.PUBLISHED },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        excerpt: true,
-        image: true,
-        status: true,
-        author: true,
-        category: true,
-        publishDate: true,
-        views: true,
-        comments: true,
-        readTime: true,
-      },
-      order: { publishDate: 'DESC' },
-      take: limit,
-    });
+    return this.postsService.getAdminPosts('', '', 1, limit);
   }
 
   async getRecentProjects(limit = 5) {

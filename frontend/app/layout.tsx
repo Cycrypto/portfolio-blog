@@ -1,6 +1,8 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Toaster } from "sonner"
+
+import { UmamiScript } from "@/components/analytics/UmamiScript"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -18,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
+        <UmamiScript />
         {children}
         <Toaster position="top-right" richColors closeButton theme="light" />
       </body>

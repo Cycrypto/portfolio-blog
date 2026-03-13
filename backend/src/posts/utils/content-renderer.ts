@@ -13,8 +13,6 @@ import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
 import Mathematics from '@tiptap/extension-mathematics';
 import Youtube from '@tiptap/extension-youtube';
 import TextAlign from '@tiptap/extension-text-align';
@@ -22,6 +20,9 @@ import * as DOMPurify from 'isomorphic-dompurify';
 import { marked } from 'marked';
 import { HeadingItem, injectHeadingIds } from './heading-processor';
 import { JSDOM } from 'jsdom';
+import { normalizeUrl } from '../../common/utils/url.util';
+import { normalizeRenderedHtml, sanitizeStyleAttribute } from './rendered-html-normalizer';
+import { TableCell, TableHeader } from './table-extensions';
 
 // Setup DOM environment for Tiptap in Node.js
 if (typeof window === 'undefined') {
@@ -34,7 +35,8 @@ const purify = (DOMPurify as any).default ?? DOMPurify;
 
 purify.addHook('uponSanitizeAttribute', (node, data) => {
     const attrName = data.attrName;
-    const attrValue = String(data.attrValue || '').trim().toLowerCase();
+    const rawAttrValue = String(data.attrValue || '').trim();
+    const normalizedAttrValue = rawAttrValue.toLowerCase();
 
     if (attrName === 'srcset') {
         data.keepAttr = false;
@@ -42,51 +44,26 @@ purify.addHook('uponSanitizeAttribute', (node, data) => {
     }
 
     if (attrName === 'href') {
-        if (attrValue.startsWith('javascript:') || attrValue.startsWith('data:')) {
+        if (normalizedAttrValue.startsWith('javascript:') || normalizedAttrValue.startsWith('data:')) {
             data.keepAttr = false;
+            return;
         }
+        data.attrValue = normalizeUrl(rawAttrValue);
         return;
     }
 
     if (attrName === 'style') {
-        const safeDeclarations = attrValue
-            .split(';')
-            .map((declaration) => declaration.trim())
-            .filter(Boolean)
-            .map((declaration) => {
-                const [property, ...valueParts] = declaration.split(':');
-                return {
-                    property: property?.trim().toLowerCase(),
-                    value: valueParts.join(':').trim().toLowerCase(),
-                };
-            })
-            .filter(({ property, value }) => {
-                if (!property || !value) {
-                    return false;
-                }
-
-                if (property === 'text-align') {
-                    return ['left', 'center', 'right', 'justify'].includes(value);
-                }
-
-                if (property === 'color' || property === 'background-color') {
-                    return /^(#[0-9a-f]{3,8}|rgba?\([^\)]+\)|hsla?\([^\)]+\)|transparent|inherit|currentcolor)$/i.test(value);
-                }
-
-                return false;
-            })
-            .map(({ property, value }) => `${property}: ${value}`);
-
-        if (safeDeclarations.length === 0) {
+        const sanitizedStyle = sanitizeStyleAttribute(rawAttrValue);
+        if (!sanitizedStyle) {
             data.keepAttr = false;
         } else {
-            data.attrValue = safeDeclarations.join('; ');
+            data.attrValue = sanitizedStyle;
         }
         return;
     }
 
     if (attrName === 'src') {
-        if (attrValue.startsWith('javascript:')) {
+        if (normalizedAttrValue.startsWith('javascript:')) {
             data.keepAttr = false;
             return;
         }
@@ -94,7 +71,7 @@ purify.addHook('uponSanitizeAttribute', (node, data) => {
 
     if (node.tagName === 'IMG' && attrName === 'src') {
         const allowedPrefixes = ['http://', 'https://', '/', './', '../', 'data:image/'];
-        const isAllowed = allowedPrefixes.some((prefix) => attrValue.startsWith(prefix));
+        const isAllowed = allowedPrefixes.some((prefix) => normalizedAttrValue.startsWith(prefix));
         if (!isAllowed) {
             data.keepAttr = false;
         }
@@ -106,7 +83,7 @@ const viewerExtensions = [
         codeBlock: false,
         horizontalRule: false,
         heading: {
-            levels: [1, 2, 3],
+            levels: [1, 2, 3, 4],
         },
     }),
     Underline,
@@ -194,7 +171,7 @@ const PURIFY_CONFIG = {
         'a', 'img', 'iframe',
         'ul', 'ol', 'li',
         'blockquote', 'code', 'pre',
-        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td', 'colgroup', 'col',
         'div', 'span', 'hr', 'mark', 'input', 'label',
         'math', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'annotation',
     ],
@@ -221,7 +198,7 @@ export function renderTiptapContent(json: JSONContent): RenderedContent {
     try {
         const rawHtml = generateHTML(json, viewerExtensions);
         const { html: htmlWithIds, headings } = injectHeadingIds(rawHtml);
-        const sanitizedHtml = purify.sanitize(htmlWithIds, PURIFY_CONFIG);
+        const sanitizedHtml = sanitizeContentHtml(htmlWithIds);
         const plainText = generateText(json, viewerExtensions);
         const wordCount = calculateWordCount(plainText);
         const readTime = calculateReadTime(plainText);
@@ -243,7 +220,7 @@ export function renderTiptapContent(json: JSONContent): RenderedContent {
 export function renderMarkdownContent(markdown: string): RenderedContent {
     const rawHtml = marked.parse(markdown, { breaks: true, gfm: true }) as string;
     const { html: htmlWithIds, headings } = injectHeadingIds(rawHtml);
-    const sanitizedHtml = purify.sanitize(htmlWithIds, PURIFY_CONFIG);
+    const sanitizedHtml = sanitizeContentHtml(htmlWithIds);
     const plainText = extractPlainText(sanitizedHtml);
     const wordCount = calculateWordCount(plainText);
     const readTime = calculateReadTime(plainText);
@@ -260,6 +237,11 @@ export function renderMarkdownContent(markdown: string): RenderedContent {
 export function convertMarkdownToTiptapJSON(markdown: string): JSONContent {
     const html = marked.parse(markdown, { breaks: true, gfm: true }) as string;
     return generateJSON(html, viewerExtensions);
+}
+
+export function sanitizeContentHtml(html: string): string {
+    const sanitizedHtml = purify.sanitize(html, PURIFY_CONFIG);
+    return normalizeRenderedHtml(sanitizedHtml);
 }
 
 function extractPlainText(html: string): string {

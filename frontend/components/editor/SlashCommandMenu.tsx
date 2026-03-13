@@ -26,9 +26,10 @@ export function SlashCommandMenu({
           <div className="notion-slash-group-title">{group}</div>
           <div className="space-y-1">
             {groupActions.map((action) => {
-              actionIndex += 1
+              const currentActionIndex = actionIndex + 1
+              actionIndex = currentActionIndex
               const Icon = action.icon
-              const isSelected = actionIndex === selectedIndex
+              const isSelected = currentActionIndex === selectedIndex
 
               return (
                 <button
@@ -40,7 +41,7 @@ export function SlashCommandMenu({
                     event.preventDefault()
                     onSelect(action)
                   }}
-                  onMouseEnter={() => onHoverIndexChange(actionIndex)}
+                  onMouseEnter={() => onHoverIndexChange(currentActionIndex)}
                 >
                   <div className="flex items-start gap-3">
                     <div className="rounded-md border border-neutral-slate-200 bg-white p-2 text-neutral-slate-500">

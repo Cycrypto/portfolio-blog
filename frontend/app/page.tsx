@@ -16,6 +16,7 @@ import { BlogCard } from "@/components/blog/blog-card"
 import { Timeline } from "@/components/home/timeline"
 import { getPosts, Post, getProjects, Project } from "@/lib/api"
 import { profileService, type ProfileData } from "@/lib/api/services/profile"
+import { trackEvent } from "@/lib/analytics/track"
 import { normalizeImageUrl } from "@/lib/utils/image"
 
 export default function Portfolio() {
@@ -45,6 +46,20 @@ export default function Portfolio() {
   const getPostSlug = (post: Post) => (post.slug && post.slug !== "null" ? post.slug : post.id.toString())
   const getPrimaryImage = (images?: string[]) =>
     (images || []).map((image) => normalizeImageUrl(image)).find((image): image is string => Boolean(image))
+  const trackCtaClick = (location: string, target: string, contentId?: string | number) => {
+    trackEvent("cta_click", {
+      location,
+      target,
+      content_id: contentId,
+    })
+  }
+
+  const trackSocialClick = (channel: "github" | "linkedin" | "email", location: string) => {
+    trackEvent("social_click", {
+      channel,
+      location,
+    })
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -131,7 +146,12 @@ export default function Portfolio() {
 
             <div className="flex flex-wrap gap-3 pt-2">
               <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
-                <Link href="/blog">
+                <Link
+                  href="/blog"
+                  onClick={() => {
+                    trackCtaClick("home_hero", "blog")
+                  }}
+                >
                   최근 글 보기 <BookOpen className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -140,7 +160,14 @@ export default function Portfolio() {
                 className="border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
                 asChild
               >
-                <Link href="#contact">문의 남기기</Link>
+                <Link
+                  href="#contact"
+                  onClick={() => {
+                    trackCtaClick("home_hero", "contact")
+                  }}
+                >
+                  문의 남기기
+                </Link>
               </Button>
             </div>
 
@@ -155,7 +182,14 @@ export default function Portfolio() {
             </div>
 
             <div className="flex flex-wrap gap-3 pt-1">
-              <Link href={profile.github || "https://github.com"} target="_blank" rel="noopener noreferrer">
+              <Link
+                href={profile.github || "https://github.com"}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackSocialClick("github", "home_hero_social")
+                }}
+              >
                 <Button
                   variant="ghost"
                   size="icon"
@@ -165,7 +199,14 @@ export default function Portfolio() {
                   <span className="sr-only">GitHub</span>
                 </Button>
               </Link>
-              <Link href={profile.linkedin || "https://linkedin.com"} target="_blank" rel="noopener noreferrer">
+              <Link
+                href={profile.linkedin || "https://linkedin.com"}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackSocialClick("linkedin", "home_hero_social")
+                }}
+              >
                 <Button
                   variant="ghost"
                   size="icon"
@@ -176,7 +217,12 @@ export default function Portfolio() {
                 </Button>
               </Link>
               {profile.email && (
-                <Link href={`mailto:${profile.email}`}>
+                <Link
+                  href={`mailto:${profile.email}`}
+                  onClick={() => {
+                    trackSocialClick("email", "home_hero_social")
+                  }}
+                >
                   <Button
                     variant="ghost"
                     size="icon"
@@ -256,6 +302,9 @@ export default function Portfolio() {
                           key={post.id}
                           href={`/blog/${getPostSlug(post)}`}
                           className="group flex items-start justify-between rounded-lg border border-brand-blue-200/70 bg-white px-3 py-2.5 transition-colors hover:bg-brand-blue-50/60"
+                          onClick={() => {
+                            trackCtaClick("home_hero_recent_post", "blog", getPostSlug(post))
+                          }}
                         >
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-neutral-slate-800 group-hover:text-brand-blue-700">
@@ -383,12 +432,18 @@ export default function Portfolio() {
                     image={getPrimaryImage(project.images)}
                     demoUrl={project.liveUrl}
                     repoUrl={project.githubUrl}
+                    trackingLocation="home_project_card"
                   />
                 ))}
               </div>
               <div className="mt-10 text-center">
                 <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
-                  <Link href="/projects">
+                  <Link
+                    href="/projects"
+                    onClick={() => {
+                      trackCtaClick("home_projects_section", "project")
+                    }}
+                  >
                     프로젝트 전체 보기 <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -398,7 +453,14 @@ export default function Portfolio() {
             <GlassmorphicCard className="mt-12 text-center">
               <p className="text-neutral-slate-600">공개할 프로젝트를 준비 중입니다.</p>
               <Button className="mt-4 bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
-                <Link href="/projects">프로젝트 목록 보기</Link>
+                <Link
+                  href="/projects"
+                  onClick={() => {
+                    trackCtaClick("home_projects_section", "project")
+                  }}
+                >
+                  프로젝트 목록 보기
+                </Link>
               </Button>
             </GlassmorphicCard>
           )}
@@ -423,12 +485,17 @@ export default function Portfolio() {
             <>
               <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {latestPosts.map((post) => (
-                  <BlogCard key={post.id} {...transformToBlogPost(post)} />
+                  <BlogCard key={post.id} {...transformToBlogPost(post)} trackingLocation="home_blog_card" />
                 ))}
               </div>
               <div className="mt-10 text-center">
                 <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
-                  <Link href="/blog">
+                  <Link
+                    href="/blog"
+                    onClick={() => {
+                      trackCtaClick("home_blog_section", "blog")
+                    }}
+                  >
                     글 전체 보기 <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -438,7 +505,14 @@ export default function Portfolio() {
             <GlassmorphicCard className="mt-12 text-center">
               <p className="text-neutral-slate-600">새 글을 준비 중입니다.</p>
               <Button className="mt-4 bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
-                <Link href="/blog">글 목록 보기</Link>
+                <Link
+                  href="/blog"
+                  onClick={() => {
+                    trackCtaClick("home_blog_section", "blog")
+                  }}
+                >
+                  글 목록 보기
+                </Link>
               </Button>
             </GlassmorphicCard>
           )}
@@ -511,7 +585,14 @@ export default function Portfolio() {
             <p className="mt-2 text-sm text-neutral-slate-500">© {new Date().getFullYear()} {profile.name}. 모든 권리 보유.</p>
           </div>
           <div className="flex gap-3">
-            <Link href={profile.github || "https://github.com"} target="_blank" rel="noopener noreferrer">
+            <Link
+              href={profile.github || "https://github.com"}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                trackSocialClick("github", "footer_social")
+              }}
+            >
               <Button
                 variant="ghost"
                 size="icon"
@@ -521,7 +602,14 @@ export default function Portfolio() {
                 <span className="sr-only">GitHub</span>
               </Button>
             </Link>
-            <Link href={profile.linkedin || "https://linkedin.com"} target="_blank" rel="noopener noreferrer">
+            <Link
+              href={profile.linkedin || "https://linkedin.com"}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                trackSocialClick("linkedin", "footer_social")
+              }}
+            >
               <Button
                 variant="ghost"
                 size="icon"
@@ -532,7 +620,12 @@ export default function Portfolio() {
               </Button>
             </Link>
             {profile.email && (
-              <Link href={`mailto:${profile.email}`}>
+              <Link
+                href={`mailto:${profile.email}`}
+                onClick={() => {
+                  trackSocialClick("email", "footer_social")
+                }}
+              >
                 <Button
                   variant="ghost"
                   size="icon"

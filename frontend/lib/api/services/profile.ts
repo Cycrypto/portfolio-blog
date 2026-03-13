@@ -1,5 +1,6 @@
 import { apiRequest } from '../client/base'
 import { TokenManager } from '../../auth/token-manager'
+import { normalizeUrlFields } from '@/lib/utils/url'
 
 export interface ProfileData {
   // 기본 정보
@@ -42,7 +43,7 @@ export const profileService = {
       // => response.data?.data에 실데이터가 있음
       // 호환성을 위해 두 경로 모두 체크
       // @ts-ignore
-      return (response as any)?.data?.data || (response as any)?.data || response as any
+      return normalizeProfileLinks((response as any)?.data?.data || (response as any)?.data || response as any)
     } catch (error) {
       console.error('Failed to fetch profile:', error)
       throw new Error('프로필 데이터를 가져오는데 실패했습니다.')
@@ -54,11 +55,11 @@ export const profileService = {
     try {
       const response = await apiRequest<{ data: ProfileData }>('/profile', {
         method: 'PUT',
-        body: JSON.stringify(data),
+        body: JSON.stringify(normalizeProfileLinks(data)),
       })
       // 동일하게 래핑된 구조 처리
       // @ts-ignore
-      return (response as any)?.data?.data || (response as any)?.data || response as any
+      return normalizeProfileLinks((response as any)?.data?.data || (response as any)?.data || response as any)
     } catch (error) {
       console.error('Failed to update profile:', error)
       throw new Error('프로필 데이터 업데이트에 실패했습니다.')
@@ -123,4 +124,8 @@ export const profileService = {
       showStatus: true
     }
   }
+}
+
+function normalizeProfileLinks<T extends Partial<ProfileData>>(profile: T): T {
+  return normalizeUrlFields(profile, ['github', 'linkedin'])
 }

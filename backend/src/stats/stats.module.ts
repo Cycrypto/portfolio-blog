@@ -5,9 +5,10 @@ import { StatsController } from './stats.controller';
 import { Post } from '../posts/entity/post.entity';
 import { Project } from '../projects/project.entity';
 import { Comment } from '../comments/entity/comment.entity';
+import { PostsModule } from '../posts/posts.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Post, Project, Comment])],
+  imports: [TypeOrmModule.forFeature([Post, Project, Comment]), PostsModule],
   providers: [StatsService],
   controllers: [StatsController],
 })

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Profile } from './profile.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { normalizeUrlFieldsInPlace } from '../common/utils/url.util';
 
 const defaultProfile: Partial<Profile> = {
   name: '박준하',
@@ -35,6 +36,11 @@ export class ProfileService {
       profile = this.profileRepository.create({ id: 1, ...defaultProfile });
       await this.profileRepository.save(profile);
     }
+
+    if (normalizeUrlFieldsInPlace(profile, ['github', 'linkedin'])) {
+      profile = await this.profileRepository.save(profile);
+    }
+
     return profile;
   }
 
@@ -44,6 +50,7 @@ export class ProfileService {
       profile = this.profileRepository.create({ id: 1, ...defaultProfile });
     }
 
+    normalizeUrlFieldsInPlace(updateDto, ['github', 'linkedin']);
     const merged = this.profileRepository.merge(profile, updateDto);
     return this.profileRepository.save(merged);
   }

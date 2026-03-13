@@ -4,13 +4,14 @@ import { PostsController } from './controller/posts.controller';
 import { PostsService } from './service/posts.service';
 import { TagsController } from './controller/tags.controller';
 import { TagsService } from './service/tags.service';
+import { Comment } from '../comments/entity/comment.entity';
 import { Post } from './entity/post.entity';
 import { Tag } from './entity/tag.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Post, Tag])],
+  imports: [TypeOrmModule.forFeature([Post, Tag, Comment])],
   controllers: [PostsController, TagsController],
   providers: [PostsService, TagsService],
   exports: [PostsService, TagsService],
 })
-export class PostsModule {} 
+export class PostsModule {}
