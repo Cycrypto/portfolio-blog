@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { PostEngagementTracker } from '@/components/analytics/PostEngagementTracker';
 import { AuthorCard } from '@/components/blog/author-card';
 import { BlogPostAdminActions } from '@/components/blog/blog-post-admin-actions';
 import { CommentSection } from '@/components/blog/CommentSection';
@@ -62,7 +63,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            <ShareButtons title={post.title} />
+            <ShareButtons title={post.title} contentId={postReactionId} />
             <BlogPostAdminActions
               postId={post.id.toString()}
               postTitle={post.title}
@@ -145,6 +146,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <Separator className="mb-8" />
 
             <div className="max-w-none">
+              <PostEngagementTracker
+                postId={postReactionId}
+                readTime={post.readTime}
+                wordCount={post.wordCount}
+              />
               {post.contentHtml ? (
                 <div className="rounded-lg bg-white p-8 shadow-sm">
                   <TiptapViewer contentHtml={post.contentHtml} />

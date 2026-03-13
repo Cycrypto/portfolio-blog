@@ -5,6 +5,7 @@ import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { TrackedLink } from "@/components/analytics/TrackedLink"
 import { ProjectGallery } from "@/components/project/project-gallery"
 import { RelatedProjects } from "@/components/project/related-projects"
 import { getProject } from "@/lib/api"
@@ -57,6 +58,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const images = (project.images || [])
     .map((image: string) => normalizeImageUrl(image))
     .filter((image: string | undefined): image is string => Boolean(image))
+  const projectId = String(project.id ?? slug)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
@@ -76,18 +78,38 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           <div className="flex items-center gap-2">
             {project.githubUrl && (
               <Button variant="outline" size="sm" asChild>
-                <Link href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                <TrackedLink
+                  href={project.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  eventName="project_outbound_click"
+                  eventPayload={{
+                    project_id: projectId,
+                    target: "repo",
+                    location: "project_detail",
+                  }}
+                >
                   <Github className="h-4 w-4 mr-2" />
                   코드 보기
-                </Link>
+                </TrackedLink>
               </Button>
             )}
             {project.liveUrl && (
               <Button size="sm" className="bg-brand-blue-500 hover:bg-brand-blue-600" asChild>
-                <Link href={project.liveUrl} target="_blank" rel="noopener noreferrer">
+                <TrackedLink
+                  href={project.liveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  eventName="project_outbound_click"
+                  eventPayload={{
+                    project_id: projectId,
+                    target: "demo",
+                    location: "project_detail",
+                  }}
+                >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   서비스 보기
-                </Link>
+                </TrackedLink>
               </Button>
             )}
           </div>
@@ -119,7 +141,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
             <Separator className="mb-8" />
 
-            {images.length > 0 ? <ProjectGallery images={images} title={project.title} /> : null}
+            {images.length > 0 ? <ProjectGallery projectId={projectId} images={images} title={project.title} /> : null}
 
             {project.longDescription && (
               <div className="prose prose-lg max-w-none">

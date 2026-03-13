@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, PenSquare, RefreshCcw } from "lucide-react"
 
@@ -13,6 +13,7 @@ import { Pagination } from "@/components/common/pagination"
 import { AdvancedSearch } from "@/components/common/advanced-search"
 import { Post } from "@/lib/api"
 import { useAdminAuth } from "@/hooks/use-admin-auth"
+import { trackEvent } from "@/lib/analytics/track"
 import { normalizeImageUrl } from "@/lib/utils/image"
 
 interface BlogPost {
@@ -34,6 +35,8 @@ export default function BlogPage() {
   const [selectedTag, setSelectedTag] = useState("")
   const [searchKeyword, setSearchKeyword] = useState("")
   const [refreshKey, setRefreshKey] = useState(0)
+  const lastTrackedSearchKeyRef = useRef("")
+  const lastTrackedFilterKeyRef = useRef("")
 
   const isAdmin = useAdminAuth()
   const postsPerPage = 9
@@ -69,9 +72,36 @@ export default function BlogPage() {
 
         const result = await response.json()
         const { data: nextPosts, totalCount } = result.data
+        const normalizedKeyword = searchKeyword.trim()
+        const normalizedTag = selectedTag.trim()
+        const nextPostList = Array.isArray(nextPosts) ? nextPosts : []
+        const resultCount = typeof totalCount === "number" ? totalCount : nextPostList.length
 
-        setPosts(Array.isArray(nextPosts) ? nextPosts : [])
-        setTotalPages(Math.max(1, Math.ceil((totalCount || 0) / postsPerPage)))
+        setPosts(nextPostList)
+        setTotalPages(Math.max(1, Math.ceil(resultCount / postsPerPage)))
+
+        if (normalizedKeyword && currentPage === 1) {
+          const trackingKey = `${normalizedKeyword.toLowerCase()}:${resultCount}`
+          if (lastTrackedSearchKeyRef.current !== trackingKey) {
+            trackEvent("blog_search", {
+              query_length: normalizedKeyword.length,
+              result_count: resultCount,
+            })
+            lastTrackedSearchKeyRef.current = trackingKey
+          }
+        }
+
+        if (normalizedTag && currentPage === 1) {
+          const trackingKey = `${normalizedTag.toLowerCase()}:${resultCount}`
+          if (lastTrackedFilterKeyRef.current !== trackingKey) {
+            trackEvent("blog_filter", {
+              filter_type: "tag",
+              filter_value: normalizedTag,
+              result_count: resultCount,
+            })
+            lastTrackedFilterKeyRef.current = trackingKey
+          }
+        }
       } catch (err) {
         if (controller.signal.aborted) {
           return
@@ -90,6 +120,18 @@ export default function BlogPage() {
 
     return () => controller.abort()
   }, [currentPage, selectedTag, searchKeyword, refreshKey])
+
+  useEffect(() => {
+    if (!searchKeyword.trim()) {
+      lastTrackedSearchKeyRef.current = ""
+    }
+  }, [searchKeyword])
+
+  useEffect(() => {
+    if (!selectedTag.trim()) {
+      lastTrackedFilterKeyRef.current = ""
+    }
+  }, [selectedTag])
 
   const transformToBlogPost = (post: Post): BlogPost => {
     const slug = post.slug && post.slug !== "null" ? post.slug : post.id.toString()
@@ -237,7 +279,7 @@ export default function BlogPage() {
               </div>
             </div>
           ) : (
-            posts.map((post) => <BlogCard key={post.id} {...transformToBlogPost(post)} />)
+            posts.map((post) => <BlogCard key={post.id} {...transformToBlogPost(post)} trackingLocation="blog_list_card" />)
           )}
         </div>
 

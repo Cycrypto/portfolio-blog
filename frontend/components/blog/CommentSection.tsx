@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Comment, createComment, deleteComment, getComments, updateComment } from "@/lib/api"
+import { trackEvent } from "@/lib/analytics/track"
 import { TokenManager } from "@/lib/auth/token-manager"
 
 interface CommentSectionProps {
@@ -94,6 +95,11 @@ export function CommentSection({ postId }: CommentSectionProps) {
         content: content.trim(),
         authorName: authorName.trim(),
         password: authorPassword.trim(),
+      })
+
+      trackEvent("comment_submit_success", {
+        post_id: postId,
+        is_reply: Boolean(parentId),
       })
 
       toast.success(parentId ? "답글이 등록되었습니다." : "댓글이 등록되었습니다.")

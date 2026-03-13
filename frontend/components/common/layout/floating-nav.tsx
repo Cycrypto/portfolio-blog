@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { trackEvent } from "@/lib/analytics/track"
 
 export function FloatingNav() {
   const [isVisible, setIsVisible] = useState(false)
@@ -49,7 +50,15 @@ export function FloatingNav() {
     { name: "연락", href: "#contact" },
   ]
 
-  const handleNavClick = () => {
+  const handleNavClick = (href?: string) => {
+    if (href) {
+      const target = href.replace("#", "") || "home"
+      trackEvent("cta_click", {
+        location: "floating_nav",
+        target,
+      })
+    }
+
     if (isMobile) {
       setIsOpen(false)
     }
@@ -88,7 +97,7 @@ export function FloatingNav() {
                         key={item.name}
                         href={item.href}
                         className="block rounded-md px-3 py-2 text-sm font-medium text-neutral-slate-700 hover:bg-brand-blue-50 hover:text-brand-blue-700"
-                        onClick={handleNavClick}
+                        onClick={() => handleNavClick(item.href)}
                       >
                         {item.name}
                       </Link>
@@ -99,7 +108,7 @@ export function FloatingNav() {
                       <Link
                         href="/admin"
                         className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-blue-700 hover:bg-brand-blue-50"
-                        onClick={handleNavClick}
+                        onClick={() => handleNavClick("/admin")}
                       >
                         <LayoutDashboard className="h-4 w-4" />
                         관리자
@@ -119,7 +128,7 @@ export function FloatingNav() {
                   key={item.name}
                   href={item.href}
                   className="rounded-full px-3 py-1 text-sm font-medium text-neutral-slate-600 transition-colors hover:bg-brand-blue-50 hover:text-brand-blue-700"
-                  onClick={handleNavClick}
+                  onClick={() => handleNavClick(item.href)}
                 >
                   {item.name}
                 </Link>

@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { likePost } from "@/lib/api"
+import { trackEvent } from "@/lib/analytics/track"
 import { cn } from "@/lib/utils"
 
 const LIKED_POSTS_STORAGE_KEY = "blog-liked-posts"
@@ -155,6 +156,9 @@ export function PostLikeButton({ postId, initialLikes, className }: PostLikeButt
       persistLikedPost(postId)
       setLikes(result.likes)
       dispatchLikeUpdated(postId, result.likes)
+      trackEvent("post_like", {
+        post_id: postId,
+      })
       toast.success("좋아요가 반영되었습니다.")
     } catch {
       setLiked(false)

@@ -11,9 +11,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { submitContact } from "@/lib/api"
+import { trackEvent, trackEventOncePerSession } from "@/lib/analytics/track"
 
 export function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const trackFormStart = () => {
+    trackEventOncePerSession("contact_form_start", "contact-form:start:home", {
+      location: "contact_section",
+    })
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -36,6 +43,9 @@ export function ContactForm() {
 
     try {
       await submitContact(payload)
+      trackEvent("contact_submit_success", {
+        location: "contact_section",
+      })
       toast.success("문의가 접수되었습니다.", {
         description: "내용을 확인한 뒤 답변드리겠습니다.",
       })
@@ -61,7 +71,7 @@ export function ContactForm() {
         <div>
           <h3 className="text-2xl font-bold mb-6 text-neutral-slate-800">문의 남기기</h3>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} onFocusCapture={trackFormStart} className="space-y-6">
             <div className="space-y-2">
               <Input
                 name="name"
