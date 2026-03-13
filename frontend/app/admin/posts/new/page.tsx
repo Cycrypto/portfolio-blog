@@ -165,6 +165,14 @@ export default function NewPost() {
     ],
   );
 
+  const editorDocumentActions = useMemo(
+    () => ({
+      openSettings: () => setSettingsOpen(true),
+      saveDraft: () => void handleSave("draft"),
+    }),
+    [handleSave],
+  )
+
   useEffect(() => {
     const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
     if (!raw) return;
@@ -351,6 +359,7 @@ export default function NewPost() {
             className="notion-fullscreen"
             onError={setError}
             onUploadStateChange={setIsUploadingEditorMedia}
+            documentActions={editorDocumentActions}
           />
         </div>
       </div>

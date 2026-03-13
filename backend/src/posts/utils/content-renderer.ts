@@ -87,7 +87,9 @@ const viewerExtensions = [
         },
     }),
     Underline,
-    Highlight,
+    Highlight.configure({
+        multicolor: true,
+    }),
     Typography,
     HorizontalRule,
     TaskList,

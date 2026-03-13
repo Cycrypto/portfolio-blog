@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
 import type { Editor } from "@tiptap/core"
+import { type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from "react"
 import { EditorContent, JSONContent, useEditor } from "@tiptap/react"
 import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus"
 import { CellSelection } from "@tiptap/pm/tables"
 import { Button } from "@/components/ui/button"
+import { BlockHandleMenu } from "@/components/editor/BlockHandleMenu"
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { EditorCommandPalette } from "@/components/editor/EditorCommandPalette"
+import { SlashCommandMenu } from "@/components/editor/SlashCommandMenu"
+import { uploadMedia } from "@/lib/api"
+import {
+  EDITOR_ACTIONS,
+  EditorAction,
+  EditorDocumentActions,
+  filterEditorActions,
+  getActionsForSurface,
+  InsertDialogMode,
+} from "@/lib/tiptap/editor-actions"
+import {
+  canTransformTopLevelBlock,
+  deleteTopLevelBlock,
+  duplicateTopLevelBlock,
+  focusAfterTopLevelBlock,
+  focusTopLevelBlock,
+  getTopLevelBlockFromTarget,
+  insertParagraphBelowTopLevelBlock,
+} from "@/lib/tiptap/block-helpers"
+import type { TopLevelBlockRange } from "@/lib/tiptap/block-helpers"
 import { getEditorExtensions } from "@/lib/tiptap/editor-extensions"
 import {
   COLUMN_WIDTH_STEP,
@@ -29,40 +51,64 @@ import {
 } from "@/lib/tiptap/table-controls"
 import { normalizeUrl } from "@/lib/utils/url"
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Bold,
   Code2,
   Heading1,
   Heading2,
+  Highlighter,
   Image,
   Italic,
   Link2,
   List,
   ListOrdered,
   ListTodo,
-  Minus,
+  Palette,
+  PlusSquare,
   Quote,
   Strikethrough,
-  Highlighter,
-  Palette,
   Table as TableIcon,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  PlusSquare,
   Video,
 } from "lucide-react"
-import { uploadMedia } from "@/lib/api"
 
 interface TiptapEditorProps {
+  className?: string
   content: JSONContent | null
+  documentActions?: EditorDocumentActions
   onChange: (json: JSONContent) => void
   onError?: (message: string) => void
   onUploadStateChange?: (isUploading: boolean) => void
-  className?: string
 }
 
-type InsertDialogMode = "image" | "link" | "math" | "youtube"
+interface SlashCommandState {
+  blockText: string
+  from: number
+  query: string
+  to: number
+}
+
+interface HoveredBlockState {
+  block: TopLevelBlockRange
+  top: number
+}
+
+const BLOCK_TRANSFORM_ACTION_IDS = new Set([
+  "paragraph",
+  "heading-1",
+  "heading-2",
+  "bullet-list",
+  "ordered-list",
+  "task-list",
+  "blockquote",
+  "code-block",
+  "align-left",
+  "align-center",
+  "align-right",
+  "align-justify",
+])
 
 const INSERT_DIALOG_COPY: Record<
   InsertDialogMode,
@@ -94,19 +140,56 @@ const INSERT_DIALOG_COPY: Record<
   },
 }
 
+function getSlashCommandState(editor: Editor | null): SlashCommandState | null {
+  if (!editor || !editor.isEditable) {
+    return null
+  }
+
+  const { empty, $from } = editor.state.selection
+  if (!empty) {
+    return null
+  }
+
+  const parent = $from.parent
+  if (!parent.isTextblock) {
+    return null
+  }
+
+  const blockText = parent.textContent
+  if (!blockText.startsWith("/")) {
+    return null
+  }
+
+  return {
+    blockText,
+    from: $from.start(),
+    query: blockText.slice(1).trim(),
+    to: $from.end(),
+  }
+}
+
 export function TiptapEditor({
+  className = "",
   content,
+  documentActions,
   onChange,
   onError,
   onUploadStateChange,
-  className = "",
 }: TiptapEditorProps) {
+  const [editorVersion, setEditorVersion] = useState(0)
+  const [insertDialogMode, setInsertDialogMode] = useState<InsertDialogMode | null>(null)
+  const [insertError, setInsertError] = useState<string | null>(null)
+  const [insertValue, setInsertValue] = useState("")
+  const [isBlockInsertMenuOpen, setIsBlockInsertMenuOpen] = useState(false)
+  const [isBlockTransformMenuOpen, setIsBlockTransformMenuOpen] = useState(false)
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [selectedSlashIndex, setSelectedSlashIndex] = useState(0)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [showHighlightPicker, setShowHighlightPicker] = useState(false)
-  const [insertDialogMode, setInsertDialogMode] = useState<InsertDialogMode | null>(null)
-  const [insertValue, setInsertValue] = useState("")
-  const [insertError, setInsertError] = useState<string | null>(null)
+  const [dismissedSlashText, setDismissedSlashText] = useState<string | null>(null)
+  const [hoveredBlock, setHoveredBlock] = useState<HoveredBlockState | null>(null)
+  const editorFrameRef = useRef<HTMLDivElement | null>(null)
   const [hasTextSelection, setHasTextSelection] = useState(false)
   const [tableSelection, setTableSelection] = useState<ReturnType<typeof getTableSelectionState>>(null)
   const [rowHeightInput, setRowHeightInput] = useState("")
@@ -114,6 +197,10 @@ export function TiptapEditor({
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const colorPickerRef = useRef<HTMLDivElement | null>(null)
   const highlightPickerRef = useRef<HTMLDivElement | null>(null)
+  const latestSelectedSlashIndexRef = useRef(0)
+  const latestSlashActionsRef = useRef<EditorAction[]>([])
+  const latestSlashStateRef = useRef<SlashCommandState | null>(null)
+  const runSlashActionRef = useRef<(action: EditorAction) => void>(() => undefined)
 
   const updateUploadingState = (nextValue: boolean) => {
     setIsUploading(nextValue)
@@ -143,6 +230,45 @@ export function TiptapEditor({
       attributes: {
         class: "notion-content focus:outline-none",
       },
+      handleKeyDown: (_view, event) => {
+        const slashState = latestSlashStateRef.current
+        const slashActions = latestSlashActionsRef.current
+
+        if (!slashState || slashActions.length === 0) {
+          return false
+        }
+
+        if (event.key === "ArrowDown") {
+          event.preventDefault()
+          setSelectedSlashIndex((currentIndex) => (currentIndex + 1) % slashActions.length)
+          return true
+        }
+
+        if (event.key === "ArrowUp") {
+          event.preventDefault()
+          setSelectedSlashIndex((currentIndex) => (currentIndex - 1 + slashActions.length) % slashActions.length)
+          return true
+        }
+
+        if (event.key === "Enter" || event.key === "Tab") {
+          const selectedAction = slashActions[latestSelectedSlashIndexRef.current] || slashActions[0]
+          if (!selectedAction) {
+            return false
+          }
+
+          event.preventDefault()
+          runSlashActionRef.current(selectedAction)
+          return true
+        }
+
+        if (event.key === "Escape") {
+          event.preventDefault()
+          setDismissedSlashText(slashState.blockText)
+          return true
+        }
+
+        return false
+      },
       handlePaste: (_view, event) => {
         const items = Array.from(event.clipboardData?.items || [])
         const imageItem = items.find((item) => item.type.indexOf("image") !== -1)
@@ -160,13 +286,16 @@ export function TiptapEditor({
     },
     onCreate: ({ editor: activeEditor }) => {
       syncEditorUiState(activeEditor)
+      setEditorVersion((currentVersion) => currentVersion + 1)
     },
     onSelectionUpdate: ({ editor: activeEditor }) => {
       syncEditorUiState(activeEditor)
+      setEditorVersion((currentVersion) => currentVersion + 1)
     },
     onUpdate: ({ editor: activeEditor }) => {
       onChange(activeEditor.getJSON())
       syncEditorUiState(activeEditor)
+      setEditorVersion((currentVersion) => currentVersion + 1)
     },
   })
 
@@ -183,6 +312,7 @@ export function TiptapEditor({
 
     setInsertDialogMode(mode)
     setInsertError(null)
+
     if (mode === "link") {
       setInsertValue((editor.getAttributes("link").href as string | undefined) || "")
       return
@@ -228,6 +358,20 @@ export function TiptapEditor({
     }
 
     editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
+  }
+
+  const clearSlashCommand = () => {
+    if (!editor) {
+      return
+    }
+
+    const activeSlashState = latestSlashStateRef.current
+    if (!activeSlashState) {
+      return
+    }
+
+    editor.chain().focus().deleteRange({ from: activeSlashState.from, to: activeSlashState.to }).run()
+    setDismissedSlashText(null)
   }
 
   const applyInsertDialog = () => {
@@ -337,6 +481,179 @@ export function TiptapEditor({
     "#c7d2fe", "#ddd6fe", "#e9d5ff", "#f3e8ff", "#fce7f3", "#fecdd3",
   ]
 
+  const actionContext = editor
+    ? {
+        documentActions,
+        editor,
+        insertTable,
+        openImagePicker: () => fileInputRef.current?.click(),
+        openInsertDialog,
+      }
+    : null
+
+  const slashState = useMemo(() => getSlashCommandState(editor), [editor, editorVersion])
+
+  const floatingActions = useMemo(() => {
+    if (!actionContext) {
+      return []
+    }
+
+    return getActionsForSurface(EDITOR_ACTIONS, actionContext, "floating")
+  }, [actionContext, editorVersion])
+
+  const paletteActions = useMemo(() => {
+    if (!actionContext) {
+      return []
+    }
+
+    return getActionsForSurface(EDITOR_ACTIONS, actionContext, "palette")
+  }, [actionContext, editorVersion])
+
+  const blockActions = useMemo(() => {
+    if (!actionContext) {
+      return []
+    }
+
+    return getActionsForSurface(EDITOR_ACTIONS, actionContext, "block")
+  }, [actionContext, editorVersion])
+
+  const slashActions = useMemo(() => {
+    if (!actionContext || !slashState) {
+      return []
+    }
+
+    const visibleActions = getActionsForSurface(EDITOR_ACTIONS, actionContext, "slash")
+    return filterEditorActions(visibleActions, slashState.query)
+  }, [actionContext, slashState])
+
+  const blockInsertActions = useMemo(
+    () => blockActions.filter((action) => !BLOCK_TRANSFORM_ACTION_IDS.has(action.id)),
+    [blockActions],
+  )
+
+  const blockTransformActions = useMemo(() => {
+    if (!hoveredBlock || !canTransformTopLevelBlock(hoveredBlock.block)) {
+      return []
+    }
+
+    return blockActions.filter((action) => BLOCK_TRANSFORM_ACTION_IDS.has(action.id))
+  }, [blockActions, hoveredBlock])
+
+  const isSlashMenuOpen = Boolean(
+    slashState &&
+    slashActions.length > 0 &&
+    slashState.blockText !== dismissedSlashText,
+  )
+  const isBlockMenuOpen = isBlockInsertMenuOpen || isBlockTransformMenuOpen
+
+  const runEditorAction = (action: EditorAction, options?: { clearSlash?: boolean }) => {
+    if (!actionContext) {
+      return
+    }
+
+    if (options?.clearSlash) {
+      clearSlashCommand()
+    }
+
+    setIsCommandPaletteOpen(false)
+    action.run(actionContext)
+  }
+
+  const updateHoveredBlock = (target: EventTarget | null) => {
+    if (!editor || !editorFrameRef.current) {
+      return
+    }
+
+    const hit = getTopLevelBlockFromTarget(editor, target)
+    if (!hit) {
+      return
+    }
+
+    const frameRect = editorFrameRef.current.getBoundingClientRect()
+    const blockRect = hit.element.getBoundingClientRect()
+    const nextHoveredBlock = {
+      block: hit.block,
+      top: blockRect.top - frameRect.top,
+    }
+
+    setHoveredBlock((currentBlock) => {
+      if (
+        currentBlock &&
+        currentBlock.block.index === nextHoveredBlock.block.index &&
+        currentBlock.block.from === nextHoveredBlock.block.from &&
+        Math.abs(currentBlock.top - nextHoveredBlock.top) < 1
+      ) {
+        return currentBlock
+      }
+
+      return nextHoveredBlock
+    })
+  }
+
+  const handleEditorFrameMouseMove = (event: ReactMouseEvent<HTMLDivElement>) => {
+    updateHoveredBlock(event.target)
+  }
+
+  const handleEditorFrameMouseLeave = () => {
+    if (!isBlockMenuOpen) {
+      setHoveredBlock(null)
+    }
+  }
+
+  const runBlockTransformAction = (action: EditorAction) => {
+    if (!editor || !hoveredBlock) {
+      return
+    }
+
+    focusTopLevelBlock(editor, hoveredBlock.block)
+    setHoveredBlock(null)
+    runEditorAction(action)
+  }
+
+  const runBlockInsertAction = (action: EditorAction) => {
+    if (!editor || !hoveredBlock) {
+      return
+    }
+
+    focusAfterTopLevelBlock(editor, hoveredBlock.block)
+    setHoveredBlock(null)
+    runEditorAction(action)
+  }
+
+  const insertParagraphBelow = () => {
+    if (!editor || !hoveredBlock) {
+      return
+    }
+
+    insertParagraphBelowTopLevelBlock(editor, hoveredBlock.block)
+    setHoveredBlock(null)
+  }
+
+  const duplicateBlock = () => {
+    if (!editor || !hoveredBlock) {
+      return
+    }
+
+    duplicateTopLevelBlock(editor, hoveredBlock.block)
+    setHoveredBlock(null)
+  }
+
+  const deleteBlock = () => {
+    if (!editor || !hoveredBlock) {
+      return
+    }
+
+    deleteTopLevelBlock(editor, hoveredBlock.block)
+    setHoveredBlock(null)
+  }
+
+  latestSelectedSlashIndexRef.current = selectedSlashIndex
+  latestSlashActionsRef.current = isSlashMenuOpen ? slashActions : []
+  latestSlashStateRef.current = isSlashMenuOpen ? slashState : null
+  runSlashActionRef.current = (action: EditorAction) => {
+    runEditorAction(action, { clearSlash: true })
+  }
+
   useEffect(() => {
     if (!editor || !content) {
       return
@@ -360,6 +677,25 @@ export function TiptapEditor({
   }, [tableSelection])
 
   useEffect(() => {
+    setSelectedSlashIndex(0)
+  }, [slashState?.query])
+
+  useEffect(() => {
+    if (slashActions.length === 0) {
+      setSelectedSlashIndex(0)
+      return
+    }
+
+    setSelectedSlashIndex((currentIndex) => Math.min(currentIndex, slashActions.length - 1))
+  }, [slashActions.length])
+
+  useEffect(() => {
+    if (slashState && dismissedSlashText && slashState.blockText !== dismissedSlashText) {
+      setDismissedSlashText(null)
+    }
+  }, [dismissedSlashText, slashState])
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
         setShowColorPicker(false)
@@ -377,6 +713,18 @@ export function TiptapEditor({
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [showColorPicker, showHighlightPicker])
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault()
+        setIsCommandPaletteOpen(true)
+      }
+    }
+
+    window.addEventListener("keydown", handleGlobalKeyDown)
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown)
+  }, [])
 
   if (!editor) {
     return (
@@ -555,7 +903,7 @@ export function TiptapEditor({
                     className="w-6 h-6 rounded border border-brand-indigo-500 hover:scale-110 transition-transform"
                     style={{ backgroundColor: color }}
                     onClick={() => {
-                      editor?.chain().focus().setColor(color).run()
+                      editor.chain().focus().setColor(color).run()
                       setShowColorPicker(false)
                     }}
                     title={color}
@@ -566,7 +914,7 @@ export function TiptapEditor({
                 type="button"
                 className="mt-2 w-full text-xs text-gray-600 hover:text-gray-900 py-1"
                 onClick={() => {
-                  editor?.chain().focus().unsetColor().run()
+                  editor.chain().focus().unsetColor().run()
                   setShowColorPicker(false)
                 }}
               >
@@ -600,9 +948,9 @@ export function TiptapEditor({
                     style={{ backgroundColor: color }}
                     onClick={() => {
                       if (color === "transparent") {
-                        editor?.chain().focus().unsetHighlight().run()
+                        editor.chain().focus().unsetHighlight().run()
                       } else {
-                        editor?.chain().focus().setHighlight({ color }).run()
+                        editor.chain().focus().setHighlight({ color }).run()
                       }
                       setShowHighlightPicker(false)
                     }}
@@ -678,15 +1026,15 @@ export function TiptapEditor({
         <div className="ml-auto flex items-center gap-2 text-xs text-neutral-slate-500">
           {isUploading && <span>이미지 업로드 중...</span>}
           <span>마크다운 문법도 사용 가능</span>
+          <span> / 명령어</span>
+          <span>Cmd/Ctrl+K</span>
         </div>
       </div>
       <BubbleMenu
         editor={editor}
         shouldShow={({ editor: activeEditor }) => activeEditor.isEditable && (hasTextSelection || tableSelection !== null)}
         options={{
-          duration: 100,
           placement: tableSelection ? "top-start" : "top",
-          interactive: true,
         }}
       >
         {(hasTextSelection || tableSelection) && (
@@ -890,93 +1238,74 @@ export function TiptapEditor({
       <FloatingMenu
         editor={editor}
         shouldShow={({ state }) => {
-          const { $from } = state.selection
-          const isTextEmpty = $from.parent.textContent.length === 0
-          return isTextEmpty && editor.isEditable
+          if (!editor.isEditable || !state.selection.empty) {
+            return false
+          }
+
+          if (isSlashMenuOpen) {
+            return true
+          }
+
+          return state.selection.$from.parent.textContent.trim().length === 0
         }}
       >
-        <div className="notion-floating-menu">
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className="notion-menu-button"
-          >
-            <Heading1 className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className="notion-menu-button"
-          >
-            <Heading2 className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            className="notion-menu-button"
-          >
-            <span className="text-xs font-semibold">H3</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
-            className="notion-menu-button"
-          >
-            <span className="text-xs font-semibold">H4</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className="notion-menu-button"
-          >
-            <List className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className="notion-menu-button"
-          >
-            <ListOrdered className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleTaskList().run()}
-            className="notion-menu-button"
-          >
-            <ListTodo className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className="notion-menu-button"
-          >
-            <Quote className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            className="notion-menu-button"
-          >
-            <Code2 className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            className="notion-menu-button"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => openInsertDialog("image")}
-            className="notion-menu-button"
-          >
-            <Image className="h-4 w-4" />
-          </button>
-        </div>
+        {isSlashMenuOpen ? (
+          <SlashCommandMenu
+            actions={slashActions}
+            selectedIndex={selectedSlashIndex}
+            onHoverIndexChange={setSelectedSlashIndex}
+            onSelect={(action) => runEditorAction(action, { clearSlash: true })}
+          />
+        ) : (
+          <div className="notion-floating-menu">
+            {floatingActions.map((action) => {
+              const Icon = action.icon
+              return (
+                <button
+                  key={action.id}
+                  type="button"
+                  data-active={action.isActive?.(editor)}
+                  onClick={() => runEditorAction(action)}
+                  className="notion-menu-button"
+                  title={action.title}
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              )
+            })}
+          </div>
+        )}
       </FloatingMenu>
 
-      <EditorContent editor={editor} />
+      <div
+        ref={editorFrameRef}
+        className="notion-editor-frame"
+        onMouseLeave={handleEditorFrameMouseLeave}
+        onMouseMove={handleEditorFrameMouseMove}
+      >
+        {hoveredBlock ? (
+          <BlockHandleMenu
+            top={hoveredBlock.top}
+            insertActions={blockInsertActions}
+            transformActions={blockTransformActions}
+            onInsertActionSelect={runBlockInsertAction}
+            onTransformActionSelect={runBlockTransformAction}
+            onInsertParagraphBelow={insertParagraphBelow}
+            onDuplicateBlock={duplicateBlock}
+            onDeleteBlock={deleteBlock}
+            onInsertMenuOpenChange={setIsBlockInsertMenuOpen}
+            onTransformMenuOpenChange={setIsBlockTransformMenuOpen}
+          />
+        ) : null}
+        <EditorContent editor={editor} />
+      </div>
+
+      <EditorCommandPalette
+        open={isCommandPaletteOpen}
+        onOpenChange={setIsCommandPaletteOpen}
+        actions={paletteActions}
+        onSelect={(action) => runEditorAction(action)}
+      />
 
       <Dialog
         open={insertDialogMode !== null}

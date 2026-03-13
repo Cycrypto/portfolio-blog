@@ -311,6 +311,14 @@ export default function EditPostPage({ params }: EditPostPageProps) {
     ],
   );
 
+  const editorDocumentActions = useMemo(
+    () => ({
+      openSettings: () => setSettingsOpen(true),
+      saveDraft: () => void handleSave("draft"),
+    }),
+    [handleSave],
+  )
+
   const handleConvertMarkdown = useCallback(async () => {
     if (!post || contentType !== 'markdown') {
       return;
@@ -506,6 +514,7 @@ export default function EditPostPage({ params }: EditPostPageProps) {
               className="notion-fullscreen"
               onError={setError}
               onUploadStateChange={setIsUploadingEditorMedia}
+              documentActions={editorDocumentActions}
             />
           )}
         </div>

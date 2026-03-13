@@ -78,7 +78,9 @@ export function getEditorExtensions() {
       },
     }),
     Underline,
-    Highlight,
+    Highlight.configure({
+      multicolor: true,
+    }),
     Typography,
     HorizontalRule,
     TaskList,
@@ -91,7 +93,7 @@ export function getEditorExtensions() {
     }),
     CodeBlockLowlight.configure({ lowlight }),
     Placeholder.configure({
-      placeholder: "Type / to browse options",
+      placeholder: "/ 를 눌러 블록 메뉴 열기",
     }),
     ResizableImage.configure({
       allowBase64: true,
