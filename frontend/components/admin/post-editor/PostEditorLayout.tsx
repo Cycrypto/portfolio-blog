@@ -45,9 +45,9 @@ export function PostEditorLayout({
   const statusToneClass = getStatusToneClass(statusTone)
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-dvh bg-white">
       <header className="sticky top-0 z-30 border-b border-neutral-slate-200/80 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between gap-3 px-4 py-3 md:px-6">
+        <div className="mx-auto flex w-full max-w-[min(1560px,calc(100vw-1rem))] items-center justify-between gap-3 px-3 py-3 sm:px-5 md:px-6 xl:px-8">
           <Button variant="ghost" size="sm" onClick={onExit} className="shrink-0 text-neutral-slate-600">
             <ArrowLeft className="h-4 w-4" />
             나가기
@@ -63,7 +63,7 @@ export function PostEditorLayout({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1180px] px-4 pb-12 pt-6 md:px-6 md:pt-8">
+      <main className="mx-auto flex min-h-[calc(100dvh-4.5rem)] w-full max-w-[min(1560px,calc(100vw-1rem))] flex-col px-3 pb-10 pt-5 sm:px-5 md:px-6 md:pt-7 xl:px-8">
         {notices ? <div className="mb-5 space-y-3">{notices}</div> : null}
 
         <div className="mb-5 flex flex-wrap items-center gap-2 text-xs text-neutral-slate-500">
@@ -84,7 +84,7 @@ export function PostEditorLayout({
 
         <AutoResizeTitleTextarea value={title} onChange={onTitleChange} />
 
-        <div className="mt-6">{children}</div>
+        <div className="mt-6 flex-1">{children}</div>
       </main>
     </div>
   )
