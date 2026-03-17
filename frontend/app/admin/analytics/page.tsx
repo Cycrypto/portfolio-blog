@@ -1,9 +1,10 @@
 import Link from "next/link"
-import { ArrowUpRight, BarChart3, CheckCircle2, ExternalLink, MousePointerClick, Search, Send, Settings } from "lucide-react"
+import { BarChart3, CheckCircle2, ExternalLink, MousePointerClick, Search, Send, Settings } from "lucide-react"
 
 import { AnalyticsOverviewPanel } from "@/components/admin/AnalyticsOverviewPanel"
 import { AdminShell } from "@/components/admin/AdminShell"
 import { Badge } from "@/components/ui/badge"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -39,61 +40,39 @@ const hasCredentialMismatch =
       ? !hasUmamiApiToken && hasUmamiApiKey
       : false
 
-const trackedEvents = [
+const measuredFlows = [
   {
-    name: "cta_click",
-    description: "홈, 블로그, 프로젝트 화면에서 주요 이동 CTA를 눌렀을 때 기록됩니다.",
+    title: "프로젝트 관심",
+    icon: MousePointerClick,
+    description: "홈 진입부터 프로젝트 보기, 상세 확인, 서비스·코드 이동까지 이어지는 흐름을 확인합니다.",
   },
   {
-    name: "social_click",
-    description: "GitHub, LinkedIn, 이메일 클릭을 채널별로 분리해서 기록합니다.",
+    title: "콘텐츠 몰입",
+    icon: Search,
+    description: "블로그 검색, 필터, 읽기 완료, 공유와 좋아요 반응을 함께 살펴봅니다.",
   },
   {
-    name: "blog_search / blog_filter",
-    description: "검색 실행과 태그 필터 적용 후 결과 수를 함께 남깁니다.",
-  },
-  {
-    name: "post_engaged",
-    description: "글에서 45초 이상 머물고 스크롤 70%를 넘긴 세션을 읽음 완료로 간주합니다.",
-  },
-  {
-    name: "post_share / post_like / comment_submit_success",
-    description: "공유, 좋아요, 댓글 성공을 행동 전환으로 기록합니다.",
-  },
-  {
-    name: "project_outbound_click / project_gallery_interaction",
-    description: "프로젝트 상세 관심과 외부 이동 의도를 측정합니다.",
-  },
-  {
-    name: "contact_form_start / contact_submit_success",
-    description: "리드 퍼널 시작과 실제 문의 성공을 구분합니다.",
+    title: "문의 전환",
+    icon: Send,
+    description: "문의 시작부터 실제 완료까지 이어지는 전환 흐름을 확인합니다.",
   },
 ]
 
-const funnelCards = [
-  {
-    title: "프로젝트 관심 퍼널",
-    icon: MousePointerClick,
-    steps: ["홈 진입", "프로젝트 카드 클릭", "프로젝트 상세 진입", "서비스 보기 / 코드 보기"],
-  },
-  {
-    title: "콘텐츠 전환 퍼널",
-    icon: Search,
-    steps: ["홈 또는 블로그 목록", "글 상세 진입", "post_engaged", "문의 폼 시작 / 문의 성공"],
-  },
-  {
-    title: "리드 퍼널",
-    icon: Send,
-    steps: ["문의 섹션 방문", "contact_form_start", "contact_submit_success"],
-  },
-]
+const helpWarnings = [
+  !hasDashboardLink ? "외부 대시보드 바로가기가 아직 연결되지 않았습니다." : null,
+  !isAdminKpiConfigured ? "관리자 화면 안에서 지표를 집계하려면 분석 API 연결과 인증 정보가 더 필요합니다." : null,
+  hasMixedCredentials ? "관리자용 인증값이 두 종류 함께 설정되어 있어 충돌 가능성이 있습니다. 한 가지만 쓰는 구성이 안전합니다." : null,
+  hasCredentialMismatch ? "현재 분석 API 주소 기준으로 인증 방식이 맞지 않을 수 있습니다." : null,
+].filter(Boolean) as string[]
+
+const overallStatusLabel = isFrontendTrackingConfigured && isAdminKpiConfigured ? "준비됨" : "확인 필요"
 
 export default function AdminAnalyticsPage() {
   return (
     <AdminShell
       active="analytics"
       title="행동 통계"
-      description="Umami 기준 행동 추적과 퍼널을 확인합니다"
+      description="방문 흐름과 전환 지표를 빠르게 확인합니다"
       actions={
         hasDashboardLink ? (
           <Button asChild className="bg-brand-blue-600 text-white hover:bg-brand-blue-700">
@@ -112,169 +91,121 @@ export default function AdminAnalyticsPage() {
           <CardHeader className="border-b border-brand-blue-100">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-xl text-neutral-slate-800">연결 상태</CardTitle>
-                <CardDescription>현재 프론트엔드 추적과 관리자 KPI API 연결 상태를 함께 보여줍니다.</CardDescription>
+                <CardTitle className="text-xl text-neutral-slate-800">설정 및 측정 도움말</CardTitle>
+                <CardDescription>기본 화면은 지표만 보여주고, 연결 상태와 측정 범위는 필요할 때만 펼쳐서 확인합니다.</CardDescription>
               </div>
               <Badge variant={isFrontendTrackingConfigured && isAdminKpiConfigured ? "default" : "secondary"}>
-                {isFrontendTrackingConfigured && isAdminKpiConfigured ? "전체 연결됨" : "일부 설정 필요"}
+                {overallStatusLabel}
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="grid gap-4 pt-5 md:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
-              <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-brand-blue-50 p-2">
-                  <CheckCircle2 className="h-4 w-4 text-brand-blue-700" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-neutral-slate-800">수집 중인 화면</h3>
-                  <p className="mt-1 text-sm text-neutral-slate-600">
-                    홈, 블로그 목록, 글 상세, 프로젝트 카드/상세, 문의 폼에서 주요 행동 이벤트를 보냅니다.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
-              <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-brand-blue-50 p-2">
-                  <Settings className="h-4 w-4 text-brand-blue-700" />
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-neutral-slate-800">프론트 추적</h3>
-                    <Badge variant={isFrontendTrackingConfigured ? "default" : "secondary"}>
-                      {isFrontendTrackingConfigured ? "수집 중" : "설정 필요"}
-                    </Badge>
+          <CardContent className="pt-0">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="help" className="border-none">
+                <AccordionTrigger className="px-6 py-5 text-left hover:no-underline">
+                  <div className="pr-4">
+                    <p className="font-semibold text-neutral-slate-800">연결 상태와 측정 범위 보기</p>
+                    <p className="mt-1 text-sm text-neutral-slate-500">
+                      분석 추적 준비 상태, 현재 측정 중인 흐름, 확인이 필요한 항목을 펼쳐서 볼 수 있습니다.
+                    </p>
                   </div>
-                  <p className="mt-1 text-sm text-neutral-slate-600">
-                    `NEXT_PUBLIC_UMAMI_SCRIPT_URL`, `NEXT_PUBLIC_UMAMI_WEBSITE_ID`, `NEXT_PUBLIC_UMAMI_DASHBOARD_URL`
-                    를 사용합니다.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
-              <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-brand-blue-50 p-2">
-                  <BarChart3 className="h-4 w-4 text-brand-blue-700" />
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-neutral-slate-800">관리자 KPI API</h3>
-                    <Badge variant={isAdminKpiConfigured ? "default" : "secondary"}>
-                      {isAdminKpiConfigured ? "집계 가능" : "설정 필요"}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-neutral-slate-600">
-                    `UMAMI_API_BASE_URL`, `UMAMI_WEBSITE_ID`, `UMAMI_API_KEY` 또는 `UMAMI_API_TOKEN`을 사용합니다.
-                  </p>
-                </div>
-              </div>
-            </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                  <div className="space-y-6">
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="rounded-lg bg-brand-blue-50 p-2">
+                            <CheckCircle2 className="h-4 w-4 text-brand-blue-700" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-semibold text-neutral-slate-800">연결 준비</h3>
+                              <Badge variant={isFrontendTrackingConfigured && isAdminKpiConfigured ? "default" : "secondary"}>
+                                {overallStatusLabel}
+                              </Badge>
+                            </div>
+                            <div className="mt-3 space-y-3 text-sm text-neutral-slate-600">
+                              <p>방문 추적은 공개 추적 스크립트와 사이트 식별값이 준비되면 자동으로 수집됩니다.</p>
+                              <p>관리자 요약은 집계 API 주소, 사이트 식별값, 관리자용 인증 정보가 준비되어야 표시됩니다.</p>
+                              <p>외부 대시보드 링크를 연결하면 상단 버튼으로 바로 이동할 수 있습니다.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
-            {!hasDashboardLink && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2 xl:col-span-3">
-                `NEXT_PUBLIC_UMAMI_DASHBOARD_URL`이 비어 있어 관리자에서 바로 Umami를 열 수 없습니다. 공유 링크 또는 대시보드 URL을
-                환경변수에 넣으면 상단 버튼이 활성화됩니다.
-              </div>
-            )}
+                      <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="rounded-lg bg-brand-blue-50 p-2">
+                            <Settings className="h-4 w-4 text-brand-blue-700" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-neutral-slate-800">현재 측정 중인 흐름</h3>
+                            <div className="mt-3 space-y-3">
+                              {measuredFlows.map((flow) => {
+                                const Icon = flow.icon
 
-            {!isAdminKpiConfigured && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2 xl:col-span-3">
-                내부 KPI 카드까지 보려면 `UMAMI_API_BASE_URL`, `UMAMI_WEBSITE_ID`, 그리고 `UMAMI_API_KEY` 또는
-                `UMAMI_API_TOKEN`이 필요합니다.
-              </div>
-            )}
-
-            {hasMixedCredentials && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2 xl:col-span-3">
-                `UMAMI_API_KEY`와 `UMAMI_API_TOKEN`이 동시에 설정되어 있습니다. Umami Cloud는 보통 API key, 셀프호스트는
-                API token 한 가지만 두는 편이 안전합니다.
-              </div>
-            )}
-
-            {hasCredentialMismatch && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2 xl:col-span-3">
-                현재 `UMAMI_API_BASE_URL` 기준으로 보면 인증 값 조합이 맞지 않을 수 있습니다.
-                {expectsCloudApiKey
-                  ? " `https://api.umami.is/v1` 를 쓰는 경우 `UMAMI_API_KEY`를 권장합니다."
-                  : " 셀프호스트 `/api` 엔드포인트를 쓰는 경우 `UMAMI_API_TOKEN`을 권장합니다."}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          {funnelCards.map((funnel) => {
-            const Icon = funnel.icon
-
-            return (
-              <Card key={funnel.title} className="surface-default shadow-none">
-                <CardHeader className="border-b border-brand-blue-100">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-brand-blue-50 p-2">
-                      <Icon className="h-4 w-4 text-brand-blue-700" />
+                                return (
+                                  <div key={flow.title} className="flex items-start gap-3 rounded-lg border border-brand-blue-50 px-3 py-3">
+                                    <div className="rounded-lg bg-brand-blue-50 p-2">
+                                      <Icon className="h-4 w-4 text-brand-blue-700" />
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-neutral-slate-800">{flow.title}</p>
+                                      <p className="mt-1 text-sm text-neutral-slate-600">{flow.description}</p>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg text-neutral-slate-800">{funnel.title}</CardTitle>
-                      <CardDescription>Umami Funnel에서 그대로 만들 수 있는 흐름입니다.</CardDescription>
+
+                    <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-brand-blue-50 p-2">
+                          <BarChart3 className="h-4 w-4 text-brand-blue-700" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-neutral-slate-800">자주 확인할 지표</h3>
+                          <div className="mt-3 grid gap-3 md:grid-cols-3">
+                            <div className="rounded-lg border border-brand-blue-50 px-3 py-3">
+                              <p className="font-medium text-neutral-slate-800">프로젝트 반응</p>
+                              <p className="mt-1 text-sm text-neutral-slate-600">프로젝트 보기 이후 서비스·코드 이동이 이어지는지 확인합니다.</p>
+                            </div>
+                            <div className="rounded-lg border border-brand-blue-50 px-3 py-3">
+                              <p className="font-medium text-neutral-slate-800">콘텐츠 반응</p>
+                              <p className="mt-1 text-sm text-neutral-slate-600">읽기 완료율과 공유·좋아요·댓글 반응을 함께 살펴봅니다.</p>
+                            </div>
+                            <div className="rounded-lg border border-brand-blue-50 px-3 py-3">
+                              <p className="font-medium text-neutral-slate-800">문의 전환</p>
+                              <p className="mt-1 text-sm text-neutral-slate-600">문의 시작 대비 실제 완료 비율을 보고 이탈 구간을 찾습니다.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
+
+                    {helpWarnings.length > 0 ? (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <h3 className="font-semibold text-amber-950">확인 필요 항목</h3>
+                        <div className="mt-3 space-y-2 text-sm text-amber-900">
+                          {helpWarnings.map((warning) => (
+                            <p key={warning}>{warning}</p>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                        방문 추적과 관리자 요약 연결이 모두 준비되어 있습니다.
+                      </div>
+                    )}
                   </div>
-                </CardHeader>
-                <CardContent className="pt-5">
-                  <ol className="space-y-3 text-sm text-neutral-slate-700">
-                    {funnel.steps.map((step, index) => (
-                      <li key={step} className="flex items-start gap-3">
-                        <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-blue-600 text-xs font-semibold text-white">
-                          {index + 1}
-                        </span>
-                        <span>{step}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-
-        <Card className="surface-default shadow-none">
-          <CardHeader className="border-b border-brand-blue-100">
-            <CardTitle className="text-xl text-neutral-slate-800">추적 이벤트 목록</CardTitle>
-            <CardDescription>Umami Events 탭에서 아래 이름으로 필터링하면 됩니다.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-5">
-            {trackedEvents.map((event) => (
-              <div key={event.name} className="rounded-xl border border-brand-blue-100 bg-white p-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <Badge variant="outline" className="bg-brand-blue-50 font-mono text-brand-blue-700">
-                    {event.name}
-                  </Badge>
-                  <p className="text-sm text-neutral-slate-600">{event.description}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="surface-default shadow-none">
-          <CardHeader className="border-b border-brand-blue-100">
-            <CardTitle className="text-xl text-neutral-slate-800">추천 확인 순서</CardTitle>
-            <CardDescription>운영 중에는 이 순서로 보면 변화를 빠르게 파악할 수 있습니다.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-5 text-sm text-neutral-slate-700">
-            <p>1. Events에서 `contact_submit_success`, `project_outbound_click`, `post_engaged` 증감 확인</p>
-            <p>2. Funnels에서 프로젝트 관심 퍼널과 리드 퍼널 전환율 확인</p>
-            <p>3. Pages에서 랜딩 페이지별 유입과 이탈이 높은 페이지 확인</p>
-            <p>4. Referrers와 UTM으로 어떤 채널이 실제 문의와 프로젝트 클릭을 만드는지 확인</p>
-            {hasDashboardLink && (
-              <Button asChild variant="outline" className="mt-2 border-brand-blue-200 text-brand-blue-700">
-                <Link href={umamiDashboardUrl} target="_blank" rel="noopener noreferrer">
-                  행동 통계 바로 열기
-                  <ArrowUpRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
       </div>
