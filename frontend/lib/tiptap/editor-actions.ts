@@ -373,17 +373,31 @@ export function filterEditorActions(actions: EditorAction[], query: string) {
 
   const terms = normalizedQuery.split(/\s+/)
 
-  return actions.filter((action) => {
-    const haystack = [
-      action.title,
-      action.description,
-      ...(action.keywords || []),
-    ]
-      .join(" ")
-      .toLowerCase()
+  return actions
+    .map((action) => {
+      const title = action.title.toLowerCase()
+      const keywords = (action.keywords || []).map((keyword) => keyword.toLowerCase())
+      const primaryFields = [title, ...keywords]
 
-    return terms.every((term) => haystack.includes(term))
-  })
+      if (!terms.every((term) => primaryFields.some((field) => field.includes(term)))) {
+        return null
+      }
+
+      const score = terms.reduce((total, term) => {
+        if (title === term) return total + 120
+        if (title.startsWith(term)) return total + 90
+        if (keywords.some((keyword) => keyword === term)) return total + 80
+        if (keywords.some((keyword) => keyword.startsWith(term))) return total + 65
+        if (title.includes(term)) return total + 45
+        if (keywords.some((keyword) => keyword.includes(term))) return total + 30
+        return total
+      }, 0)
+
+      return { action, score }
+    })
+    .filter((entry): entry is { action: EditorAction; score: number } => entry !== null)
+    .sort((left, right) => right.score - left.score || left.action.title.localeCompare(right.action.title, "ko"))
+    .map(({ action }) => action)
 }
 
 export function groupEditorActions(actions: EditorAction[]) {

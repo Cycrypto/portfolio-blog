@@ -501,7 +501,6 @@ export function TiptapEditor({
 
   const isSlashMenuOpen = Boolean(
     slashState &&
-    slashActions.length > 0 &&
     slashState.blockText !== dismissedSlashText,
   )
   const isDraggingBlock = draggedBlock !== null

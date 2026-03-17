@@ -21,6 +21,13 @@ export function SlashCommandMenu({
 
   return (
     <div className="notion-slash-menu">
+      {groupedActions.length === 0 ? (
+        <div className="notion-slash-empty">
+          <div className="font-medium text-neutral-slate-800">검색 결과가 없습니다.</div>
+          <div className="text-xs text-neutral-slate-500">다른 키워드를 입력하거나 `/`만 입력해서 전체 목록을 보세요.</div>
+        </div>
+      ) : null}
+
       {groupedActions.map(({ group, actions: groupActions }) => (
         <div key={group} className="notion-slash-group">
           <div className="notion-slash-group-title">{group}</div>

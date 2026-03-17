@@ -281,6 +281,10 @@
   @apply absolute z-30;
 }
 
+.notion-slash-empty {
+  @apply flex flex-col gap-1 rounded-xl border border-dashed border-neutral-slate-200 bg-neutral-slate-50/70 px-4 py-5 text-center;
+}
+
 .notion-slash-group {
   @apply p-1;
 }
