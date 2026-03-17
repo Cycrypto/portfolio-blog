@@ -29,6 +29,12 @@ export class PostEditResponseDTO {
     @ApiProperty({ description: '대표 이미지 URL', required: false })
     image?: string;
 
+    @ApiProperty({ description: '대표 글 여부', example: false })
+    isFeatured: boolean;
+
+    @ApiProperty({ description: '대표 글 노출 순서', example: 0 })
+    featuredOrder: number;
+
     @ApiProperty({ description: '태그 배열', type: [String], required: false })
     tags?: string[];
 

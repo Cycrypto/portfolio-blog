@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getProjects, Project } from "@/lib/api"
+import { getProjectPath } from "@/lib/projects/project-url"
 
 interface RelatedProjectsProps {
   currentSlug: string
@@ -19,7 +20,13 @@ export function RelatedProjects({ currentSlug }: RelatedProjectsProps) {
       try {
         setLoading(true)
         const list = await getProjects()
-        setProjects(list.filter((p) => p.id?.toString() !== currentSlug))
+        setProjects(
+          list.filter(
+            (p) =>
+              p.id?.toString() !== currentSlug &&
+              (p.slug || p.id?.toString()) !== currentSlug,
+          ),
+        )
       } catch (e) {
         setProjects([])
       } finally {
@@ -70,7 +77,7 @@ export function RelatedProjects({ currentSlug }: RelatedProjectsProps) {
         <h3 className="text-lg font-semibold mb-4 text-neutral-slate-800">비슷한 프로젝트</h3>
         <div className="space-y-4">
           {related.map((project) => (
-            <Link key={project.id} href={`/projects/${project.id}`} className="block group">
+            <Link key={project.id} href={getProjectPath(project)} className="block group">
               <div className="p-3 rounded-lg border border-neutral-slate-200 hover:border-brand-blue-200 transition-colors">
                 <h4 className="font-medium text-neutral-slate-800 group-hover:text-brand-blue-600 transition-colors mb-2">
                   {project.title}

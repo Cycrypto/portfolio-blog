@@ -4,13 +4,19 @@ import { Project, CreateProjectRequest, UpdateProjectRequest } from '../../types
 import { normalizeUrlFields } from '@/lib/utils/url'
 
 export async function getProjects(): Promise<Project[]> {
-  const result = await apiRequest<{ data: Project[] }>('/projects', { requireAuth: false })
+  const result = await apiRequest<{ data: Project[] }>('/projects', {
+    requireAuth: false,
+    cache: 'no-store',
+  })
   const projects = (result as any)?.data?.data ?? (result as any)?.data ?? []
   return Array.isArray(projects) ? projects.map(normalizeProjectLinks) : []
 }
 
 export async function getProject(id: string): Promise<Project> {
-  const result = await apiRequest<{ data: Project }>(`/projects/${id}`, { requireAuth: false })
+  const result = await apiRequest<{ data: Project }>(`/projects/${id}`, {
+    requireAuth: false,
+    cache: 'no-store',
+  })
   return normalizeProjectLinks((result as any)?.data?.data ?? (result as any)?.data)
 }
 

@@ -8,6 +8,8 @@ export class PostListItemDTO {
     excerpt?: string;  // 포스트 요약
     contentType: PostContentType;  // 콘텐츠 타입
     image?: string;  // 포스트 이미지
+    isFeatured: boolean;  // 대표 글 여부
+    featuredOrder: number;  // 대표 글 순서
     tags?: string[];  // 포스트 태그 (태그 이름 배열)
     status: string;  // 포스트 상태
     author: string;  // 작성자

@@ -68,6 +68,12 @@ export class Post {
   @Column({ nullable: true })
   image: string;
 
+  @Column({ default: false })
+  isFeatured: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  featuredOrder: number;
+
   @ManyToMany(() => Tag, (tag) => tag.posts)
   @JoinTable({
     name: 'post_tags',

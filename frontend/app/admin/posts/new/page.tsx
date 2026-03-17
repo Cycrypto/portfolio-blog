@@ -31,6 +31,8 @@ interface StoredDraft {
   category: string;
   tags: string[];
   featuredImage: string;
+  isFeatured: boolean;
+  featuredOrder: number;
   updatedAt: string;
 }
 
@@ -50,6 +52,8 @@ export default function NewPost() {
   const [category, setCategory] = useState(DEFAULT_POST_CATEGORY);
   const [tags, setTags] = useState<string[]>([]);
   const [featuredImage, setFeaturedImage] = useState('');
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [featuredOrder, setFeaturedOrder] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingFeaturedImage, setIsUploadingFeaturedImage] =
     useState(false);
@@ -74,6 +78,8 @@ export default function NewPost() {
     metrics.characterCount > 0 ||
     category !== DEFAULT_POST_CATEGORY ||
     tags.length > 0 ||
+    isFeatured ||
+    featuredOrder > 0 ||
     !!normalizedFeaturedImage;
 
   const handleExit = () => {
@@ -127,6 +133,8 @@ export default function NewPost() {
           contentType: 'tiptap',
           contentJson,
           image: normalizedFeaturedImage,
+          isFeatured,
+          featuredOrder: isFeatured ? featuredOrder : 0,
           tags: tags.length > 0 ? tags : undefined,
           status: saveStatus,
           author: DEFAULT_AUTHOR,
@@ -159,6 +167,8 @@ export default function NewPost() {
       contentJson,
       normalizedFeaturedImage,
       tags,
+      isFeatured,
+      featuredOrder,
       metrics.estimatedReadTime,
       router,
       isUploadingMedia,
@@ -184,6 +194,8 @@ export default function NewPost() {
       setCategory(parsed.category || DEFAULT_POST_CATEGORY);
       setTags(Array.isArray(parsed.tags) ? parsed.tags : []);
       setFeaturedImage(parsed.featuredImage || '');
+      setIsFeatured(Boolean(parsed.isFeatured));
+      setFeaturedOrder(parsed.featuredOrder || 0);
       setLastDraftSavedAt(parsed.updatedAt || null);
       setRestoredDraft(true);
     } catch (e) {
@@ -205,6 +217,8 @@ export default function NewPost() {
         category,
         tags,
         featuredImage,
+        isFeatured,
+        featuredOrder,
         updatedAt: new Date().toISOString(),
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
@@ -212,7 +226,16 @@ export default function NewPost() {
     }, 600);
 
     return () => window.clearTimeout(timer);
-  }, [title, contentJson, category, tags, featuredImage, hasUnsavedChanges]);
+  }, [
+    title,
+    contentJson,
+    category,
+    tags,
+    featuredImage,
+    isFeatured,
+    featuredOrder,
+    hasUnsavedChanges,
+  ]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -300,6 +323,10 @@ export default function NewPost() {
                 featuredImagePreview={normalizedFeaturedImage}
                 onFeaturedImageChange={setFeaturedImage}
                 onFeaturedImageUpload={handleFeaturedImageUpload}
+                isFeatured={isFeatured}
+                onFeaturedChange={setIsFeatured}
+                featuredOrder={featuredOrder}
+                onFeaturedOrderChange={setFeaturedOrder}
                 isUploadingImage={isUploadingFeaturedImage}
                 isSaving={isSaving}
                 error={error}

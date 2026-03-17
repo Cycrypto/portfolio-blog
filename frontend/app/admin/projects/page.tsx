@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { deleteProject, getProjects, Project } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { AdminShell } from "@/components/admin/AdminShell"
+import { getProjectPath } from "@/lib/projects/project-url"
 
 export default function AdminProjects() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -137,7 +138,14 @@ export default function AdminProjects() {
                   {filteredProjects.map((project) => (
                     <TableRow key={project.id}>
                       <TableCell>
-                        <div className="font-semibold text-neutral-slate-800">{project.title}</div>
+                        <div>
+                          <div className="font-semibold text-neutral-slate-800">{project.title}</div>
+                          {project.isFeatured ? (
+                            <Badge variant="secondary" className="mt-2 bg-brand-blue-50 text-brand-blue-700">
+                              대표 {project.featuredOrder}
+                            </Badge>
+                          ) : null}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -197,7 +205,7 @@ export default function AdminProjects() {
                             </Button>
                           )}
                           <Button variant="outline" size="sm" asChild>
-                            <Link href={`/projects/${project.id}`}>
+                            <Link href={getProjectPath(project)}>
                               <Eye className="mr-1 h-3 w-3" />
                               보기
                             </Link>

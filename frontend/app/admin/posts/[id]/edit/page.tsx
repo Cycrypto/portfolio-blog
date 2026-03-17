@@ -70,6 +70,8 @@ export default function EditPostPage({ params }: EditPostPageProps) {
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [featuredImage, setFeaturedImage] = useState('');
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [featuredOrder, setFeaturedOrder] = useState(0);
   const [contentType, setContentType] = useState<'tiptap' | 'markdown'>(
     'tiptap',
   );
@@ -121,6 +123,8 @@ export default function EditPostPage({ params }: EditPostPageProps) {
       category !== post.category ||
       currentTagsKey !== originalTagsKey ||
       normalizedFeaturedImage !== normalizedOriginalImage ||
+      isFeatured !== post.isFeatured ||
+      featuredOrder !== post.featuredOrder ||
       isContentChanged);
 
   const applyPostState = useCallback((postData: PostEdit) => {
@@ -134,6 +138,8 @@ export default function EditPostPage({ params }: EditPostPageProps) {
     setCategory(postData.category);
     setTags(postData.tags || []);
     setFeaturedImage(normalizeImageUrl(postData.image) || '');
+    setIsFeatured(Boolean(postData.isFeatured));
+    setFeaturedOrder(postData.featuredOrder || 0);
   }, []);
 
   useEffect(() => {
@@ -221,6 +227,14 @@ export default function EditPostPage({ params }: EditPostPageProps) {
         payload.image = normalizedFeaturedImage;
       }
 
+      if (isFeatured !== post.isFeatured) {
+        payload.isFeatured = isFeatured;
+      }
+
+      if ((isFeatured ? featuredOrder : 0) !== post.featuredOrder) {
+        payload.featuredOrder = isFeatured ? featuredOrder : 0;
+      }
+
       if (saveStatus !== post.status) {
         payload.status = saveStatus;
       }
@@ -243,6 +257,8 @@ export default function EditPostPage({ params }: EditPostPageProps) {
       tags,
       normalizedFeaturedImage,
       normalizedOriginalImage,
+      isFeatured,
+      featuredOrder,
     ],
   );
 
@@ -430,6 +446,10 @@ export default function EditPostPage({ params }: EditPostPageProps) {
                 featuredImagePreview={normalizedFeaturedImage}
                 onFeaturedImageChange={setFeaturedImage}
                 onFeaturedImageUpload={handleFeaturedImageUpload}
+                isFeatured={isFeatured}
+                onFeaturedChange={setIsFeatured}
+                featuredOrder={featuredOrder}
+                onFeaturedOrderChange={setFeaturedOrder}
                 isUploadingImage={isUploadingFeaturedImage}
                 isSaving={isBusy}
                 error={error}

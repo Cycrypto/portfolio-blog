@@ -1,0 +1,24 @@
+import { buildPortfolioSnapshot } from '@/lib/portfolio/build-portfolio-snapshot';
+import { renderResumePdf } from '@/lib/portfolio/resume-pdf';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+  try {
+    const snapshot = await buildPortfolioSnapshot();
+    const pdf = await renderResumePdf(snapshot);
+
+    return new Response(pdf, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename="park-junha-resume-ko.pdf"',
+        'Cache-Control': 'no-store',
+      },
+    });
+  } catch (error) {
+    console.error('Failed to generate resume PDF:', error);
+    return new Response('Failed to generate resume PDF', { status: 500 });
+  }
+}

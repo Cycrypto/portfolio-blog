@@ -22,7 +22,10 @@ export async function getPosts(
   try {
     const result = await apiRequest<{
       data: { data: Post[]; totalCount: number };
-    }>(`/posts?page=${page}&pageSize=${pageSize}`, { requireAuth: false });
+    }>(`/posts?page=${page}&pageSize=${pageSize}`, {
+      requireAuth: false,
+      cache: 'no-store',
+    });
 
     return {
       posts: result.data?.data || [],
@@ -108,6 +111,7 @@ export async function getPost(id: string): Promise<Post> {
   try {
     const result = await apiRequest<{ data: Post }>(`/posts/${id}`, {
       requireAuth: false,
+      cache: 'no-store',
     });
     return result.data;
   } catch (error) {

@@ -47,6 +47,7 @@ import {
 import { getAdminPosts, deletePost, Post } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { getPostPath } from '@/lib/posts/post-url';
 
 export default function AdminPosts() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -241,9 +242,19 @@ export default function AdminPosts() {
                           <div className="font-semibold text-neutral-slate-800">
                             {post.title}
                           </div>
-                          <div className="mt-1 flex items-center text-xs text-neutral-slate-500">
-                            <User className="mr-1 h-3 w-3" />
-                            {post.author}
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-slate-500">
+                            <span className="inline-flex items-center">
+                              <User className="mr-1 h-3 w-3" />
+                              {post.author}
+                            </span>
+                            {post.isFeatured ? (
+                              <Badge
+                                variant="secondary"
+                                className="bg-brand-blue-50 text-brand-blue-700"
+                              >
+                                대표 {post.featuredOrder}
+                              </Badge>
+                            ) : null}
                           </div>
                         </div>
                       </TableCell>
@@ -291,7 +302,7 @@ export default function AdminPosts() {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant="outline" size="sm" asChild>
-                                  <Link href={`/blog/${post.id}`}>
+                                  <Link href={getPostPath(post)}>
                                     <Eye className="mr-1 h-3 w-3" />
                                     보기
                                   </Link>

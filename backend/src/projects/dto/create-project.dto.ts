@@ -1,8 +1,20 @@
-import { IsArray, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class CreateProjectDto {
   @IsString()
   title: string;
+
+  @IsOptional()
+  @IsString()
+  slug?: string;
 
   @IsOptional()
   @IsString()
@@ -21,6 +33,15 @@ export class CreateProjectDto {
   status?: string;
 
   @IsOptional()
+  @IsBoolean()
+  isFeatured?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  featuredOrder?: number;
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   @Max(100)
@@ -33,6 +54,26 @@ export class CreateProjectDto {
   @IsOptional()
   @IsArray()
   features?: string[];
+
+  @IsOptional()
+  @IsString()
+  role?: string;
+
+  @IsOptional()
+  @IsString()
+  problem?: string;
+
+  @IsOptional()
+  @IsString()
+  approach?: string;
+
+  @IsOptional()
+  @IsString()
+  outcomes?: string;
+
+  @IsOptional()
+  @IsArray()
+  impactMetrics?: string[];
 
   @IsOptional()
   @IsString()

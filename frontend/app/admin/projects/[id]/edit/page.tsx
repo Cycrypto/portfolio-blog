@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,12 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
 import { ArrowLeft, Save, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
 import Link from "next/link"
 import { getProject, updateProject, uploadMedia } from "@/lib/api"
 import { Project } from "@/lib/types/api"
 import { AdminShell } from "@/components/admin/AdminShell"
 import { normalizeImageUrl } from "@/lib/utils/image"
+import { generateSlug } from "@/lib/utils/slug"
 
 export default function EditProject() {
   const router = useRouter()
@@ -29,11 +31,19 @@ export default function EditProject() {
   const [longDescription, setLongDescription] = useState("")
   const [category, setCategory] = useState("")
   const [status, setStatus] = useState("planned")
+  const [isFeatured, setIsFeatured] = useState(false)
+  const [featuredOrder, setFeaturedOrder] = useState(0)
   const [progress, setProgress] = useState([0])
   const [techStack, setTechStack] = useState<string[]>([])
   const [newTech, setNewTech] = useState("")
   const [features, setFeatures] = useState<string[]>([])
   const [newFeature, setNewFeature] = useState("")
+  const [role, setRole] = useState("")
+  const [problem, setProblem] = useState("")
+  const [approach, setApproach] = useState("")
+  const [outcomes, setOutcomes] = useState("")
+  const [impactMetrics, setImpactMetrics] = useState<string[]>([])
+  const [newMetric, setNewMetric] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [githubUrl, setGithubUrl] = useState("")
@@ -43,6 +53,10 @@ export default function EditProject() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const imageInputId = "project-image-upload"
+  const slugPreview = useMemo(
+    () => project?.slug || generateSlug(title),
+    [project?.slug, title],
+  )
 
   useEffect(() => {
     const load = async () => {
@@ -54,9 +68,16 @@ export default function EditProject() {
         setLongDescription(data.longDescription || "")
         setCategory(data.category || "")
         setStatus(data.status || "planned")
+        setIsFeatured(Boolean(data.isFeatured))
+        setFeaturedOrder(data.featuredOrder || 0)
         setProgress([data.progress || 0])
         setTechStack(data.techStack || [])
         setFeatures(data.features || [])
+        setRole(data.role || "")
+        setProblem(data.problem || "")
+        setApproach(data.approach || "")
+        setOutcomes(data.outcomes || "")
+        setImpactMetrics(data.impactMetrics || [])
         setStartDate(data.startDate || "")
         setEndDate(data.endDate || "")
         setGithubUrl(data.githubUrl || "")
@@ -91,6 +112,17 @@ export default function EditProject() {
     setFeatures(features.filter((feature) => feature !== featureToRemove))
   }
 
+  const addMetric = () => {
+    const trimmed = newMetric.trim()
+    if (!trimmed || impactMetrics.includes(trimmed)) return
+    setImpactMetrics([...impactMetrics, trimmed])
+    setNewMetric("")
+  }
+
+  const removeMetric = (metricToRemove: string) => {
+    setImpactMetrics(impactMetrics.filter((metric) => metric !== metricToRemove))
+  }
+
   const addImage = () => {
     const normalized = normalizeImageUrl(newImage)
     if (!normalized || images.includes(normalized)) return
@@ -112,13 +144,21 @@ export default function EditProject() {
       setError(null)
       await updateProject(id, {
         title: title.trim(),
+        slug: slugPreview,
         description: description.trim(),
         longDescription: longDescription.trim(),
         category,
         status,
+        isFeatured,
+        featuredOrder: isFeatured ? featuredOrder : 0,
         progress: progress[0],
         techStack,
         features,
+        role: role.trim(),
+        problem: problem.trim(),
+        approach: approach.trim(),
+        outcomes: outcomes.trim(),
+        impactMetrics,
         startDate,
         endDate,
         githubUrl,
@@ -169,6 +209,11 @@ export default function EditProject() {
                       onChange={(e) => setTitle(e.target.value)}
                       className="text-lg"
                     />
+                    {slugPreview ? (
+                      <p className="mt-2 text-xs text-neutral-slate-500">
+                        공개 URL: <code>{`/projects/${slugPreview}`}</code>
+                      </p>
+                    ) : null}
                   </div>
 
                   <div>
@@ -192,6 +237,82 @@ export default function EditProject() {
                       rows={10}
                       className="font-mono"
                     />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>케이스 스터디</CardTitle>
+                  <CardDescription>랜딩, 상세 페이지, 이력서 PDF에서 재사용됩니다</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="role">내 역할</Label>
+                    <Textarea
+                      id="role"
+                      placeholder="예: 백엔드 설계 및 인증/배포 전담"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="problem">문제 정의</Label>
+                    <Textarea
+                      id="problem"
+                      placeholder="어떤 문제를 해결하려는 프로젝트였는지 적어주세요"
+                      value={problem}
+                      onChange={(e) => setProblem(e.target.value)}
+                      rows={4}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="approach">접근 방식</Label>
+                    <Textarea
+                      id="approach"
+                      placeholder="설계 판단, 핵심 구현, 기술 선택 이유를 정리하세요"
+                      value={approach}
+                      onChange={(e) => setApproach(e.target.value)}
+                      rows={5}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="outcomes">결과 및 회고</Label>
+                    <Textarea
+                      id="outcomes"
+                      placeholder="결과, 개선 효과, 회고를 정리하세요"
+                      value={outcomes}
+                      onChange={(e) => setOutcomes(e.target.value)}
+                      rows={4}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>성과 지표</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="예: 응답 시간을 35% 단축"
+                        value={newMetric}
+                        onChange={(e) => setNewMetric(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            addMetric()
+                          }
+                        }}
+                      />
+                      <Button onClick={addMetric} size="sm">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {impactMetrics.map((metric) => (
+                        <Badge key={metric} variant="secondary" className="flex items-center gap-1">
+                          {metric}
+                          <X className="w-3 h-3 cursor-pointer" onClick={() => removeMetric(metric)} />
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -379,6 +500,28 @@ export default function EditProject() {
                   <div>
                     <Label>진행률: {progress[0]}%</Label>
                     <Slider value={progress} onValueChange={setProgress} max={100} step={5} className="mt-2" />
+                  </div>
+
+                  <div className="rounded-lg border border-brand-blue-100 bg-brand-blue-50/60 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <Label htmlFor="featured-project">대표 프로젝트 노출</Label>
+                        <p className="mt-1 text-xs text-neutral-slate-500">랜딩과 이력서 PDF에 우선 사용됩니다</p>
+                      </div>
+                      <Switch id="featured-project" checked={isFeatured} onCheckedChange={setIsFeatured} />
+                    </div>
+                    <div className="mt-4">
+                      <Label htmlFor="featured-order">대표 노출 순서</Label>
+                      <Input
+                        id="featured-order"
+                        type="number"
+                        min={0}
+                        value={featuredOrder}
+                        onChange={(e) => setFeaturedOrder(Number(e.target.value) || 0)}
+                        disabled={!isFeatured}
+                        className="mt-2"
+                      />
+                    </div>
                   </div>
 
                   <Separator />

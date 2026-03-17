@@ -173,7 +173,7 @@ export default function BlogPage() {
                 </Link>
               </Button>
               <Link href="/" className="truncate text-lg font-bold text-neutral-slate-800 md:text-xl">
-                박준하 블로그
+                박준하 포트폴리오
               </Link>
             </div>
             {isAdmin && (

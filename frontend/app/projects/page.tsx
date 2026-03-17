@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
@@ -6,6 +7,23 @@ import { ProjectCard } from "@/components/project/project-card"
 import { SectionHeading } from "@/components/common/section-heading"
 import { getProjects, Project } from "@/lib/api"
 import { normalizeImageUrl } from "@/lib/utils/image"
+import { absoluteUrl } from "@/lib/site"
+
+export const metadata: Metadata = {
+  title: "프로젝트 | 박준하 포트폴리오",
+  description: "문제 정의, 접근, 성과를 기준으로 정리한 프로젝트 목록입니다.",
+  alternates: {
+    canonical: absoluteUrl('/projects'),
+  },
+  openGraph: {
+    title: "프로젝트 | 박준하 포트폴리오",
+    description: "문제 정의, 접근, 성과를 기준으로 정리한 프로젝트 목록입니다.",
+    url: absoluteUrl('/projects'),
+    type: 'website',
+  },
+}
+
+export const dynamic = "force-dynamic"
 
 const getPrimaryImage = (images?: string[]) =>
   (images || []).map((image) => normalizeImageUrl(image)).find((image): image is string => Boolean(image))
@@ -28,7 +46,7 @@ export default async function ProjectsPage() {
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
-            <Link href="/" className="text-lg font-bold text-neutral-slate-800 md:text-xl">박준하 블로그</Link>
+            <Link href="/" className="text-lg font-bold text-neutral-slate-800 md:text-xl">박준하 포트폴리오</Link>
           </div>
         </div>
       </header>
@@ -42,6 +60,7 @@ export default async function ProjectsPage() {
               <ProjectCard
                 key={project.id || index}
                 id={project.id}
+                slug={project.slug}
                 title={project.title}
                 description={project.description}
                 tags={project.techStack || []}

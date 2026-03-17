@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Menu, X, PenSquare, LayoutDashboard, FileText, Settings } from "lucide-react"
+import { Menu, X, PenSquare, LayoutDashboard, FileText, Settings, Download } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { useMobile } from "@/hooks/use-mobile"
@@ -102,6 +102,14 @@ export function FloatingNav() {
                         {item.name}
                       </Link>
                     ))}
+                    <a
+                      href="/api/resume"
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-blue-700 hover:bg-brand-blue-50"
+                      onClick={handleNavClick}
+                    >
+                      <Download className="h-4 w-4" />
+                      이력서
+                    </a>
                   </nav>
                   {isAdmin && (
                     <div className="mt-2 border-t border-neutral-slate-200 pt-2">
@@ -133,6 +141,17 @@ export function FloatingNav() {
                   {item.name}
                 </Link>
               ))}
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-1 border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
+                asChild
+              >
+                <a href="/api/resume">
+                  <Download className="mr-1 h-4 w-4" />
+                  이력서
+                </a>
+              </Button>
               {isAdmin && (
                 <>
                   <div className="w-px h-6 bg-neutral-slate-300 mx-2" />

@@ -17,6 +17,8 @@ export interface Post {
   plainText?: string;
   wordCount?: number;
   image?: string;
+  isFeatured: boolean;
+  featuredOrder: number;
   tags?: string[];
   status: string;
   author: string;
@@ -38,6 +40,8 @@ export interface PostEdit {
   contentMarkdown?: string | null;
   contentHtml?: string | null;
   image?: string;
+  isFeatured: boolean;
+  featuredOrder: number;
   tags?: string[];
   status: string;
   author: string;
@@ -54,6 +58,8 @@ export interface CreatePostRequest {
   contentJson?: Record<string, unknown>;
   contentMarkdown?: string;
   image?: string;
+  isFeatured?: boolean;
+  featuredOrder?: number;
   tags?: string[];
   status: string;
   author: string;
@@ -70,6 +76,8 @@ export interface UpdatePostRequest {
   contentJson?: Record<string, unknown>;
   contentMarkdown?: string;
   image?: string;
+  isFeatured?: boolean;
+  featuredOrder?: number;
   tags?: string[];
   status?: string;
   author?: string;
@@ -112,13 +120,21 @@ export interface Tag {
 export interface Project {
   id: number;
   title: string;
+  slug?: string;
   description?: string;
   longDescription?: string;
   category?: string;
   status: string;
+  isFeatured: boolean;
+  featuredOrder: number;
   progress: number;
   techStack: string[];
   features: string[];
+  role?: string;
+  problem?: string;
+  approach?: string;
+  outcomes?: string;
+  impactMetrics: string[];
   startDate?: string;
   endDate?: string;
   githubUrl?: string;
@@ -128,13 +144,21 @@ export interface Project {
 
 export interface CreateProjectRequest {
   title: string;
+  slug?: string;
   description?: string;
   longDescription?: string;
   category?: string;
   status?: string;
+  isFeatured?: boolean;
+  featuredOrder?: number;
   progress?: number;
   techStack?: string[];
   features?: string[];
+  role?: string;
+  problem?: string;
+  approach?: string;
+  outcomes?: string;
+  impactMetrics?: string[];
   startDate?: string;
   endDate?: string;
   githubUrl?: string;

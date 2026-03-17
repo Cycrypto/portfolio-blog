@@ -1,4 +1,16 @@
-import { IsString, IsEnum, IsOptional, IsDateString, IsArray, IsNumber, IsObject, ValidateIf } from 'class-validator';
+import {
+    IsString,
+    IsEnum,
+    IsOptional,
+    IsDateString,
+    IsArray,
+    IsNumber,
+    IsObject,
+    ValidateIf,
+    IsBoolean,
+    IsInt,
+    Min,
+} from 'class-validator';
 import { PostContentType, PostStatus } from "../../entity/post.entity";
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -39,6 +51,17 @@ export class UpdatePostRequestDTO {
     @IsString()
     @IsOptional()
     image?: string;
+
+    @ApiProperty({ description: '대표 글 여부', required: false, example: false })
+    @IsBoolean()
+    @IsOptional()
+    isFeatured?: boolean;
+
+    @ApiProperty({ description: '대표 글 노출 순서', required: false, example: 1 })
+    @IsInt()
+    @Min(0)
+    @IsOptional()
+    featuredOrder?: number;
 
     @ApiProperty({ description: '태그 배열', type: [String], required: false, example: ['nestjs', 'refactoring'] })
     @IsArray()

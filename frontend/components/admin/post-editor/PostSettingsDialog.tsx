@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { POST_CATEGORY_OPTIONS } from '@/lib/posts/post-editor-config';
 
 interface PostSettingsDialogProps {
@@ -35,6 +36,10 @@ interface PostSettingsDialogProps {
   featuredImagePreview?: string;
   onFeaturedImageChange: (value: string) => void;
   onFeaturedImageUpload: (file: File) => Promise<void>;
+  isFeatured: boolean;
+  onFeaturedChange: (value: boolean) => void;
+  featuredOrder: number;
+  onFeaturedOrderChange: (value: number) => void;
   isUploadingImage: boolean;
   isSaving: boolean;
   error?: string | null;
@@ -53,6 +58,10 @@ export function PostSettingsDialog({
   featuredImagePreview,
   onFeaturedImageChange,
   onFeaturedImageUpload,
+  isFeatured,
+  onFeaturedChange,
+  featuredOrder,
+  onFeaturedOrderChange,
   isUploadingImage,
   isSaving,
   error,
@@ -139,6 +148,36 @@ export function PostSettingsDialog({
           </div>
 
           <Separator />
+
+          <div className="grid gap-4 rounded-lg border border-brand-blue-100 bg-brand-blue-50/50 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <Label htmlFor="featured-post">대표 글로 노출</Label>
+                <p className="mt-1 text-xs text-neutral-slate-500">
+                  랜딩과 이력서 PDF에 우선 노출됩니다.
+                </p>
+              </div>
+              <Switch
+                id="featured-post"
+                checked={isFeatured}
+                onCheckedChange={onFeaturedChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="featured-order">대표 노출 순서</Label>
+              <Input
+                id="featured-order"
+                type="number"
+                min={0}
+                value={featuredOrder}
+                onChange={(event) =>
+                  onFeaturedOrderChange(Number(event.target.value) || 0)
+                }
+                disabled={!isFeatured}
+                className="mt-2"
+              />
+            </div>
+          </div>
 
           <div>
             <Label htmlFor="featured-image">대표 이미지 (선택)</Label>

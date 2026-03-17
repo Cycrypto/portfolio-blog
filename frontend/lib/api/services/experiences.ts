@@ -2,7 +2,10 @@ import { apiRequest } from '../client/base'
 import { Experience, CreateExperienceRequest, UpdateExperienceRequest } from '../../types/api'
 
 export async function getExperiences(): Promise<Experience[]> {
-  const result = await apiRequest<{ data: Experience[] }>('/experiences', { requireAuth: false })
+  const result = await apiRequest<{ data: Experience[] }>('/experiences', {
+    requireAuth: false,
+    cache: 'no-store',
+  })
   const data = (result as any)?.data?.data ?? (result as any)?.data ?? []
   return Array.isArray(data) ? data : []
 }

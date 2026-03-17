@@ -8,6 +8,9 @@ export class Project {
   @Column()
   title: string;
 
+  @Column({ default: '', unique: true })
+  slug: string;
+
   @Column({ type: 'text', default: '' })
   description: string;
 
@@ -20,6 +23,12 @@ export class Project {
   @Column({ default: 'planned' })
   status: string;
 
+  @Column({ default: false })
+  isFeatured: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  featuredOrder: number;
+
   @Column({ type: 'int', default: 0 })
   progress: number;
 
@@ -28,6 +37,21 @@ export class Project {
 
   @Column('text', { array: true, default: '{}' })
   features: string[];
+
+  @Column({ type: 'text', default: '' })
+  role: string;
+
+  @Column({ type: 'text', default: '' })
+  problem: string;
+
+  @Column({ type: 'text', default: '' })
+  approach: string;
+
+  @Column({ type: 'text', default: '' })
+  outcomes: string;
+
+  @Column('text', { array: true, default: '{}' })
+  impactMetrics: string[];
 
   @Column({ default: '' })
   startDate: string;

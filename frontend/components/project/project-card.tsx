@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { trackEvent } from "@/lib/analytics/track"
 import { normalizeImageUrl } from "@/lib/utils/image"
+import { getProjectPath } from "@/lib/projects/project-url"
 
 interface ProjectCardProps {
   id: number | string
+  slug?: string | null
   title: string
   description?: string
   tags?: string[]
@@ -23,6 +25,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({
   id,
+  slug,
   title,
   description = "",
   tags = [],
@@ -33,6 +36,7 @@ export function ProjectCard({
 }: ProjectCardProps) {
   const normalizedImage = normalizeImageUrl(image)
   const projectDescription = description.trim() || "프로젝트 요약을 준비 중입니다."
+  const projectPath = getProjectPath({ id, slug })
   const contentId = String(id)
 
   return (
@@ -59,7 +63,7 @@ export function ProjectCard({
 
           <div className="p-6 flex-grow">
             <Link
-              href={`/projects/${id}`}
+              href={projectPath}
               onClick={() => {
                 trackEvent("cta_click", {
                   location: trackingLocation,
@@ -119,7 +123,7 @@ export function ProjectCard({
                 asChild
               >
                 <Link
-                  href={demoUrl || `/projects/${id}`}
+                  href={demoUrl || projectPath}
                   target={demoUrl ? "_blank" : undefined}
                   rel={demoUrl ? "noopener noreferrer" : undefined}
                   onClick={() => {

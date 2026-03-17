@@ -289,6 +289,8 @@ export class PostsController {
     postResponseDTO.headings = post.headings || [];
     postResponseDTO.wordCount = post.wordCount ?? undefined;
     postResponseDTO.image = post.image;
+    postResponseDTO.isFeatured = post.isFeatured;
+    postResponseDTO.featuredOrder = post.featuredOrder;
     postResponseDTO.tags = post.tags ? post.tags.map((tag) => tag.name) : [];
     postResponseDTO.status = post.status;
     postResponseDTO.author = post.author;
@@ -313,6 +315,8 @@ export class PostsController {
     postEditResponseDTO.contentMarkdown = post.contentMarkdown;
     postEditResponseDTO.contentHtml = post.contentHtml;
     postEditResponseDTO.image = post.image;
+    postEditResponseDTO.isFeatured = post.isFeatured;
+    postEditResponseDTO.featuredOrder = post.featuredOrder;
     postEditResponseDTO.tags = post.tags
       ? post.tags.map((tag) => tag.name)
       : [];

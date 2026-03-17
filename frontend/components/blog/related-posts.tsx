@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getPosts, Post } from "@/lib/api"
 import { useEffect, useState } from "react"
+import { getPostPath } from "@/lib/posts/post-url"
 
 interface RelatedPostsProps {
   currentPostId: number
@@ -91,7 +92,7 @@ export function RelatedPosts({ currentPostId, currentPostSlug }: RelatedPostsPro
         <h3 className="text-lg font-semibold mb-4 text-neutral-slate-800">함께 읽으면 좋은 글</h3>
         <div className="space-y-4">
           {relatedPosts.map((post) => (
-            <Link key={post.id} href={`/blog/${post.slug && post.slug !== "null" ? post.slug : post.id}`} className="block group">
+            <Link key={post.id} href={getPostPath(post)} className="block group">
               <div className="p-3 rounded-lg border border-neutral-slate-200 hover:border-brand-blue-200 transition-colors">
                 <h4 className="font-medium text-neutral-slate-800 group-hover:text-brand-blue-600 transition-colors mb-1 line-clamp-2">
                   {post.title}

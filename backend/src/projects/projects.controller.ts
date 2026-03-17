@@ -20,13 +20,9 @@ export class ProjectsController {
 
   @Get(':id')
   @ApiOperation({ summary: '프로젝트 상세 조회' })
-  @ApiParam({ name: 'id', description: '프로젝트 ID' })
+  @ApiParam({ name: 'id', description: '프로젝트 ID 또는 slug' })
   async findOne(@Param('id') id: string) {
-    const numericId = parseInt(id, 10);
-    if (Number.isNaN(numericId)) {
-      throw new NotFoundException('잘못된 프로젝트 ID');
-    }
-    const project = await this.projectsService.findOne(numericId);
+    const project = await this.projectsService.findOneByIdentifier(id);
     if (!project) {
       throw new NotFoundException('프로젝트를 찾을 수 없습니다.');
     }
