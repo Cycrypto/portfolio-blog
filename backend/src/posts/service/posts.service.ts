@@ -117,7 +117,7 @@ export class PostsService {
   ): Promise<Post | null> {
     const post = await this.postRepository.findOne({
       where: { id },
-      relations: ['tags'],
+      relations: ['tags', 'project'],
     });
 
     if (!post) {
@@ -197,7 +197,7 @@ export class PostsService {
 
     return this.postRepository.findOne({
       where: { id },
-      relations: ['tags'],
+      relations: ['tags', 'project'],
     });
   }
 
@@ -207,7 +207,7 @@ export class PostsService {
   ): Promise<Post | null> {
     const post = await this.postRepository.findOne({
       where: { id },
-      relations: ['tags'],
+      relations: ['tags', 'project'],
     });
 
     if (!post) {
@@ -285,14 +285,14 @@ export class PostsService {
     if (/^\d+$/.test(normalizedIdentifier)) {
       post = await this.postRepository.findOne({
         where: { id: Number.parseInt(normalizedIdentifier, 10) },
-        relations: ['tags'],
+        relations: ['tags', 'project'],
       });
     }
 
     if (!post) {
       post = await this.postRepository.findOne({
         where: { slug: normalizedIdentifier },
-        relations: ['tags'],
+        relations: ['tags', 'project'],
       });
     }
 
@@ -432,6 +432,7 @@ export class PostsService {
     const queryBuilder = this.postRepository
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.tags', 'tags')
+      .leftJoinAndSelect('post.project', 'project')
       .select([
         'post.id',
         'post.title',
@@ -449,6 +450,12 @@ export class PostsService {
         'post.likes',
         'post.comments',
         'post.readTime',
+        'post.projectId',
+        'project.id',
+        'project.title',
+        'project.slug',
+        'project.category',
+        'project.status',
         'tags.id',
         'tags.name',
       ])
@@ -489,6 +496,16 @@ export class PostsService {
       likes: post.likes,
       comments: post.liveCommentsCount ?? post.comments,
       readTime: post.readTime,
+      projectId: post.projectId,
+      project: post.project
+        ? {
+            id: post.project.id,
+            title: post.project.title,
+            slug: post.project.slug,
+            category: post.project.category,
+            status: post.project.status,
+          }
+        : null,
     }));
   }
 

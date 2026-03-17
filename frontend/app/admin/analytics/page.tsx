@@ -8,8 +8,34 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 const umamiDashboardUrl = process.env.NEXT_PUBLIC_UMAMI_DASHBOARD_URL || ""
-const isUmamiConfigured = Boolean(process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL && process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID)
+const isFrontendTrackingConfigured = Boolean(
+  process.env.NEXT_PUBLIC_UMAMI_SCRIPT_URL && process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
+)
 const hasDashboardLink = Boolean(umamiDashboardUrl)
+const hasUmamiApiBaseUrl = Boolean(process.env.UMAMI_API_BASE_URL)
+const hasUmamiApiWebsiteId = Boolean(process.env.UMAMI_WEBSITE_ID)
+const hasUmamiApiKey = Boolean(process.env.UMAMI_API_KEY)
+const hasUmamiApiToken = Boolean(process.env.UMAMI_API_TOKEN)
+const hasUmamiApiCredential = hasUmamiApiKey || hasUmamiApiToken
+const isAdminKpiConfigured = hasUmamiApiBaseUrl && hasUmamiApiWebsiteId && hasUmamiApiCredential
+const hasMixedCredentials = hasUmamiApiKey && hasUmamiApiToken
+const umamiApiBaseUrl = process.env.UMAMI_API_BASE_URL || ""
+
+function isUmamiCloudBaseUrl(baseUrl: string) {
+  try {
+    return new URL(baseUrl).hostname === "api.umami.is"
+  } catch {
+    return false
+  }
+}
+
+const expectsCloudApiKey = umamiApiBaseUrl ? isUmamiCloudBaseUrl(umamiApiBaseUrl) : null
+const hasCredentialMismatch =
+  expectsCloudApiKey === true
+    ? !hasUmamiApiKey && hasUmamiApiToken
+    : expectsCloudApiKey === false
+      ? !hasUmamiApiToken && hasUmamiApiKey
+      : false
 
 const trackedEvents = [
   {
@@ -85,14 +111,14 @@ export default function AdminAnalyticsPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-xl text-neutral-slate-800">연결 상태</CardTitle>
-                <CardDescription>현재 프론트엔드 행동 추적이 어떻게 연결되어 있는지 보여줍니다.</CardDescription>
+                <CardDescription>현재 프론트엔드 추적과 관리자 KPI API 연결 상태를 함께 보여줍니다.</CardDescription>
               </div>
-              <Badge variant={isUmamiConfigured ? "default" : "secondary"}>
-                {isUmamiConfigured ? "Umami 연결됨" : "설정 필요"}
+              <Badge variant={isFrontendTrackingConfigured && isAdminKpiConfigured ? "default" : "secondary"}>
+                {isFrontendTrackingConfigured && isAdminKpiConfigured ? "전체 연결됨" : "일부 설정 필요"}
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="grid gap-4 pt-5 md:grid-cols-2">
+          <CardContent className="grid gap-4 pt-5 md:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
               <div className="flex items-start gap-3">
                 <div className="rounded-lg bg-brand-blue-50 p-2">
@@ -112,7 +138,12 @@ export default function AdminAnalyticsPage() {
                   <Settings className="h-4 w-4 text-brand-blue-700" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-neutral-slate-800">설정 값</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-neutral-slate-800">프론트 추적</h3>
+                    <Badge variant={isFrontendTrackingConfigured ? "default" : "secondary"}>
+                      {isFrontendTrackingConfigured ? "수집 중" : "설정 필요"}
+                    </Badge>
+                  </div>
                   <p className="mt-1 text-sm text-neutral-slate-600">
                     `NEXT_PUBLIC_UMAMI_SCRIPT_URL`, `NEXT_PUBLIC_UMAMI_WEBSITE_ID`, `NEXT_PUBLIC_UMAMI_DASHBOARD_URL`
                     를 사용합니다.
@@ -120,11 +151,52 @@ export default function AdminAnalyticsPage() {
                 </div>
               </div>
             </div>
+            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg bg-brand-blue-50 p-2">
+                  <BarChart3 className="h-4 w-4 text-brand-blue-700" />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-neutral-slate-800">관리자 KPI API</h3>
+                    <Badge variant={isAdminKpiConfigured ? "default" : "secondary"}>
+                      {isAdminKpiConfigured ? "집계 가능" : "설정 필요"}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-sm text-neutral-slate-600">
+                    `UMAMI_API_BASE_URL`, `UMAMI_WEBSITE_ID`, `UMAMI_API_KEY` 또는 `UMAMI_API_TOKEN`을 사용합니다.
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {!hasDashboardLink && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2 xl:col-span-3">
                 `NEXT_PUBLIC_UMAMI_DASHBOARD_URL`이 비어 있어 관리자에서 바로 Umami를 열 수 없습니다. 공유 링크 또는 대시보드 URL을
                 환경변수에 넣으면 상단 버튼이 활성화됩니다.
+              </div>
+            )}
+
+            {!isAdminKpiConfigured && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2 xl:col-span-3">
+                내부 KPI 카드까지 보려면 `UMAMI_API_BASE_URL`, `UMAMI_WEBSITE_ID`, 그리고 `UMAMI_API_KEY` 또는
+                `UMAMI_API_TOKEN`이 필요합니다.
+              </div>
+            )}
+
+            {hasMixedCredentials && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2 xl:col-span-3">
+                `UMAMI_API_KEY`와 `UMAMI_API_TOKEN`이 동시에 설정되어 있습니다. Umami Cloud는 보통 API key, 셀프호스트는
+                API token 한 가지만 두는 편이 안전합니다.
+              </div>
+            )}
+
+            {hasCredentialMismatch && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 md:col-span-2 xl:col-span-3">
+                현재 `UMAMI_API_BASE_URL` 기준으로 보면 인증 값 조합이 맞지 않을 수 있습니다.
+                {expectsCloudApiKey
+                  ? " `https://api.umami.is/v1` 를 쓰는 경우 `UMAMI_API_KEY`를 권장합니다."
+                  : " 셀프호스트 `/api` 엔드포인트를 쓰는 경우 `UMAMI_API_TOKEN`을 권장합니다."}
               </div>
             )}
           </CardContent>

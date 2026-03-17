@@ -10,6 +10,7 @@ import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { ProjectGallery } from '@/components/project/project-gallery';
 import { RelatedProjects } from '@/components/project/related-projects';
 import { getProject } from '@/lib/api';
+import { getPostPath } from '@/lib/posts/post-url';
 import { getProjectPath } from '@/lib/projects/project-url';
 import { absoluteUrl } from '@/lib/site';
 import { normalizeImageUrl } from '@/lib/utils/image';
@@ -121,6 +122,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const canonicalProjectPath = getProjectPath(project);
   const relatedKey = project.slug || slug;
   const projectId = String(project.id ?? slug);
+  const linkedPublishedPosts = (project.linkedPosts || []).filter(
+    (post) => post.status === 'published',
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
@@ -261,6 +265,47 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     >
                       {metric}
                     </Badge>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {linkedPublishedPosts.length > 0 ? (
+              <section className="rounded-2xl border border-brand-blue-200/70 bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-neutral-slate-900">
+                  관련 기술 글
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-neutral-slate-600">
+                  이 프로젝트 구현 과정과 연결된 공개 기술 글입니다.
+                </p>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  {linkedPublishedPosts.map((post) => (
+                    <Link
+                      key={post.id}
+                      href={getPostPath({ id: post.id, slug: post.slug })}
+                      className="rounded-xl border border-brand-blue-200/70 p-4 transition-colors hover:bg-brand-blue-50/60"
+                    >
+                      <h3 className="font-semibold text-neutral-slate-900">
+                        {post.title}
+                      </h3>
+                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-neutral-slate-600">
+                        {post.excerpt || '요약을 준비 중입니다.'}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-slate-500">
+                        {post.publishDate ? (
+                          <span className="rounded-full border border-brand-blue-200 bg-white px-2 py-1">
+                            {new Date(post.publishDate).toLocaleDateString(
+                              'ko-KR',
+                            )}
+                          </span>
+                        ) : null}
+                        {post.readTime ? (
+                          <span className="rounded-full border border-brand-blue-200 bg-white px-2 py-1">
+                            {post.readTime}분 읽기
+                          </span>
+                        ) : null}
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </section>

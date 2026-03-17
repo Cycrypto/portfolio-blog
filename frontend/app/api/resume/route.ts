@@ -1,4 +1,4 @@
-import { buildPortfolioSnapshot } from '@/lib/portfolio/build-portfolio-snapshot';
+import { buildResumeSnapshot } from '@/lib/portfolio/build-resume-snapshot';
 import { renderResumePdf } from '@/lib/portfolio/resume-pdf';
 
 export const runtime = 'nodejs';
@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const snapshot = await buildPortfolioSnapshot();
+    const snapshot = await buildResumeSnapshot();
     const pdf = await renderResumePdf(snapshot);
 
     return new Response(pdf, {

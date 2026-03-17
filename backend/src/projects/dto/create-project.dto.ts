@@ -6,6 +6,7 @@ import {
   IsString,
   Max,
   Min,
+  ArrayUnique,
 } from 'class-validator';
 
 export class CreateProjectDto {
@@ -77,6 +78,18 @@ export class CreateProjectDto {
 
   @IsOptional()
   @IsString()
+  resumeTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  resumeSummary?: string;
+
+  @IsOptional()
+  @IsArray()
+  resumeHighlights?: string[];
+
+  @IsOptional()
+  @IsString()
   startDate?: string;
 
   @IsOptional()
@@ -94,4 +107,11 @@ export class CreateProjectDto {
   @IsOptional()
   @IsArray()
   images?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  linkedPostIds?: number[];
 }

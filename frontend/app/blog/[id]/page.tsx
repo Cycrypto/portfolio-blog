@@ -19,8 +19,8 @@ import {
 } from '@/components/blog/post-like-card';
 import { ShareButtons } from '@/components/common/share-buttons';
 import { TiptapViewer } from '@/components/editor/TiptapViewer';
-import { buildPortfolioSnapshot } from '@/lib/portfolio/build-portfolio-snapshot';
 import { getPost, type Post } from '@/lib/api';
+import { profileService } from '@/lib/api/services/profile';
 import { PostViewCount } from '@/components/blog/post-view-count';
 import { absoluteUrl } from '@/lib/site';
 import { normalizeImageUrl } from '@/lib/utils/image';
@@ -41,39 +41,6 @@ async function getPostOr404(identifier: string): Promise<Post> {
   } catch (error) {
     return notFound();
   }
-}
-
-function findRelatedProjects(post: Post, snapshot: Awaited<ReturnType<typeof buildPortfolioSnapshot>>) {
-  const tagSet = new Set([...(post.tags || []), post.category].filter(Boolean).map((tag) => tag.toLowerCase()));
-
-  const scoredProjects = snapshot.allProjects
-    .map((project) => {
-      const projectKeywords = [
-        ...(project.techStack || []),
-        project.category || '',
-        project.title,
-      ]
-        .filter(Boolean)
-        .map((value) => value.toLowerCase());
-
-      const score = projectKeywords.filter((keyword) => tagSet.has(keyword)).length;
-      return { project, score };
-    })
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-
-      return (a.project.featuredOrder || Number.MAX_SAFE_INTEGER) - (b.project.featuredOrder || Number.MAX_SAFE_INTEGER);
-    })
-    .map(({ project }) => project);
-
-  if (scoredProjects.length > 0) {
-    return scoredProjects.slice(0, 3);
-  }
-
-  return snapshot.featuredProjects.slice(0, 2);
 }
 
 export async function generateMetadata({
@@ -113,9 +80,11 @@ export async function generateMetadata({
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const resolvedParams = await params;
   const post = await getPostOr404(resolvedParams.id);
-  const snapshot = await buildPortfolioSnapshot();
+  const profile = await profileService
+    .getProfile()
+    .catch(() => profileService.getDefaultProfile());
   const heroImage = normalizeImageUrl(post.image);
-  const profileImage = normalizeImageUrl(snapshot.profile.profileImage);
+  const profileImage = normalizeImageUrl(profile.profileImage);
   const currentPostSlug =
     post.slug && post.slug !== 'null' ? post.slug : undefined;
   const postReactionId =
@@ -124,7 +93,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     0,
     6,
   );
-  const relatedProjects = findRelatedProjects(post, snapshot);
+  const linkedProject = post.project;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-slate-50 via-brand-indigo-50 to-brand-blue-50">
@@ -275,49 +244,40 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </div>
             </section>
 
-            {relatedProjects.length > 0 ? (
+            {linkedProject ? (
               <>
                 <Separator className="my-12" />
                 <section className="rounded-2xl border border-brand-blue-200/70 bg-white p-6 shadow-sm">
                   <h2 className="text-xl font-bold text-neutral-slate-900">
-                    관련 프로젝트
+                    연결된 프로젝트
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-neutral-slate-600">
-                    이 글에서 다루는 기술과 문제 맥락이 이어지는 대표
-                    프로젝트입니다.
+                    이 글과 명시적으로 연결된 프로젝트입니다.
                   </p>
-                  <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    {relatedProjects.map((project) => (
-                      <Link
-                        key={project.id}
-                        href={getProjectPath(project)}
-                        className="rounded-xl border border-brand-blue-200/70 p-4 transition-colors hover:bg-brand-blue-50/60"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <h3 className="font-semibold text-neutral-slate-900">
-                            {project.title}
-                          </h3>
-                          {project.isFeatured ? (
-                            <Badge
-                              variant="secondary"
-                              className="bg-brand-blue-100 text-brand-blue-700"
-                            >
-                              대표
-                            </Badge>
-                          ) : null}
-                        </div>
-                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-neutral-slate-600">
-                          {project.problem || project.description || '프로젝트 설명을 정리 중입니다.'}
+                  <div className="mt-6">
+                    <Link
+                      href={getProjectPath(linkedProject)}
+                      className="block rounded-xl border border-brand-blue-200/70 p-4 transition-colors hover:bg-brand-blue-50/60"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-semibold text-neutral-slate-900">
+                          {linkedProject.title}
+                        </h3>
+                        {linkedProject.status ? (
+                          <Badge
+                            variant="secondary"
+                            className="bg-brand-blue-100 text-brand-blue-700"
+                          >
+                            {linkedProject.status}
+                          </Badge>
+                        ) : null}
+                      </div>
+                      {linkedProject.category ? (
+                        <p className="mt-3 text-sm text-neutral-slate-600">
+                          카테고리: {linkedProject.category}
                         </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {(project.techStack || []).slice(0, 4).map((tech) => (
-                            <Badge key={tech} variant="outline">
-                              {tech}
-                            </Badge>
-                          ))}
-                        </div>
-                      </Link>
-                    ))}
+                      ) : null}
+                    </Link>
                   </div>
                 </section>
               </>
@@ -334,16 +294,16 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
             <Separator className="my-12" />
 
-            <AuthorCard
+              <AuthorCard
               author={{
-                name: snapshot.profile.name || post.author,
+                name: profile.name || post.author,
                 avatar: profileImage || undefined,
                 bio:
-                  snapshot.profile.about ||
+                  profile.about ||
                   '개발 과정에서 확인한 내용과 구현 경험을 기록합니다.',
-                githubUrl: snapshot.profile.github || undefined,
-                linkedinUrl: snapshot.profile.linkedin || undefined,
-                email: snapshot.profile.email || undefined,
+                githubUrl: profile.github || undefined,
+                linkedinUrl: profile.linkedin || undefined,
+                email: profile.email || undefined,
               }}
             />
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,16 +8,18 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ArrowLeft, Save, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { createProject, uploadMedia } from "@/lib/api"
+import { createProject, getAdminPosts, uploadMedia } from "@/lib/api"
 import { AdminShell } from "@/components/admin/AdminShell"
 import { normalizeImageUrl } from "@/lib/utils/image"
 import { generateSlug } from "@/lib/utils/slug"
+import { Post } from "@/lib/types/api"
 
 export default function NewProject() {
   const router = useRouter()
@@ -39,6 +41,14 @@ export default function NewProject() {
   const [outcomes, setOutcomes] = useState("")
   const [impactMetrics, setImpactMetrics] = useState<string[]>([])
   const [newMetric, setNewMetric] = useState("")
+  const [resumeTitle, setResumeTitle] = useState("")
+  const [resumeSummary, setResumeSummary] = useState("")
+  const [resumeHighlights, setResumeHighlights] = useState<string[]>([])
+  const [newResumeHighlight, setNewResumeHighlight] = useState("")
+  const [linkedPostIds, setLinkedPostIds] = useState<number[]>([])
+  const [adminPosts, setAdminPosts] = useState<Post[]>([])
+  const [postSearch, setPostSearch] = useState("")
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [githubUrl, setGithubUrl] = useState("")
@@ -49,6 +59,23 @@ export default function NewProject() {
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const slugPreview = useMemo(() => generateSlug(title), [title])
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        setIsLoadingPosts(true)
+        const result = await getAdminPosts(1, 200)
+        setAdminPosts(result.posts || [])
+      } catch (loadError) {
+        console.error(loadError)
+        setError("연결 가능한 블로그 글을 불러오지 못했습니다.")
+      } finally {
+        setIsLoadingPosts(false)
+      }
+    }
+
+    void loadPosts()
+  }, [])
 
   const addTech = () => {
     if (newTech.trim() && !techStack.includes(newTech.trim())) {
@@ -77,6 +104,27 @@ export default function NewProject() {
     if (!trimmed || impactMetrics.includes(trimmed)) return
     setImpactMetrics([...impactMetrics, trimmed])
     setNewMetric("")
+  }
+
+  const addResumeHighlight = () => {
+    const trimmed = newResumeHighlight.trim()
+    if (!trimmed || resumeHighlights.includes(trimmed)) return
+    setResumeHighlights([...resumeHighlights, trimmed])
+    setNewResumeHighlight("")
+  }
+
+  const removeResumeHighlight = (highlightToRemove: string) => {
+    setResumeHighlights(
+      resumeHighlights.filter((highlight) => highlight !== highlightToRemove),
+    )
+  }
+
+  const toggleLinkedPost = (postId: number) => {
+    setLinkedPostIds((prev) =>
+      prev.includes(postId)
+        ? prev.filter((selectedId) => selectedId !== postId)
+        : [...prev, postId],
+    )
   }
 
   const removeMetric = (metricToRemove: string) => {
@@ -120,11 +168,15 @@ export default function NewProject() {
         approach: approach.trim(),
         outcomes: outcomes.trim(),
         impactMetrics,
+        resumeTitle: resumeTitle.trim(),
+        resumeSummary: resumeSummary.trim(),
+        resumeHighlights,
         startDate,
         endDate,
         githubUrl,
         liveUrl,
         images: images.map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image)),
+        linkedPostIds,
       })
       router.push('/admin/projects')
     } catch (err) {
@@ -134,6 +186,10 @@ export default function NewProject() {
       setIsSaving(false)
     }
   }
+
+  const filteredPosts = adminPosts
+    .filter((post) => post.title.toLowerCase().includes(postSearch.toLowerCase()))
+    .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
 
   return (
     <AdminShell
@@ -272,6 +328,120 @@ export default function NewProject() {
                       ))}
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>이력서용 내용</CardTitle>
+                  <CardDescription>PDF 이력서에 보여줄 요약 내용을 편집합니다</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="resume-title">이력서용 프로젝트 제목</Label>
+                    <Input
+                      id="resume-title"
+                      placeholder="기본 프로젝트명을 그대로 쓰려면 비워두세요"
+                      value={resumeTitle}
+                      onChange={(e) => setResumeTitle(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="resume-summary">이력서용 요약</Label>
+                    <Textarea
+                      id="resume-summary"
+                      placeholder="이 프로젝트를 이력서에서 어떻게 소개할지 작성하세요"
+                      rows={4}
+                      value={resumeSummary}
+                      onChange={(e) => setResumeSummary(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>이력서 하이라이트</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="예: 결제 실패율 22% 감소"
+                        value={newResumeHighlight}
+                        onChange={(e) => setNewResumeHighlight(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            addResumeHighlight()
+                          }
+                        }}
+                      />
+                      <Button onClick={addResumeHighlight} size="sm">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {resumeHighlights.map((highlight) => (
+                        <Badge key={highlight} variant="secondary" className="flex items-center gap-1">
+                          {highlight}
+                          <X className="w-3 h-3 cursor-pointer" onClick={() => removeResumeHighlight(highlight)} />
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>연결할 블로그 글</CardTitle>
+                  <CardDescription>이미 다른 프로젝트에 연결된 글은 선택할 수 없습니다</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="제목으로 검색"
+                    value={postSearch}
+                    onChange={(e) => setPostSearch(e.target.value)}
+                  />
+                  <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-brand-blue-100 p-3">
+                    {isLoadingPosts ? (
+                      <p className="text-sm text-neutral-slate-500">블로그 글을 불러오는 중...</p>
+                    ) : filteredPosts.length === 0 ? (
+                      <p className="text-sm text-neutral-slate-500">조건에 맞는 글이 없습니다.</p>
+                    ) : (
+                      filteredPosts.map((post) => {
+                        const assignedToOtherProject = Boolean(post.projectId)
+                        const checked = linkedPostIds.includes(post.id)
+                        const disabled = assignedToOtherProject && !checked
+
+                        return (
+                          <label
+                            key={post.id}
+                            className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 ${
+                              disabled
+                                ? "border-neutral-slate-200 bg-neutral-slate-50 text-neutral-slate-400"
+                                : "border-brand-blue-100 hover:bg-brand-blue-50/50"
+                            }`}
+                          >
+                            <Checkbox
+                              checked={checked}
+                              disabled={disabled}
+                              onCheckedChange={() => toggleLinkedPost(post.id)}
+                              className="mt-0.5"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{post.title}</p>
+                              <p className="mt-1 text-xs text-neutral-slate-500">
+                                {post.category} · {new Date(post.publishDate).toLocaleDateString("ko-KR")}
+                              </p>
+                              {assignedToOtherProject ? (
+                                <p className="mt-1 text-xs text-amber-600">
+                                  다른 프로젝트에 연결됨: {post.project?.title || `ID ${post.projectId}`}
+                                </p>
+                              ) : null}
+                            </div>
+                          </label>
+                        )
+                      })
+                    )}
+                  </div>
+                  <p className="text-xs text-neutral-slate-500">
+                    선택됨: {linkedPostIds.length}개
+                  </p>
                 </CardContent>
               </Card>
 

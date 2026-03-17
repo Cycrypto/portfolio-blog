@@ -34,6 +34,22 @@ interface UmamiValueMetric {
   total: number
 }
 
+type UmamiAuthMode = "api-key" | "token"
+
+interface UmamiAuthStrategy {
+  mode: UmamiAuthMode
+  headers: HeadersInit
+}
+
+interface UmamiRequestConfig {
+  baseUrl: string
+  websiteId: string
+  authStrategies: UmamiAuthStrategy[]
+  hasApiKey: boolean
+  hasApiToken: boolean
+  expectsCloudApiKey: boolean
+}
+
 const RANGE_DAYS: Record<SummaryRange, number> = {
   "7d": 7,
   "30d": 30,
@@ -57,6 +73,45 @@ const TRACKED_EVENT_NAMES = [
 
 function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`
+}
+
+function isUmamiCloudBaseUrl(baseUrl: string) {
+  try {
+    return new URL(baseUrl).hostname === "api.umami.is"
+  } catch {
+    return false
+  }
+}
+
+function extractUmamiErrorMessage(responseText: string) {
+  try {
+    const parsed = JSON.parse(responseText) as { error?: { message?: string }; message?: string }
+
+    if (typeof parsed.error?.message === "string" && parsed.error.message.length > 0) {
+      return parsed.error.message
+    }
+
+    if (typeof parsed.message === "string" && parsed.message.length > 0) {
+      return parsed.message
+    }
+  } catch {
+    // Fall back to the raw response below when the body is not JSON.
+  }
+
+  return responseText.trim() || "Unknown error"
+}
+
+class UmamiApiError extends Error {
+  status: number
+  responseText: string
+
+  constructor(status: number, responseText: string) {
+    super(`Umami request failed: ${status} ${extractUmamiErrorMessage(responseText)}`)
+
+    this.name = "UmamiApiError"
+    this.status = status
+    this.responseText = responseText
+  }
 }
 
 function getRangeKey(range: string | null): SummaryRange {
@@ -92,6 +147,20 @@ function mapValueMetrics(metrics: UmamiValueMetric[]) {
     value: metric.value,
     total: Number(metric.total || 0),
   }))
+}
+
+function buildUmamiHeaders(mode: UmamiAuthMode, credential: string) {
+  const headers: HeadersInit = {
+    Accept: "application/json",
+  }
+
+  if (mode === "api-key") {
+    headers["x-umami-api-key"] = credential
+  } else {
+    headers.Authorization = `Bearer ${credential}`
+  }
+
+  return headers
 }
 
 async function verifyAdminAccess(request: NextRequest) {
@@ -130,25 +199,56 @@ function getUmamiRequestConfig() {
     return null
   }
 
-  const headers: HeadersInit = {
-    Accept: "application/json",
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
+  const expectsCloudApiKey = isUmamiCloudBaseUrl(normalizedBaseUrl)
+  const authStrategies: UmamiAuthStrategy[] = []
+
+  if (expectsCloudApiKey) {
+    if (apiKey) {
+      authStrategies.push({
+        mode: "api-key",
+        headers: buildUmamiHeaders("api-key", apiKey),
+      })
+    }
+
+    if (apiToken) {
+      authStrategies.push({
+        mode: "token",
+        headers: buildUmamiHeaders("token", apiToken),
+      })
+    }
+  } else {
+    if (apiToken) {
+      authStrategies.push({
+        mode: "token",
+        headers: buildUmamiHeaders("token", apiToken),
+      })
+    }
+
+    if (apiKey) {
+      authStrategies.push({
+        mode: "api-key",
+        headers: buildUmamiHeaders("api-key", apiKey),
+      })
+    }
   }
 
-  if (apiKey) {
-    headers["x-umami-api-key"] = apiKey
-  } else if (apiToken) {
-    headers.Authorization = `Bearer ${apiToken}`
+  if (authStrategies.length === 0) {
+    return null
   }
 
   return {
-    baseUrl: normalizeBaseUrl(baseUrl),
+    baseUrl: normalizedBaseUrl,
     websiteId,
-    headers,
+    authStrategies,
+    hasApiKey: Boolean(apiKey),
+    hasApiToken: Boolean(apiToken),
+    expectsCloudApiKey,
   }
 }
 
 async function fetchUmamiJson<T>(
-  config: { baseUrl: string; websiteId: string; headers: HeadersInit },
+  config: { baseUrl: string; headers: HeadersInit },
   path: string,
   searchParams: URLSearchParams,
 ) {
@@ -161,11 +261,69 @@ async function fetchUmamiJson<T>(
   })
 
   if (!response.ok) {
-    const message = await response.text()
-    throw new Error(`Umami request failed: ${response.status} ${message}`)
+    throw new UmamiApiError(response.status, await response.text())
   }
 
   return (await response.json()) as T
+}
+
+function formatUmamiError(error: unknown, config: UmamiRequestConfig) {
+  if (error instanceof UmamiApiError && error.status === 401) {
+    const providerHint = config.expectsCloudApiKey
+      ? "Umami Cloud는 `UMAMI_API_BASE_URL=https://api.umami.is/v1` 와 `UMAMI_API_KEY` 조합을 사용합니다."
+      : "셀프호스트 Umami는 `UMAMI_API_BASE_URL=https://<host>/api` 와 `UMAMI_API_TOKEN` 조합이 일반적입니다."
+
+    const retryHint =
+      config.hasApiKey && config.hasApiToken
+        ? "현재 `UMAMI_API_KEY`와 `UMAMI_API_TOKEN`이 모두 있어 둘 다 시도했지만 인증에 실패했습니다. 한 가지만 남기는 편이 안전합니다."
+        : ""
+
+    return new Error(
+      `Umami 인증에 실패했습니다. 응답: ${extractUmamiErrorMessage(error.responseText)}. ${providerHint}${retryHint ? ` ${retryHint}` : ""}`,
+    )
+  }
+
+  if (error instanceof UmamiApiError) {
+    return new Error(`Umami 요청이 실패했습니다 (${error.status}). ${extractUmamiErrorMessage(error.responseText)}`)
+  }
+
+  return error instanceof Error ? error : new Error("Failed to fetch analytics summary.")
+}
+
+async function fetchUmamiJsonWithFallback<T>(
+  config: UmamiRequestConfig,
+  path: string,
+  searchParams: URLSearchParams,
+) {
+  let lastError: unknown = null
+
+  for (const [index, strategy] of config.authStrategies.entries()) {
+    try {
+      const data = await fetchUmamiJson<T>(
+        {
+          baseUrl: config.baseUrl,
+          headers: strategy.headers,
+        },
+        path,
+        searchParams,
+      )
+
+      return {
+        data,
+        strategy,
+      }
+    } catch (error) {
+      lastError = error
+      const hasNextStrategy = index < config.authStrategies.length - 1
+      const shouldTryNextStrategy = hasNextStrategy && error instanceof UmamiApiError && error.status === 401
+
+      if (!shouldTryNextStrategy) {
+        throw formatUmamiError(error, config)
+      }
+    }
+  }
+
+  throw formatUmamiError(lastError, config)
 }
 
 export async function GET(request: NextRequest) {
@@ -194,55 +352,61 @@ export async function GET(request: NextRequest) {
   })
 
   try {
-    const [stats, active, topPages, eventSeries, ctaTargets, projectTargets] =
-      await Promise.all([
-        fetchUmamiJson<UmamiWebsiteStats>(
-          umamiConfig,
-          `websites/${umamiConfig.websiteId}/stats`,
-          commonParams,
-        ),
-        fetchUmamiJson<UmamiActiveStats>(
-          umamiConfig,
-          `websites/${umamiConfig.websiteId}/active`,
-          new URLSearchParams(),
-        ),
-        fetchUmamiJson<UmamiExpandedMetric[]>(
-          umamiConfig,
-          `websites/${umamiConfig.websiteId}/metrics/expanded`,
-          new URLSearchParams({
-            ...Object.fromEntries(commonParams.entries()),
-            type: "path",
-            limit: "5",
-          }),
-        ),
-        fetchUmamiJson<UmamiEventSeriesItem[]>(
-          umamiConfig,
-          `websites/${umamiConfig.websiteId}/events/series`,
-          new URLSearchParams({
-            ...Object.fromEntries(commonParams.entries()),
-            unit: "day",
-            timezone,
-          }),
-        ),
-        fetchUmamiJson<UmamiValueMetric[]>(
-          umamiConfig,
-          `websites/${umamiConfig.websiteId}/event-data/values`,
-          new URLSearchParams({
-            ...Object.fromEntries(commonParams.entries()),
-            event: "cta_click",
-            propertyName: "target",
-          }),
-        ),
-        fetchUmamiJson<UmamiValueMetric[]>(
-          umamiConfig,
-          `websites/${umamiConfig.websiteId}/event-data/values`,
-          new URLSearchParams({
-            ...Object.fromEntries(commonParams.entries()),
-            event: "project_outbound_click",
-            propertyName: "target",
-          }),
-        ),
-      ])
+    const statsResult = await fetchUmamiJsonWithFallback<UmamiWebsiteStats>(
+      umamiConfig,
+      `websites/${umamiConfig.websiteId}/stats`,
+      commonParams,
+    )
+
+    const stats = statsResult.data
+    const authenticatedConfig = {
+      baseUrl: umamiConfig.baseUrl,
+      headers: statsResult.strategy.headers,
+    }
+
+    const [active, topPages, eventSeries, ctaTargets, projectTargets] = await Promise.all([
+      fetchUmamiJson<UmamiActiveStats>(
+        authenticatedConfig,
+        `websites/${umamiConfig.websiteId}/active`,
+        new URLSearchParams(),
+      ),
+      fetchUmamiJson<UmamiExpandedMetric[]>(
+        authenticatedConfig,
+        `websites/${umamiConfig.websiteId}/metrics/expanded`,
+        new URLSearchParams({
+          ...Object.fromEntries(commonParams.entries()),
+          type: "path",
+          limit: "5",
+        }),
+      ),
+      fetchUmamiJson<UmamiEventSeriesItem[]>(
+        authenticatedConfig,
+        `websites/${umamiConfig.websiteId}/events/series`,
+        new URLSearchParams({
+          ...Object.fromEntries(commonParams.entries()),
+          unit: "day",
+          timezone,
+        }),
+      ),
+      fetchUmamiJson<UmamiValueMetric[]>(
+        authenticatedConfig,
+        `websites/${umamiConfig.websiteId}/event-data/values`,
+        new URLSearchParams({
+          ...Object.fromEntries(commonParams.entries()),
+          event: "cta_click",
+          propertyName: "target",
+        }),
+      ),
+      fetchUmamiJson<UmamiValueMetric[]>(
+        authenticatedConfig,
+        `websites/${umamiConfig.websiteId}/event-data/values`,
+        new URLSearchParams({
+          ...Object.fromEntries(commonParams.entries()),
+          event: "project_outbound_click",
+          propertyName: "target",
+        }),
+      ),
+    ])
 
     const eventTotals = aggregateEventTotals(eventSeries)
     const projectInterestCount =
@@ -291,7 +455,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: error instanceof Error ? error.message : "Failed to fetch analytics summary.",
+        message: formatUmamiError(error, umamiConfig).message,
       },
       { status: 502 },
     )

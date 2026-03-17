@@ -10,6 +10,7 @@ export * from './services/media';
 export * from './services/stats';
 export * from './services/experiences';
 export * from './services/contact';
+export * from './services/resume-settings';
 
 // 타입
 export * from '../types/api';

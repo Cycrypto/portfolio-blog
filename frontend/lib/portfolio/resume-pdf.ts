@@ -3,24 +3,24 @@ import path from 'node:path';
 
 import PDFDocument from 'pdfkit';
 
-import type { Experience, Post, Project } from '@/lib/types/api';
+import { absoluteUrl } from '@/lib/site';
+import { normalizeImageUrl } from '@/lib/utils/image';
 
-import type { PortfolioSnapshot } from './build-portfolio-snapshot';
+import type { Project } from '@/lib/types/api';
+import type { ResumeSnapshot } from './build-resume-snapshot';
 
-const PAGE_SIZE: PDFKit.PDFDocumentOptions['size'] = 'A4';
-const PAGE_MARGIN_X = 52;
-const PAGE_MARGIN_TOP = 46;
-const PAGE_MARGIN_BOTTOM = 42;
-const CONTENT_WIDTH = 595.28 - PAGE_MARGIN_X * 2;
+const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
-const FOOTER_Y = PAGE_HEIGHT - PAGE_MARGIN_BOTTOM + 8;
-const SECTION_GAP = 24;
-const ENTRY_GAP = 16;
+const PAGE_MARGIN_X = 48;
+const PAGE_MARGIN_TOP = 42;
+const PAGE_MARGIN_BOTTOM = 42;
+const CONTENT_WIDTH = PAGE_WIDTH - PAGE_MARGIN_X * 2;
 const COLORS = {
   text: '#111827',
   muted: '#4B5563',
   subtle: '#6B7280',
   rule: '#CBD5E1',
+  panel: '#F8FAFC',
 };
 
 function resolveFontPath(): string {
@@ -32,7 +32,6 @@ function resolveFontPath(): string {
   ];
 
   const resolved = candidates.find((candidate) => fs.existsSync(candidate));
-
   if (!resolved) {
     throw new Error('A Korean serif font is required to generate the resume PDF.');
   }
@@ -52,8 +51,8 @@ function clampText(value: string, limit: number): string {
   return `${value.slice(0, Math.max(0, limit - 3)).trimEnd()}...`;
 }
 
-function unique(values: string[]): string[] {
-  return Array.from(new Set(values.filter(Boolean)));
+function unique(values: Array<string | null | undefined>): string[] {
+  return Array.from(new Set(values.map((value) => cleanText(value)).filter(Boolean)));
 }
 
 function formatDate(value?: string): string {
@@ -103,9 +102,7 @@ function toBulletItems(
       .map((segment) => clampText(cleanText(segment), charLimit))
       .filter(Boolean);
 
-    const source = segments.length > 0 ? segments : [clampText(normalized, charLimit)];
-
-    for (const item of source) {
+    for (const item of segments.length > 0 ? segments : [clampText(normalized, charLimit)]) {
       if (!items.includes(item)) {
         items.push(item);
       }
@@ -119,38 +116,71 @@ function toBulletItems(
   return items;
 }
 
-function normalizeLinkLabel(url?: string): string {
-  const value = cleanText(url);
-  if (!value) {
-    return '';
+function resolvePhotoUrl(photoUrl?: string): string | null {
+  const normalized = normalizeImageUrl(photoUrl);
+  if (!normalized) {
+    return null;
   }
 
-  return value
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/\/$/, '');
+  if (/^https?:\/\//i.test(normalized)) {
+    return normalized;
+  }
+
+  if (normalized.startsWith('/')) {
+    return absoluteUrl(normalized);
+  }
+
+  return normalized;
 }
 
-function drawFooter(doc: PDFKit.PDFDocument, pageNumber: number, totalPages: number) {
-  doc
-    .save()
-    .fontSize(9)
-    .fillColor(COLORS.subtle)
-    .text(`${pageNumber} / ${totalPages}`, PAGE_MARGIN_X, FOOTER_Y, {
-      width: CONTENT_WIDTH,
-      align: 'right',
-    })
-    .restore();
+async function loadImageBuffer(photoUrl?: string): Promise<Buffer | null> {
+  const resolvedUrl = resolvePhotoUrl(photoUrl);
+  if (!resolvedUrl) {
+    return null;
+  }
+
+  try {
+    if (/^https?:\/\//i.test(resolvedUrl)) {
+      const response = await fetch(resolvedUrl);
+      if (!response.ok) {
+        return null;
+      }
+
+      return Buffer.from(await response.arrayBuffer());
+    }
+
+    return fs.readFileSync(resolvedUrl);
+  } catch (error) {
+    console.error('Failed to load resume photo:', error);
+    return null;
+  }
 }
 
-function drawSectionHeading(doc: PDFKit.PDFDocument, title: string, y: number): number {
-  doc
-    .fontSize(11)
-    .fillColor(COLORS.text)
-    .text(title, PAGE_MARGIN_X, y, { width: 120 });
+function ensurePage(
+  doc: PDFKit.PDFDocument,
+  y: number,
+  requiredHeight: number,
+): number {
+  const limit = PAGE_HEIGHT - PAGE_MARGIN_BOTTOM - 24;
+  if (y + requiredHeight <= limit) {
+    return y;
+  }
+
+  doc.addPage();
+  doc.font('resume');
+  return PAGE_MARGIN_TOP;
+}
+
+function drawSectionHeading(
+  doc: PDFKit.PDFDocument,
+  title: string,
+  y: number,
+): number {
+  doc.fontSize(11).fillColor(COLORS.text).text(title, PAGE_MARGIN_X, y, {
+    width: 120,
+  });
 
   const titleWidth = doc.widthOfString(title);
-
   doc
     .save()
     .lineWidth(0.8)
@@ -173,91 +203,119 @@ function drawBulletList(
   let cursor = y;
 
   for (const item of items) {
-    doc
-      .fontSize(fontSize)
-      .fillColor(COLORS.text)
-      .text(`- ${item}`, PAGE_MARGIN_X, cursor, {
-        width,
-        lineGap: 2,
-      });
-
+    doc.fontSize(fontSize).fillColor(COLORS.text).text(`- ${item}`, PAGE_MARGIN_X, cursor, {
+      width,
+      lineGap: 2,
+    });
     cursor = doc.y + 4;
   }
 
   return cursor;
 }
 
-function drawHeader(doc: PDFKit.PDFDocument, snapshot: PortfolioSnapshot): number {
-  const { profile, yearsOfExperience, availableForWork, featuredProjects, featuredPosts } =
-    snapshot;
+function drawFooter(doc: PDFKit.PDFDocument) {
+  const range = doc.bufferedPageRange();
+  for (let index = 0; index < range.count; index += 1) {
+    doc.switchToPage(index);
+    doc
+      .font('resume')
+      .fontSize(9)
+      .fillColor(COLORS.subtle)
+      .text(`${index + 1} / ${range.count}`, PAGE_MARGIN_X, PAGE_HEIGHT - PAGE_MARGIN_BOTTOM + 6, {
+        width: CONTENT_WIDTH,
+        align: 'right',
+      });
+  }
+}
 
-  const contactItems = unique([
-    cleanText(profile.location),
-    cleanText(profile.email),
-    normalizeLinkLabel(profile.github),
-    normalizeLinkLabel(profile.linkedin),
-  ]);
+function drawHeader(
+  doc: PDFKit.PDFDocument,
+  snapshot: ResumeSnapshot,
+  photoBuffer: Buffer | null,
+): number {
+  const { settings } = snapshot;
+  const hasPhoto = Boolean(settings.showPhoto && photoBuffer);
+  const photoBoxWidth = hasPhoto ? 112 : 0;
+  const gap = hasPhoto ? 24 : 0;
+  const textWidth = CONTENT_WIDTH - photoBoxWidth - gap;
+  const photoX = PAGE_MARGIN_X + textWidth + gap;
+  const topY = PAGE_MARGIN_TOP;
 
-  doc.fontSize(27).fillColor(COLORS.text).text(profile.name || '이름 미기재', PAGE_MARGIN_X, PAGE_MARGIN_TOP);
+  doc.fontSize(27).fillColor(COLORS.text).text(settings.name || snapshot.profile.name || '이름 미기재', PAGE_MARGIN_X, topY, {
+    width: textWidth,
+  });
 
   let cursor = doc.y + 2;
 
-  doc.fontSize(12.5).fillColor(COLORS.muted).text(profile.title || 'Backend Engineer', PAGE_MARGIN_X, cursor, {
-    width: CONTENT_WIDTH,
+  doc.fontSize(12.5).fillColor(COLORS.muted).text(settings.title || snapshot.profile.title || 'Backend Engineer', PAGE_MARGIN_X, cursor, {
+    width: textWidth,
   });
+  cursor = doc.y + 6;
 
-  cursor = doc.y + 4;
+  const contactLine = unique([
+    settings.location,
+    settings.email,
+    settings.github?.replace(/^https?:\/\//, '').replace(/\/$/, ''),
+    settings.linkedin?.replace(/^https?:\/\//, '').replace(/\/$/, ''),
+  ]).join('  |  ');
 
-  if (contactItems.length > 0) {
-    doc
-      .fontSize(9.5)
-      .fillColor(COLORS.subtle)
-      .text(contactItems.join('  |  '), PAGE_MARGIN_X, cursor, {
-        width: CONTENT_WIDTH,
-      });
+  if (contactLine) {
+    doc.fontSize(9.5).fillColor(COLORS.subtle).text(contactLine, PAGE_MARGIN_X, cursor, {
+      width: textWidth,
+    });
+    cursor = doc.y + 6;
+  }
 
+  const headline = clampText(
+    cleanText(settings.headline || snapshot.profile.subtitle || snapshot.profile.description || snapshot.profile.about),
+    170,
+  );
+  if (headline) {
+    doc.fontSize(10.5).fillColor(COLORS.text).text(headline, PAGE_MARGIN_X, cursor, {
+      width: textWidth,
+      lineGap: 3,
+    });
     cursor = doc.y + 4;
   }
 
-  const metaLine = unique([
-    yearsOfExperience > 0 ? `${yearsOfExperience}+년 경력` : '',
-    availableForWork ? '협업 가능 상태' : cleanText(profile.status),
-    featuredProjects.length > 0 ? `대표 프로젝트 ${featuredProjects.length}건` : '',
-    featuredPosts.length > 0 ? `기술 글 ${featuredPosts.length}건` : '',
-  ]).join('  |  ');
+  if (hasPhoto && photoBuffer) {
+    doc
+      .save()
+      .roundedRect(photoX, topY, photoBoxWidth, 128, 14)
+      .fill(COLORS.panel)
+      .restore();
 
-  if (metaLine) {
-    doc.fontSize(9.5).fillColor(COLORS.subtle).text(metaLine, PAGE_MARGIN_X, cursor, {
-      width: CONTENT_WIDTH,
-    });
+    try {
+      doc.image(photoBuffer, photoX + 8, topY + 8, {
+        fit: [photoBoxWidth - 16, 112],
+        align: 'center',
+        valign: 'center',
+      });
+    } catch (error) {
+      console.error('Failed to render resume photo:', error);
+    }
 
-    cursor = doc.y + 8;
+    doc
+      .save()
+      .lineWidth(0.8)
+      .strokeColor(COLORS.rule)
+      .roundedRect(photoX, topY, photoBoxWidth, 128, 14)
+      .stroke()
+      .restore();
   }
 
-  const intro = clampText(
-    cleanText(profile.subtitle || profile.description || profile.about || ''),
-    210,
-  );
-
-  if (intro) {
-    doc.fontSize(10.5).fillColor(COLORS.text).text(intro, PAGE_MARGIN_X, cursor, {
-      width: CONTENT_WIDTH,
-      lineGap: 3,
-    });
-
-    cursor = doc.y + 10;
-  }
+  const bottomY = hasPhoto ? Math.max(cursor, topY + 128) : cursor;
 
   doc
     .save()
     .lineWidth(1.2)
     .strokeColor(COLORS.rule)
-    .moveTo(PAGE_MARGIN_X, cursor)
-    .lineTo(PAGE_MARGIN_X + CONTENT_WIDTH, cursor)
+    .moveTo(PAGE_MARGIN_X, bottomY + 8)
+    .lineTo(PAGE_MARGIN_X + CONTENT_WIDTH, bottomY + 8)
     .stroke()
     .restore();
 
-  return cursor + 16;
+  return bottomY + 20;
 }
 
 function drawSkillsSection(
@@ -276,358 +334,223 @@ function drawSkillsSection(
     doc.fontSize(10).fillColor(COLORS.muted).text('정리된 기술 스택 정보가 없습니다.', PAGE_MARGIN_X, nextY, {
       width: CONTENT_WIDTH,
     });
-    return doc.y + SECTION_GAP;
+    return doc.y + 18;
   }
 
   const columnWidth = (CONTENT_WIDTH - 24) / 2;
   const leftSkills = orderedSkills.filter((_, index) => index % 2 === 0);
   const rightSkills = orderedSkills.filter((_, index) => index % 2 === 1);
 
-  const leftText = leftSkills.map((skill) => `- ${skill}`).join('\n');
-  const rightText = rightSkills.map((skill) => `- ${skill}`).join('\n');
-
   doc.fontSize(10).fillColor(COLORS.text);
-  doc.text(leftText, PAGE_MARGIN_X, nextY, {
+  doc.text(leftSkills.map((skill) => `- ${skill}`).join('\n'), PAGE_MARGIN_X, nextY, {
     width: columnWidth,
     lineGap: 3,
   });
-
   const leftBottom = doc.y;
 
-  doc.text(rightText, PAGE_MARGIN_X + columnWidth + 24, nextY, {
+  doc.text(rightSkills.map((skill) => `- ${skill}`).join('\n'), PAGE_MARGIN_X + columnWidth + 24, nextY, {
     width: columnWidth,
     lineGap: 3,
   });
 
-  return Math.max(leftBottom, doc.y) + SECTION_GAP;
+  return Math.max(leftBottom, doc.y) + 18;
 }
 
-function drawExperienceEntry(
-  doc: PDFKit.PDFDocument,
-  experience: Experience,
-  y: number,
-): number {
-  const title = unique([cleanText(experience.company), cleanText(experience.title)]).join(' | ');
-  const period = formatPeriod(experience.startDate, experience.endDate);
-  const titleWidth = CONTENT_WIDTH - 124;
-
-  doc.fontSize(11).fillColor(COLORS.text).text(title || '경력 정보', PAGE_MARGIN_X, y, {
-    width: titleWidth,
-  });
-
-  if (period) {
-    doc.fontSize(9.5).fillColor(COLORS.subtle).text(period, PAGE_MARGIN_X + titleWidth + 16, y + 1, {
-      width: 108,
-      align: 'right',
-    });
-  }
-
-  let cursor = Math.max(doc.y, y + 16) + 4;
-  const bullets = toBulletItems([experience.description], 2, 108);
-
-  if (bullets.length > 0) {
-    cursor = drawBulletList(doc, bullets, cursor, CONTENT_WIDTH, 10);
-  }
-
-  doc
-    .save()
-    .lineWidth(0.6)
-    .strokeColor(COLORS.rule)
-    .moveTo(PAGE_MARGIN_X, cursor + 4)
-    .lineTo(PAGE_MARGIN_X + CONTENT_WIDTH, cursor + 4)
-    .stroke()
-    .restore();
-
-  return cursor + ENTRY_GAP;
-}
-
-function drawExperienceSection(
-  doc: PDFKit.PDFDocument,
-  experiences: Experience[],
-  y: number,
-): number {
+function drawExperienceSection(doc: PDFKit.PDFDocument, snapshot: ResumeSnapshot, y: number): number {
   let cursor = drawSectionHeading(doc, '경력', y);
-  const ordered = [...experiences]
-    .sort(
-      (a, b) =>
-        new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime(),
-    )
+  const experiences = [...snapshot.experiences]
+    .sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())
     .slice(0, 4);
 
-  if (ordered.length === 0) {
+  if (experiences.length === 0) {
     doc.fontSize(10).fillColor(COLORS.muted).text('등록된 경력 정보가 없습니다.', PAGE_MARGIN_X, cursor, {
       width: CONTENT_WIDTH,
     });
-    return doc.y + SECTION_GAP;
+    return doc.y + 18;
   }
 
-  for (const experience of ordered) {
-    cursor = drawExperienceEntry(doc, experience, cursor);
+  for (const experience of experiences) {
+    cursor = ensurePage(doc, cursor, 70);
+    const period = formatPeriod(experience.startDate, experience.endDate);
+    const titleWidth = CONTENT_WIDTH - 124;
+    const title = unique([experience.company, experience.title]).join(' | ');
+
+    doc.fontSize(11).fillColor(COLORS.text).text(title || '경력 정보', PAGE_MARGIN_X, cursor, {
+      width: titleWidth,
+    });
+    if (period) {
+      doc.fontSize(9.5).fillColor(COLORS.subtle).text(period, PAGE_MARGIN_X + titleWidth + 16, cursor + 1, {
+        width: 108,
+        align: 'right',
+      });
+    }
+
+    cursor = Math.max(doc.y, cursor + 16) + 4;
+    const bullets = toBulletItems([experience.description], 2, 116);
+    cursor = bullets.length > 0
+      ? drawBulletList(doc, bullets, cursor, CONTENT_WIDTH, 10)
+      : cursor;
+
+    doc
+      .save()
+      .lineWidth(0.6)
+      .strokeColor(COLORS.rule)
+      .moveTo(PAGE_MARGIN_X, cursor + 4)
+      .lineTo(PAGE_MARGIN_X + CONTENT_WIDTH, cursor + 4)
+      .stroke()
+      .restore();
+
+    cursor += 16;
   }
 
-  return cursor + 4;
+  return cursor;
 }
 
-function drawProjectEntry(
-  doc: PDFKit.PDFDocument,
-  project: Project,
-  y: number,
-): number {
-  const period = formatPeriod(project.startDate, project.endDate);
-  const titleWidth = CONTENT_WIDTH - 124;
-
-  doc.fontSize(11).fillColor(COLORS.text).text(cleanText(project.title) || '프로젝트', PAGE_MARGIN_X, y, {
-    width: titleWidth,
-  });
-
-  if (period) {
-    doc.fontSize(9.5).fillColor(COLORS.subtle).text(period, PAGE_MARGIN_X + titleWidth + 16, y + 1, {
-      width: 108,
-      align: 'right',
-    });
-  }
-
-  let cursor = Math.max(doc.y, y + 16) + 2;
-
-  const subline = unique([
-    cleanText(project.category),
-    cleanText(project.role),
-    cleanText(project.status),
-  ]).join('  |  ');
-
-  if (subline) {
-    doc.fontSize(9.5).fillColor(COLORS.muted).text(subline, PAGE_MARGIN_X, cursor, {
-      width: CONTENT_WIDTH,
-    });
-    cursor = doc.y + 5;
-  }
+function projectBulletLines(project: Project): string[] {
+  const summary = cleanText(
+    project.resumeSummary || project.description || project.problem || project.longDescription,
+  );
 
   const bullets = toBulletItems(
     [
-      project.problem,
-      project.approach,
-      project.outcomes,
+      summary,
+      ...(project.resumeHighlights || []),
       ...(project.impactMetrics || []),
-      project.longDescription,
-      project.description,
-      ...(project.features || []),
+      project.outcomes,
     ],
     3,
     118,
   );
 
-  if (bullets.length > 0) {
-    cursor = drawBulletList(doc, bullets, cursor, CONTENT_WIDTH, 10);
-  }
-
-  const stackLine = cleanText((project.techStack || []).slice(0, 8).join(', '));
-  if (stackLine) {
-    doc.fontSize(9.5).fillColor(COLORS.subtle).text(`기술 스택: ${stackLine}`, PAGE_MARGIN_X, cursor, {
-      width: CONTENT_WIDTH,
-      lineGap: 2,
-    });
-    cursor = doc.y + 4;
-  }
-
-  doc
-    .save()
-    .lineWidth(0.6)
-    .strokeColor(COLORS.rule)
-    .moveTo(PAGE_MARGIN_X, cursor + 4)
-    .lineTo(PAGE_MARGIN_X + CONTENT_WIDTH, cursor + 4)
-    .stroke()
-    .restore();
-
-  return cursor + ENTRY_GAP;
+  return bullets;
 }
 
-function drawProjectSection(
-  doc: PDFKit.PDFDocument,
-  projects: Project[],
-  y: number,
-): number {
-  let cursor = drawSectionHeading(doc, '대표 프로젝트', y);
-  const selected = projects.slice(0, 3);
+function drawProjectSection(doc: PDFKit.PDFDocument, snapshot: ResumeSnapshot, y: number): number {
+  let cursor = drawSectionHeading(doc, '선정 프로젝트', y);
 
-  if (selected.length === 0) {
-    doc.fontSize(10).fillColor(COLORS.muted).text('등록된 프로젝트가 없습니다.', PAGE_MARGIN_X, cursor, {
+  if (snapshot.selectedProjects.length === 0) {
+    doc.fontSize(10).fillColor(COLORS.muted).text('이력서에 선택된 프로젝트가 없습니다.', PAGE_MARGIN_X, cursor, {
       width: CONTENT_WIDTH,
     });
-    return doc.y + SECTION_GAP;
+    return doc.y + 18;
   }
 
-  for (const project of selected) {
-    cursor = drawProjectEntry(doc, project, cursor);
+  for (const project of snapshot.selectedProjects) {
+    cursor = ensurePage(doc, cursor, 110);
+    const period = formatPeriod(project.startDate, project.endDate);
+    const titleWidth = CONTENT_WIDTH - 124;
+
+    doc.fontSize(11).fillColor(COLORS.text).text(
+      cleanText(project.resumeTitle || project.title) || '프로젝트',
+      PAGE_MARGIN_X,
+      cursor,
+      { width: titleWidth },
+    );
+
+    if (period) {
+      doc.fontSize(9.5).fillColor(COLORS.subtle).text(period, PAGE_MARGIN_X + titleWidth + 16, cursor + 1, {
+        width: 108,
+        align: 'right',
+      });
+    }
+
+    cursor = Math.max(doc.y, cursor + 16) + 3;
+
+    const subline = unique([project.category, project.role, project.status]).join('  |  ');
+    if (subline) {
+      doc.fontSize(9.5).fillColor(COLORS.muted).text(subline, PAGE_MARGIN_X, cursor, {
+        width: CONTENT_WIDTH,
+      });
+      cursor = doc.y + 5;
+    }
+
+    const bullets = projectBulletLines(project);
+    if (bullets.length > 0) {
+      cursor = drawBulletList(doc, bullets, cursor, CONTENT_WIDTH, 10);
+    }
+
+    const stackLine = cleanText((project.techStack || []).slice(0, 8).join(', '));
+    if (stackLine) {
+      doc.fontSize(9.5).fillColor(COLORS.subtle).text(`기술 스택: ${stackLine}`, PAGE_MARGIN_X, cursor, {
+        width: CONTENT_WIDTH,
+      });
+      cursor = doc.y + 4;
+    }
+
+    doc
+      .save()
+      .lineWidth(0.6)
+      .strokeColor(COLORS.rule)
+      .moveTo(PAGE_MARGIN_X, cursor + 4)
+      .lineTo(PAGE_MARGIN_X + CONTENT_WIDTH, cursor + 4)
+      .stroke()
+      .restore();
+
+    cursor += 16;
   }
 
-  return cursor + 4;
+  return cursor;
 }
 
-function buildPostExcerpt(post: Post): string {
-  const base = cleanText(post.excerpt || post.plainText || '');
-  if (!base) {
-    return '';
-  }
-
-  return clampText(base, 140);
-}
-
-function drawPostEntry(doc: PDFKit.PDFDocument, post: Post, y: number): number {
-  const date = formatDate(post.publishDate);
-  const titleWidth = CONTENT_WIDTH - 124;
-
-  doc.fontSize(11).fillColor(COLORS.text).text(cleanText(post.title) || '기술 글', PAGE_MARGIN_X, y, {
-    width: titleWidth,
-  });
-
-  if (date) {
-    doc.fontSize(9.5).fillColor(COLORS.subtle).text(date, PAGE_MARGIN_X + titleWidth + 16, y + 1, {
-      width: 108,
-      align: 'right',
-    });
-  }
-
-  let cursor = Math.max(doc.y, y + 16) + 2;
-  const excerpt = buildPostExcerpt(post);
-
-  if (excerpt) {
-    doc.fontSize(10).fillColor(COLORS.text).text(`- ${excerpt}`, PAGE_MARGIN_X, cursor, {
-      width: CONTENT_WIDTH,
-      lineGap: 2,
-    });
-    cursor = doc.y + 4;
-  }
-
-  const meta = unique([
-    cleanText(post.category),
-    (post.tags || []).slice(0, 4).join(', '),
-    post.readTime ? `${post.readTime}분 읽기` : '',
-  ]).join('  |  ');
-
-  if (meta) {
-    doc.fontSize(9.5).fillColor(COLORS.subtle).text(meta, PAGE_MARGIN_X, cursor, {
-      width: CONTENT_WIDTH,
-    });
-    cursor = doc.y + 4;
-  }
-
-  doc
-    .save()
-    .lineWidth(0.6)
-    .strokeColor(COLORS.rule)
-    .moveTo(PAGE_MARGIN_X, cursor + 4)
-    .lineTo(PAGE_MARGIN_X + CONTENT_WIDTH, cursor + 4)
-    .stroke()
-    .restore();
-
-  return cursor + ENTRY_GAP;
-}
-
-function drawPostSection(doc: PDFKit.PDFDocument, posts: Post[], y: number): number {
-  let cursor = drawSectionHeading(doc, '기술 글', y);
-  const selected = posts.slice(0, 2);
-
-  if (selected.length === 0) {
-    doc.fontSize(10).fillColor(COLORS.muted).text('선정된 기술 글이 없습니다.', PAGE_MARGIN_X, cursor, {
-      width: CONTENT_WIDTH,
-    });
-    return doc.y + SECTION_GAP;
-  }
-
-  for (const post of selected) {
-    cursor = drawPostEntry(doc, post, cursor);
-  }
-
-  return cursor + 4;
-}
-
-function drawClosingSection(doc: PDFKit.PDFDocument, snapshot: PortfolioSnapshot, y: number): number {
-  const nextY = drawSectionHeading(doc, '추가 정보', y);
-  const lines = unique([
-    cleanText(snapshot.profile.statusMessage),
-    snapshot.availableForWork ? '현재 새로운 협업과 채용 제안을 열어두고 있습니다.' : '',
-    snapshot.profile.email ? `연락: ${snapshot.profile.email}` : '',
-  ]).slice(0, 3);
-
-  if (lines.length === 0) {
-    doc.fontSize(10).fillColor(COLORS.muted).text('추가로 제공할 정보가 없습니다.', PAGE_MARGIN_X, nextY, {
-      width: CONTENT_WIDTH,
-    });
-    return doc.y + 8;
-  }
-
-  doc.fontSize(10).fillColor(COLORS.text).text(lines.join('\n'), PAGE_MARGIN_X, nextY, {
-    width: CONTENT_WIDTH,
-    lineGap: 4,
-  });
-
-  return doc.y + 8;
-}
-
-export async function renderResumePdf(snapshot: PortfolioSnapshot): Promise<Buffer> {
+export async function renderResumePdf(snapshot: ResumeSnapshot): Promise<Buffer> {
   const fontPath = resolveFontPath();
+  const photoBuffer = snapshot.settings.showPhoto
+    ? await loadImageBuffer(snapshot.settings.photoUrl)
+    : null;
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
-      size: PAGE_SIZE,
+      size: 'A4',
       margin: 0,
       autoFirstPage: true,
+      bufferPages: true,
       compress: true,
       font: fontPath,
       info: {
-        Title: `${snapshot.profile.name || 'Portfolio'} Resume`,
-        Author: snapshot.profile.name || 'Portfolio',
+        Title: `${snapshot.settings.name || snapshot.profile.name || 'Portfolio'} Resume`,
+        Author: snapshot.settings.name || snapshot.profile.name || 'Portfolio',
         Subject: 'Portfolio Resume PDF',
       },
     });
 
     const chunks: Buffer[] = [];
-
     doc.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
 
     doc.registerFont('resume', fontPath);
     doc.font('resume');
 
-    let y = drawHeader(doc, snapshot);
+    let y = drawHeader(doc, snapshot, photoBuffer);
 
     const summaryBullets = toBulletItems(
       [
-        snapshot.profile.subtitle,
+        snapshot.settings.headline,
         snapshot.profile.about,
         snapshot.profile.description,
-        snapshot.profile.statusMessage,
       ],
       3,
       122,
     );
 
     y = drawSectionHeading(doc, '핵심 요약', y);
-    y =
-      summaryBullets.length > 0
-        ? drawBulletList(doc, summaryBullets, y)
-        : (() => {
-            doc.fontSize(10).fillColor(COLORS.muted).text('요약 정보가 없습니다.', PAGE_MARGIN_X, y, {
-              width: CONTENT_WIDTH,
-            });
-            return doc.y + 4;
-          })();
-    y += SECTION_GAP - 8;
+    y = summaryBullets.length > 0
+      ? drawBulletList(doc, summaryBullets, y)
+      : (() => {
+          doc.fontSize(10).fillColor(COLORS.muted).text('요약 정보가 없습니다.', PAGE_MARGIN_X, y, {
+            width: CONTENT_WIDTH,
+          });
+          return doc.y + 4;
+        })();
+    y += 14;
 
     y = drawSkillsSection(doc, snapshot.profile.skills || [], y);
-    y = drawExperienceSection(doc, snapshot.experiences || [], y);
+    y = ensurePage(doc, y, 160);
+    y = drawExperienceSection(doc, snapshot, y);
+    y = ensurePage(doc, y, 220);
+    drawProjectSection(doc, snapshot, y);
 
-    drawFooter(doc, 1, 2);
-    doc.addPage({ size: PAGE_SIZE, margin: 0 });
-    doc.font('resume');
-
-    y = PAGE_MARGIN_TOP;
-    y = drawProjectSection(doc, snapshot.featuredProjects || [], y);
-    y = drawPostSection(doc, snapshot.featuredPosts || [], y);
-    drawClosingSection(doc, snapshot, y);
-
-    drawFooter(doc, 2, 2);
+    drawFooter(doc);
     doc.end();
   });
 }

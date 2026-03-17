@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Eye, Edit, FolderOpen, MessageSquare, User, Briefcase, Mail, Home, BarChart3 } from "lucide-react"
+import { Eye, Edit, FolderOpen, MessageSquare, User, Briefcase, Mail, Home, BarChart3, FileBadge2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export type AdminSidebarActive =
@@ -10,6 +10,7 @@ export type AdminSidebarActive =
   | "comments"
   | "profile"
   | "experience"
+  | "resume"
   | "contacts"
 
 interface AdminSidebarProps {
@@ -28,6 +29,7 @@ export const ADMIN_MENU_ITEMS: Array<{
   { key: "analytics", label: "행동 통계", icon: BarChart3, href: "/admin/analytics" },
   { key: "posts", label: "블로그 포스트", icon: Edit, href: "/admin/posts" },
   { key: "projects", label: "프로젝트", icon: FolderOpen, href: "/admin/projects" },
+  { key: "resume", label: "이력서", icon: FileBadge2, href: "/admin/resume" },
   { key: "experience", label: "경력 관리", icon: Briefcase, href: "/admin/experience" },
   { key: "comments", label: "댓글 관리", icon: MessageSquare, href: "/admin/comments" },
   { key: "contacts", label: "문의 메시지", icon: Mail, href: "/admin/contacts" },

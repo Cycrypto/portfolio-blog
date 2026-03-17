@@ -64,4 +64,21 @@ export class PostResponseDTO {
 
     @ApiProperty({ description: '예상 읽기 시간 (분)', example: 5 })
     readTime: number;
+
+    @ApiProperty({ description: '연결된 프로젝트 ID', required: false, nullable: true })
+    projectId?: number | null;
+
+    @ApiProperty({
+        description: '연결된 프로젝트 요약',
+        required: false,
+        nullable: true,
+        type: Object,
+    })
+    project?: {
+        id: number;
+        title: string;
+        slug?: string;
+        category?: string;
+        status?: string;
+    } | null;
 }

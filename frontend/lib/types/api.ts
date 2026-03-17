@@ -6,6 +6,26 @@ export interface PostHeading {
   id: string;
 }
 
+export interface LinkedProjectSummary {
+  id: number;
+  title: string;
+  slug?: string;
+  category?: string;
+  status?: string;
+}
+
+export interface LinkedPostSummary {
+  id: number;
+  title: string;
+  slug?: string;
+  excerpt?: string;
+  category?: string;
+  publishDate?: string;
+  readTime?: number;
+  status?: string;
+  tags?: string[];
+}
+
 export interface Post {
   id: number;
   title: string;
@@ -28,6 +48,8 @@ export interface Post {
   likes: number;
   comments: number;
   readTime: number;
+  projectId?: number | null;
+  project?: LinkedProjectSummary | null;
 }
 
 export interface PostEdit {
@@ -48,6 +70,8 @@ export interface PostEdit {
   category: string;
   publishDate: string;
   readTime: number;
+  projectId?: number | null;
+  project?: LinkedProjectSummary | null;
 }
 
 export interface CreatePostRequest {
@@ -135,11 +159,15 @@ export interface Project {
   approach?: string;
   outcomes?: string;
   impactMetrics: string[];
+  resumeTitle?: string;
+  resumeSummary?: string;
+  resumeHighlights: string[];
   startDate?: string;
   endDate?: string;
   githubUrl?: string;
   liveUrl?: string;
   images: string[];
+  linkedPosts?: LinkedPostSummary[];
 }
 
 export interface CreateProjectRequest {
@@ -159,11 +187,15 @@ export interface CreateProjectRequest {
   approach?: string;
   outcomes?: string;
   impactMetrics?: string[];
+  resumeTitle?: string;
+  resumeSummary?: string;
+  resumeHighlights?: string[];
   startDate?: string;
   endDate?: string;
   githubUrl?: string;
   liveUrl?: string;
   images?: string[];
+  linkedPostIds?: number[];
 }
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {}
@@ -202,4 +234,31 @@ export interface ContactResponse {
   message: string;
   isRead: boolean;
   createdAt: string;
+}
+
+export interface ResumeSettings {
+  id: number;
+  name: string;
+  title: string;
+  headline: string;
+  email: string;
+  location: string;
+  github: string;
+  linkedin: string;
+  photoUrl: string;
+  showPhoto: boolean;
+  selectedProjectIds: number[];
+}
+
+export interface UpdateResumeSettingsRequest {
+  name?: string;
+  title?: string;
+  headline?: string;
+  email?: string;
+  location?: string;
+  github?: string;
+  linkedin?: string;
+  photoUrl?: string;
+  showPhoto?: boolean;
+  selectedProjectIds?: number[];
 }

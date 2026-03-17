@@ -19,4 +19,12 @@ export class PostListItemDTO {
     likes: number;  // 좋아요 수
     comments: number;  // 댓글 수
     readTime: number;  // 읽는 시간 (분)
+    projectId?: number | null;
+    project?: {
+        id: number;
+        title: string;
+        slug?: string;
+        category?: string;
+        status?: string;
+    } | null;
 }

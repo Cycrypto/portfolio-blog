@@ -1,14 +1,17 @@
 import {
   Column,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { IsEnum } from 'class-validator';
 import { Comment } from '../../comments/entity/comment.entity';
 import { Tag } from './tag.entity';
+import { Project } from '../../projects/project.entity';
 
 // 상태를 enum으로 정의
 export enum PostStatus {
@@ -118,4 +121,14 @@ export class Post {
 
   @Column({ default: 8 })
   readTime: number; // 읽는 시간 (분)
+
+  @Column({ type: 'integer', nullable: true })
+  projectId: number | null;
+
+  @ManyToOne(() => Project, (project) => project.posts, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'projectId' })
+  project?: Project | null;
 }

@@ -1,29 +1,40 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { Project } from './project.entity';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { normalizeUrlFieldsInPlace } from '../common/utils/url.util';
 import { generateSlug } from '../common/utils/slug.util';
+import { Post } from '../posts/entity/post.entity';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
+    @InjectRepository(Post)
+    private readonly postRepository: Repository<Post>,
   ) {}
 
   private async resolveUniqueSlug(
     requestedSlug: string,
     excludeProjectId?: number,
+    manager?: EntityManager,
   ): Promise<string> {
+    const projectRepository = manager
+      ? manager.getRepository(Project)
+      : this.projectRepository;
     const baseSlug = requestedSlug || 'project';
     let candidate = baseSlug;
     let attempt = 2;
 
     while (true) {
-      const existing = await this.projectRepository.findOne({
+      const existing = await projectRepository.findOne({
         where: { slug: candidate },
       });
 
@@ -36,22 +47,93 @@ export class ProjectsService {
     }
   }
 
+  private sanitizeLinkedPostIds(linkedPostIds?: number[]): number[] {
+    if (!linkedPostIds) {
+      return [];
+    }
+
+    return [...new Set(linkedPostIds.filter((postId) => Number.isInteger(postId) && postId > 0))];
+  }
+
+  private async syncLinkedPosts(
+    projectId: number,
+    linkedPostIds: number[],
+    manager: EntityManager,
+  ): Promise<void> {
+    const postRepository = manager.getRepository(Post);
+    const normalizedIds = this.sanitizeLinkedPostIds(linkedPostIds);
+
+    if (normalizedIds.length === 0) {
+      await postRepository
+        .createQueryBuilder()
+        .update(Post)
+        .set({ projectId: null })
+        .where(`"projectId" = :projectId`, { projectId })
+        .execute();
+      return;
+    }
+
+    const targetPosts = await postRepository.find({
+      where: { id: In(normalizedIds) },
+    });
+
+    if (targetPosts.length !== normalizedIds.length) {
+      throw new BadRequestException('연결할 블로그 글 일부를 찾을 수 없습니다.');
+    }
+
+    const conflictingPost = targetPosts.find(
+      (post) => post.projectId && post.projectId !== projectId,
+    );
+
+    if (conflictingPost) {
+      throw new ConflictException(
+        `이미 다른 프로젝트에 연결된 글입니다: ${conflictingPost.title}`,
+      );
+    }
+
+    await postRepository
+      .createQueryBuilder()
+      .update(Post)
+      .set({ projectId: null })
+      .where(`"projectId" = :projectId`, { projectId })
+      .andWhere(`"id" NOT IN (:...postIds)`, { postIds: normalizedIds })
+      .execute();
+
+    await postRepository
+      .createQueryBuilder()
+      .update(Post)
+      .set({ projectId })
+      .where(`"id" IN (:...postIds)`, { postIds: normalizedIds })
+      .execute();
+  }
+
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
     normalizeUrlFieldsInPlace(createProjectDto, ['githubUrl', 'liveUrl']);
-    const requestedSlug =
-      createProjectDto.slug?.trim() || generateSlug(createProjectDto.title);
-    const slug = await this.resolveUniqueSlug(requestedSlug);
-    const project = this.projectRepository.create({
-      ...createProjectDto,
-      slug,
-      isFeatured: createProjectDto.isFeatured ?? false,
-      featuredOrder: createProjectDto.featuredOrder ?? 0,
-      techStack: createProjectDto.techStack || [],
-      features: createProjectDto.features || [],
-      impactMetrics: createProjectDto.impactMetrics || [],
-      images: createProjectDto.images || [],
+    return this.projectRepository.manager.transaction(async (manager) => {
+      const { linkedPostIds, ...projectPayload } = createProjectDto;
+      const requestedSlug =
+        projectPayload.slug?.trim() || generateSlug(projectPayload.title);
+      const slug = await this.resolveUniqueSlug(requestedSlug, undefined, manager);
+      const projectRepository = manager.getRepository(Project);
+      const project = projectRepository.create({
+        ...projectPayload,
+        slug,
+        isFeatured: projectPayload.isFeatured ?? false,
+        featuredOrder: projectPayload.featuredOrder ?? 0,
+        techStack: projectPayload.techStack || [],
+        features: projectPayload.features || [],
+        impactMetrics: projectPayload.impactMetrics || [],
+        resumeHighlights: projectPayload.resumeHighlights || [],
+        images: projectPayload.images || [],
+      });
+      const savedProject = await projectRepository.save(project);
+
+      if (linkedPostIds !== undefined) {
+        await this.syncLinkedPosts(savedProject.id, linkedPostIds, manager);
+      }
+
+      return savedProject;
     });
-    return this.projectRepository.save(project);
   }
 
   async findAll(): Promise<Project[]> {
@@ -100,6 +182,30 @@ export class ProjectsService {
     return shouldSave ? this.projectRepository.save(project) : project;
   }
 
+  async findOneWithLinkedPosts(id: number): Promise<Project | null> {
+    const basicProject = await this.findOne(id);
+    if (!basicProject) {
+      return null;
+    }
+
+    const detailedProject = await this.projectRepository.findOne({
+      where: { id: basicProject.id },
+      relations: ['posts', 'posts.tags'],
+    });
+
+    if (!detailedProject) {
+      return null;
+    }
+
+    detailedProject.posts =
+      detailedProject.posts?.sort((a, b) =>
+        new Date(b.publishDate || 0).getTime() -
+        new Date(a.publishDate || 0).getTime(),
+      ) || [];
+
+    return detailedProject;
+  }
+
   async findOneByIdentifier(identifier: string): Promise<Project | null> {
     const normalizedIdentifier = identifier.trim();
     if (!normalizedIdentifier) {
@@ -134,20 +240,57 @@ export class ProjectsService {
     return shouldSave ? this.projectRepository.save(project) : project;
   }
 
-  async update(id: number, updateProjectDto: UpdateProjectDto): Promise<Project | null> {
-    const project = await this.findOne(id);
-    if (!project) return null;
-
-    normalizeUrlFieldsInPlace(updateProjectDto, ['githubUrl', 'liveUrl']);
-    if (updateProjectDto.slug !== undefined || updateProjectDto.title !== undefined || !project.slug) {
-      const requestedSlug =
-        updateProjectDto.slug?.trim() ||
-        generateSlug(updateProjectDto.title ?? project.title);
-      updateProjectDto.slug = await this.resolveUniqueSlug(requestedSlug, project.id);
+  async findOneByIdentifierWithLinkedPosts(
+    identifier: string,
+  ): Promise<Project | null> {
+    const basicProject = await this.findOneByIdentifier(identifier);
+    if (!basicProject) {
+      return null;
     }
-    const merged = this.projectRepository.merge(project, updateProjectDto);
-    merged.impactMetrics = updateProjectDto.impactMetrics ?? merged.impactMetrics ?? [];
-    return this.projectRepository.save(merged);
+
+    return this.findOneWithLinkedPosts(basicProject.id);
+  }
+
+  async update(id: number, updateProjectDto: UpdateProjectDto): Promise<Project | null> {
+    return this.projectRepository.manager.transaction(async (manager) => {
+      const projectRepository = manager.getRepository(Project);
+      const project = await projectRepository.findOne({ where: { id } });
+      if (!project) {
+        return null;
+      }
+
+      normalizeUrlFieldsInPlace(updateProjectDto, ['githubUrl', 'liveUrl']);
+      const { linkedPostIds, ...projectPayload } = updateProjectDto;
+
+      if (
+        projectPayload.slug !== undefined ||
+        projectPayload.title !== undefined ||
+        !project.slug
+      ) {
+        const requestedSlug =
+          projectPayload.slug?.trim() ||
+          generateSlug(projectPayload.title ?? project.title);
+        projectPayload.slug = await this.resolveUniqueSlug(
+          requestedSlug,
+          project.id,
+          manager,
+        );
+      }
+
+      const merged = projectRepository.merge(project, projectPayload);
+      merged.impactMetrics =
+        projectPayload.impactMetrics ?? merged.impactMetrics ?? [];
+      merged.resumeHighlights =
+        projectPayload.resumeHighlights ?? merged.resumeHighlights ?? [];
+
+      const savedProject = await projectRepository.save(merged);
+
+      if (linkedPostIds !== undefined) {
+        await this.syncLinkedPosts(savedProject.id, linkedPostIds, manager);
+      }
+
+      return savedProject;
+    });
   }
 
   async remove(id: number): Promise<boolean> {

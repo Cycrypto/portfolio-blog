@@ -300,6 +300,16 @@ export class PostsController {
     postResponseDTO.likes = post.likes;
     postResponseDTO.comments = post.comments;
     postResponseDTO.readTime = post.readTime;
+    postResponseDTO.projectId = post.projectId;
+    postResponseDTO.project = post.project
+      ? {
+          id: post.project.id,
+          title: post.project.title,
+          slug: post.project.slug,
+          category: post.project.category,
+          status: post.project.status,
+        }
+      : null;
 
     return postResponseDTO;
   }
@@ -325,6 +335,16 @@ export class PostsController {
     postEditResponseDTO.category = post.category;
     postEditResponseDTO.publishDate = post.publishDate;
     postEditResponseDTO.readTime = post.readTime;
+    postEditResponseDTO.projectId = post.projectId;
+    postEditResponseDTO.project = post.project
+      ? {
+          id: post.project.id,
+          title: post.project.title,
+          slug: post.project.slug,
+          category: post.project.category,
+          status: post.project.status,
+        }
+      : null;
 
     return postEditResponseDTO;
   }

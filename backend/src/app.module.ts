@@ -16,6 +16,7 @@ import { StatsModule } from './stats/stats.module';
 import { ExperienceModule } from './experience/experience.module';
 import { ContactModule } from './contact/contact.module';
 import { UsersModule } from './users/users.module';
+import { ResumeSettingsModule } from './resume-settings/resume-settings.module';
 
 function parseBooleanEnv(value: string | undefined, defaultValue: boolean): boolean {
     if (value === undefined) {
@@ -64,6 +65,7 @@ function parseBooleanEnv(value: string | undefined, defaultValue: boolean): bool
         StatsModule,
         ExperienceModule,
         ContactModule,
+        ResumeSettingsModule,
     ],
     controllers: [AppController],
     providers: [AppService, JwtStrategy],

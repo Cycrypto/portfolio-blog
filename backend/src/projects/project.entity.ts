@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Post } from '../posts/entity/post.entity';
 
 @Entity('projects')
 export class Project {
@@ -53,6 +54,15 @@ export class Project {
   @Column('text', { array: true, default: '{}' })
   impactMetrics: string[];
 
+  @Column({ type: 'text', default: '' })
+  resumeTitle: string;
+
+  @Column({ type: 'text', default: '' })
+  resumeSummary: string;
+
+  @Column('text', { array: true, default: '{}' })
+  resumeHighlights: string[];
+
   @Column({ default: '' })
   startDate: string;
 
@@ -67,4 +77,7 @@ export class Project {
 
   @Column('text', { array: true, default: '{}' })
   images: string[];
+
+  @OneToMany(() => Post, (post) => post.project)
+  posts?: Post[];
 }
