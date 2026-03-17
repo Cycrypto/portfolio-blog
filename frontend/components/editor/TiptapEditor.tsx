@@ -528,6 +528,16 @@ export function TiptapEditor({
           }
         })()
       : null
+  const activeTableSelection =
+    tableSelection && selectedTablePos !== null && selectedTablePos === activeDesktopTablePos
+      ? tableSelection
+      : null
+  const activeRowHandle = activeTableSelection
+    ? desktopTableGeometry?.rowHandles.find((handle) => handle.index === activeTableSelection.row) ?? null
+    : null
+  const activeColumnHandle = activeTableSelection
+    ? desktopTableGeometry?.columnHandles.find((handle) => handle.index === activeTableSelection.column) ?? null
+    : null
 
   const updateHoveredTable = (target: EventTarget | null) => {
     if (!editor || !editorFrameRef.current || isMobile) {
@@ -1106,115 +1116,111 @@ export function TiptapEditor({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {desktopTableGeometry.rowHandles.map((handle) => {
-              const menuId = `row:${desktopTableGeometry.tablePos}:${handle.index}`
-              return (
-                <DropdownMenu
-                  key={menuId}
-                  open={tableMenuOpenId === menuId}
-                  onOpenChange={(open) => setTableMenuOpenId(open ? menuId : null)}
-                >
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="notion-table-overlay-button notion-table-axis-button"
-                      data-active={tableSelection?.row === handle.index}
-                      style={{ left: desktopTableGeometry.left - 46, top: handle.top }}
-                      aria-label={`행 ${handle.index + 1} 옵션`}
-                    >
-                      <GripVertical className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="notion-table-overlay-menu">
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
-                          insertTableRow(activeEditor, tablePos, handle.index, "before"),
-                        )
-                      }
-                    >
-                      위에 추가
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
-                          insertTableRow(activeEditor, tablePos, handle.index, "after"),
-                        )
-                      }
-                    >
-                      아래에 추가
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      disabled={desktopTableGeometry.rowCount <= 1}
-                      className="text-red-600 focus:text-red-600"
-                      onSelect={() =>
-                        runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
-                          deleteTableRowAt(activeEditor, tablePos, handle.index),
-                        )
-                      }
-                    >
-                      행 삭제
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )
-            })}
+            {activeRowHandle ? (
+              <DropdownMenu
+                open={tableMenuOpenId === `row:${desktopTableGeometry.tablePos}:${activeRowHandle.index}`}
+                onOpenChange={(open) =>
+                  setTableMenuOpenId(open ? `row:${desktopTableGeometry.tablePos}:${activeRowHandle.index}` : null)
+                }
+              >
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="notion-table-overlay-button notion-table-axis-button"
+                    data-active="true"
+                    style={{ left: desktopTableGeometry.left - 46, top: activeRowHandle.top }}
+                    aria-label={`행 ${activeRowHandle.index + 1} 옵션`}
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="notion-table-overlay-menu">
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
+                        insertTableRow(activeEditor, tablePos, activeRowHandle.index, "before"),
+                      )
+                    }
+                  >
+                    위에 추가
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
+                        insertTableRow(activeEditor, tablePos, activeRowHandle.index, "after"),
+                      )
+                    }
+                  >
+                    아래에 추가
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={desktopTableGeometry.rowCount <= 1}
+                    className="text-red-600 focus:text-red-600"
+                    onSelect={() =>
+                      runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
+                        deleteTableRowAt(activeEditor, tablePos, activeRowHandle.index),
+                      )
+                    }
+                  >
+                    행 삭제
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
 
-            {desktopTableGeometry.columnHandles.map((handle) => {
-              const menuId = `column:${desktopTableGeometry.tablePos}:${handle.index}`
-              return (
-                <DropdownMenu
-                  key={menuId}
-                  open={tableMenuOpenId === menuId}
-                  onOpenChange={(open) => setTableMenuOpenId(open ? menuId : null)}
-                >
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="notion-table-overlay-button notion-table-axis-button"
-                      data-active={tableSelection?.column === handle.index}
-                      style={{ left: handle.left, top: desktopTableGeometry.top - 46 }}
-                      aria-label={`열 ${handle.index + 1} 옵션`}
-                    >
-                      <GripHorizontal className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="notion-table-overlay-menu">
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
-                          insertTableColumn(activeEditor, tablePos, handle.index, "before"),
-                        )
-                      }
-                    >
-                      왼쪽에 추가
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
-                          insertTableColumn(activeEditor, tablePos, handle.index, "after"),
-                        )
-                      }
-                    >
-                      오른쪽에 추가
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      disabled={desktopTableGeometry.columnCount <= 1}
-                      className="text-red-600 focus:text-red-600"
-                      onSelect={() =>
-                        runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
-                          deleteTableColumnAt(activeEditor, tablePos, handle.index),
-                        )
-                      }
-                    >
-                      열 삭제
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )
-            })}
+            {activeColumnHandle ? (
+              <DropdownMenu
+                open={tableMenuOpenId === `column:${desktopTableGeometry.tablePos}:${activeColumnHandle.index}`}
+                onOpenChange={(open) =>
+                  setTableMenuOpenId(open ? `column:${desktopTableGeometry.tablePos}:${activeColumnHandle.index}` : null)
+                }
+              >
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="notion-table-overlay-button notion-table-axis-button"
+                    data-active="true"
+                    style={{ left: activeColumnHandle.left, top: desktopTableGeometry.top - 46 }}
+                    aria-label={`열 ${activeColumnHandle.index + 1} 옵션`}
+                  >
+                    <GripHorizontal className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="notion-table-overlay-menu">
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
+                        insertTableColumn(activeEditor, tablePos, activeColumnHandle.index, "before"),
+                      )
+                    }
+                  >
+                    왼쪽에 추가
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
+                        insertTableColumn(activeEditor, tablePos, activeColumnHandle.index, "after"),
+                      )
+                    }
+                  >
+                    오른쪽에 추가
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={desktopTableGeometry.columnCount <= 1}
+                    className="text-red-600 focus:text-red-600"
+                    onSelect={() =>
+                      runTableActionAt(desktopTableGeometry.tablePos, (activeEditor, tablePos) =>
+                        deleteTableColumnAt(activeEditor, tablePos, activeColumnHandle.index),
+                      )
+                    }
+                  >
+                    열 삭제
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
 
             <button
               type="button"
