@@ -376,7 +376,7 @@ export async function GET(request: NextRequest) {
         new URLSearchParams({
           ...Object.fromEntries(commonParams.entries()),
           type: "path",
-          limit: "5",
+          limit: "20",
         }),
       ),
       fetchUmamiJson<UmamiEventSeriesItem[]>(

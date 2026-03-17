@@ -45,6 +45,13 @@ interface AnalyticsSummaryResponse {
   generatedAt: string
 }
 
+interface AggregatedTopPage {
+  label: string
+  pageviews: number
+  visitors: number
+  visits: number
+}
+
 const RANGE_OPTIONS: Array<{ key: SummaryRange; label: string }> = [
   { key: "7d", label: "7일" },
   { key: "30d", label: "30일" },
@@ -103,6 +110,35 @@ function getFriendlyAnalyticsErrorMessage(error: unknown) {
   }
 
   return "지표를 아직 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+}
+
+function aggregateTopPages(
+  topPages: AnalyticsSummaryResponse["topPages"],
+): AggregatedTopPage[] {
+  const groupedPages = new Map<string, AggregatedTopPage>()
+
+  for (const page of topPages) {
+    const label = getAnalyticsPageLabel(page.path)
+    const existingPage = groupedPages.get(label)
+
+    if (existingPage) {
+      existingPage.pageviews += page.pageviews
+      existingPage.visitors += page.visitors
+      existingPage.visits += page.visits
+      continue
+    }
+
+    groupedPages.set(label, {
+      label,
+      pageviews: page.pageviews,
+      visitors: page.visitors,
+      visits: page.visits,
+    })
+  }
+
+  return Array.from(groupedPages.values())
+    .sort((left, right) => right.pageviews - left.pageviews || right.visitors - left.visitors)
+    .slice(0, 5)
 }
 
 export function AnalyticsOverviewPanel() {
@@ -178,6 +214,7 @@ export function AnalyticsOverviewPanel() {
     (summary?.eventTotals.post_share || 0) +
     (summary?.eventTotals.post_like || 0) +
     (summary?.eventTotals.comment_submit_success || 0)
+  const groupedTopPages = summary ? aggregateTopPages(summary.topPages) : []
   const updatedAt = summary ? new Date(summary.generatedAt).toLocaleString("ko-KR") : null
 
   return (
@@ -389,10 +426,10 @@ export function AnalyticsOverviewPanel() {
                   </div>
                 </div>
                 <div className="mt-4 space-y-3">
-                  {summary.topPages.length > 0 ? (
-                    summary.topPages.map((page) => (
-                      <div key={page.path} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg border border-brand-blue-50 px-3 py-3 text-sm">
-                        <span className="truncate text-neutral-slate-700">{getAnalyticsPageLabel(page.path)}</span>
+                  {groupedTopPages.length > 0 ? (
+                    groupedTopPages.map((page) => (
+                      <div key={page.label} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg border border-brand-blue-50 px-3 py-3 text-sm">
+                        <span className="truncate text-neutral-slate-700">{page.label}</span>
                         <span className="text-neutral-slate-500">PV {formatInteger(page.pageviews)}</span>
                         <span className="text-neutral-slate-500">UV {formatInteger(page.visitors)}</span>
                       </div>
