@@ -30,15 +30,10 @@ import {
   InsertDialogMode,
 } from "@/lib/tiptap/editor-actions"
 import {
-  canTransformTopLevelBlock,
-  deleteTopLevelBlock,
-  duplicateTopLevelBlock,
-  focusAfterTopLevelBlock,
   focusTopLevelBlock,
   getTopLevelBlockAtCoords,
   getTopLevelBlockFromSelection,
   getTopLevelBlockFromTarget,
-  insertParagraphBelowTopLevelBlock,
   moveTopLevelBlock,
 } from "@/lib/tiptap/block-helpers"
 import type { TopLevelBlockRange } from "@/lib/tiptap/block-helpers"
@@ -75,7 +70,6 @@ interface SlashCommandState {
 
 interface HoveredBlockState {
   block: TopLevelBlockRange
-  height: number
   top: number
 }
 
@@ -113,6 +107,18 @@ const INSERT_DIALOG_COPY: Record<
     placeholder: "https://www.youtube.com/watch?v=...",
     submitLabel: "동영상 삽입",
   },
+}
+
+const BLOCK_HANDLE_HEIGHT = 42
+const MOBILE_BLOCK_HANDLE_HEIGHT = 38
+const TEXT_ANCHOR_SELECTOR = "p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, figcaption, td, th"
+
+function getBlockAnchorRect(element: HTMLElement) {
+  const anchor = element.matches(TEXT_ANCHOR_SELECTOR)
+    ? element
+    : element.querySelector<HTMLElement>(TEXT_ANCHOR_SELECTOR)
+
+  return anchor?.getBoundingClientRect() ?? element.getBoundingClientRect()
 }
 
 function getSlashCommandState(editor: Editor | null): SlashCommandState | null {
@@ -156,8 +162,6 @@ export function TiptapEditor({
   const [insertDialogMode, setInsertDialogMode] = useState<InsertDialogMode | null>(null)
   const [insertError, setInsertError] = useState<string | null>(null)
   const [insertValue, setInsertValue] = useState("")
-  const [isBlockInsertMenuOpen, setIsBlockInsertMenuOpen] = useState(false)
-  const [isBlockTransformMenuOpen, setIsBlockTransformMenuOpen] = useState(false)
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0)
@@ -488,32 +492,11 @@ export function TiptapEditor({
     return filterEditorActions(visibleActions, slashState.query)
   }, [actionContext, slashState])
 
-  const blockInsertActions = useMemo(() => {
-    if (!actionContext) {
-      return []
-    }
-
-    return getActionsForSurface(EDITOR_ACTIONS, actionContext, "block-insert")
-  }, [actionContext, editorVersion])
-
-  const blockTransformActions = useMemo(() => {
-    if (!hoveredBlock || !canTransformTopLevelBlock(hoveredBlock.block)) {
-      return []
-    }
-
-    if (!actionContext) {
-      return []
-    }
-
-    return getActionsForSurface(EDITOR_ACTIONS, actionContext, "block-actions")
-  }, [actionContext, editorVersion, hoveredBlock])
-
   const isSlashMenuOpen = Boolean(
     slashState &&
     slashActions.length > 0 &&
     slashState.blockText !== dismissedSlashText,
   )
-  const isBlockMenuOpen = isBlockInsertMenuOpen || isBlockTransformMenuOpen
   const isDraggingBlock = draggedBlock !== null
 
   const runEditorAction = (action: EditorAction, options?: { clearSlash?: boolean }) => {
@@ -535,12 +518,15 @@ export function TiptapEditor({
     }
 
     const frameRect = editorFrameRef.current.getBoundingClientRect()
-    const blockRect = element.getBoundingClientRect()
+    const anchorRect = getBlockAnchorRect(element)
+    const handleHeight = isMobile ? MOBILE_BLOCK_HANDLE_HEIGHT : BLOCK_HANDLE_HEIGHT
 
     return {
       block,
-      height: blockRect.height,
-      top: blockRect.top - frameRect.top,
+      top:
+        anchorRect.top -
+        frameRect.top +
+        (anchorRect.height - handleHeight) / 2,
     }
   }
 
@@ -589,7 +575,7 @@ export function TiptapEditor({
   }
 
   const handleEditorFrameMouseMove = (event: ReactMouseEvent<HTMLDivElement>) => {
-    if (isBlockMenuOpen || isDraggingBlock) {
+    if (isDraggingBlock) {
       return
     }
 
@@ -597,29 +583,9 @@ export function TiptapEditor({
   }
 
   const handleEditorFrameMouseLeave = () => {
-    if (!isBlockMenuOpen && !isDraggingBlock && !isMobile) {
+    if (!isDraggingBlock && !isMobile) {
       setHoveredBlock(null)
     }
-  }
-
-  const runBlockTransformAction = (action: EditorAction) => {
-    if (!editor || !hoveredBlock) {
-      return
-    }
-
-    focusTopLevelBlock(editor, hoveredBlock.block)
-    setHoveredBlock(null)
-    runEditorAction(action)
-  }
-
-  const runBlockInsertAction = (action: EditorAction) => {
-    if (!editor || !hoveredBlock) {
-      return
-    }
-
-    focusAfterTopLevelBlock(editor, hoveredBlock.block)
-    setHoveredBlock(null)
-    runEditorAction(action)
   }
 
   const clearDragState = () => {
@@ -664,33 +630,6 @@ export function TiptapEditor({
     focusTopLevelBlock(editor, hoveredBlock.block)
     setDraggedBlock(hoveredBlock)
     setDropIndicator(null)
-  }
-
-  const insertParagraphBelow = () => {
-    if (!editor || !hoveredBlock) {
-      return
-    }
-
-    insertParagraphBelowTopLevelBlock(editor, hoveredBlock.block)
-    setHoveredBlock(null)
-  }
-
-  const duplicateBlock = () => {
-    if (!editor || !hoveredBlock) {
-      return
-    }
-
-    duplicateTopLevelBlock(editor, hoveredBlock.block)
-    setHoveredBlock(null)
-  }
-
-  const deleteBlock = () => {
-    if (!editor || !hoveredBlock) {
-      return
-    }
-
-    deleteTopLevelBlock(editor, hoveredBlock.block)
-    setHoveredBlock(null)
   }
 
   latestSelectedSlashIndexRef.current = selectedSlashIndex
@@ -770,7 +709,7 @@ export function TiptapEditor({
   }, [draggedBlock, dropIndicator, editor])
 
   useEffect(() => {
-    if (!editor || isBlockMenuOpen || isDraggingBlock) {
+    if (!editor || isDraggingBlock) {
       return
     }
 
@@ -790,17 +729,17 @@ export function TiptapEditor({
         setHoveredBlock(nextHoveredBlock)
       }
     }
-  }, [editor, editorVersion, isBlockMenuOpen, isDraggingBlock, isMobile])
+  }, [editor, editorVersion, isDraggingBlock, isMobile])
 
   useEffect(() => {
     if (isMobile) {
       return
     }
 
-    if (!isBlockMenuOpen && !isDraggingBlock) {
+    if (!isDraggingBlock) {
       setHoveredBlock(null)
     }
-  }, [isBlockMenuOpen, isDraggingBlock, isMobile])
+  }, [isDraggingBlock, isMobile])
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
@@ -1104,16 +1043,7 @@ export function TiptapEditor({
           <BlockHandleMenu
             isDragging={isDraggingBlock}
             top={hoveredBlock.top}
-            insertActions={blockInsertActions}
-            transformActions={blockTransformActions}
             onDragHandleMouseDown={handleBlockDragStart}
-            onInsertActionSelect={runBlockInsertAction}
-            onTransformActionSelect={runBlockTransformAction}
-            onInsertParagraphBelow={insertParagraphBelow}
-            onDuplicateBlock={duplicateBlock}
-            onDeleteBlock={deleteBlock}
-            onInsertMenuOpenChange={setIsBlockInsertMenuOpen}
-            onTransformMenuOpenChange={setIsBlockTransformMenuOpen}
           />
         ) : null}
         {dropIndicator ? (

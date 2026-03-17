@@ -19,6 +19,8 @@ interface BlockCoordinates {
   clientY: number
 }
 
+const BLOCK_HANDLE_HORIZONTAL_REACH = 160
+
 function getFirstTextSelectionPos(node: ProseMirrorNode, startPos: number): number | null {
   if (node.isTextblock) {
     return Math.min(startPos + 1, startPos + node.nodeSize - 1)
@@ -164,7 +166,7 @@ export function getTopLevelBlockAtCoords(editor: Editor, coordinates: BlockCoord
 
     const rect = child.getBoundingClientRect()
     const withinHorizontalReach =
-      coordinates.clientX >= rect.left - 84 &&
+      coordinates.clientX >= rect.left - BLOCK_HANDLE_HORIZONTAL_REACH &&
       coordinates.clientX <= rect.right + 24
 
     if (!withinHorizontalReach) {

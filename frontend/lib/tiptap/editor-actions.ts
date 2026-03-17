@@ -6,6 +6,7 @@ import {
   AlignLeft,
   AlignRight,
   Code2,
+  Copy,
   Heading1,
   Heading2,
   ImageIcon,
@@ -17,9 +18,15 @@ import {
   Save,
   Settings2,
   Table as TableIcon,
+  Trash2,
   Type,
   Video,
 } from "lucide-react"
+import {
+  deleteTopLevelBlock,
+  duplicateTopLevelBlock,
+  getTopLevelBlockFromSelection,
+} from "@/lib/tiptap/block-helpers"
 
 export type InsertDialogMode = "image" | "link" | "math" | "youtube"
 export type EditorActionSurface =
@@ -232,7 +239,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "정렬",
     icon: AlignLeft,
     keywords: ["align", "left", "정렬", "왼쪽"],
-    surfaces: ["palette", "block-actions", "mobile-overflow"],
+    surfaces: ["slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive({ textAlign: "left" }),
     run: ({ editor }) => {
       editor.chain().focus().setTextAlign("left").run()
@@ -245,7 +252,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "정렬",
     icon: AlignCenter,
     keywords: ["align", "center", "정렬", "가운데"],
-    surfaces: ["palette", "block-actions", "mobile-overflow"],
+    surfaces: ["slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive({ textAlign: "center" }),
     run: ({ editor }) => {
       editor.chain().focus().setTextAlign("center").run()
@@ -258,7 +265,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "정렬",
     icon: AlignRight,
     keywords: ["align", "right", "정렬", "오른쪽"],
-    surfaces: ["palette", "block-actions", "mobile-overflow"],
+    surfaces: ["slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive({ textAlign: "right" }),
     run: ({ editor }) => {
       editor.chain().focus().setTextAlign("right").run()
@@ -271,10 +278,44 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "정렬",
     icon: AlignJustify,
     keywords: ["align", "justify", "정렬", "양쪽"],
-    surfaces: ["palette", "block-actions", "mobile-overflow"],
+    surfaces: ["slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive({ textAlign: "justify" }),
     run: ({ editor }) => {
       editor.chain().focus().setTextAlign("justify").run()
+    },
+  },
+  {
+    id: "duplicate-block",
+    title: "블록 복제",
+    description: "현재 블록을 바로 아래에 복제합니다.",
+    group: "기본",
+    icon: Copy,
+    keywords: ["duplicate", "clone", "block", "복제"],
+    surfaces: ["slash", "palette", "mobile-overflow"],
+    run: ({ editor }) => {
+      const block = getTopLevelBlockFromSelection(editor)
+      if (!block) {
+        return
+      }
+
+      duplicateTopLevelBlock(editor, block)
+    },
+  },
+  {
+    id: "delete-block",
+    title: "블록 삭제",
+    description: "현재 선택한 블록을 삭제합니다.",
+    group: "기본",
+    icon: Trash2,
+    keywords: ["delete", "remove", "block", "삭제"],
+    surfaces: ["slash", "palette", "mobile-overflow"],
+    run: ({ editor }) => {
+      const block = getTopLevelBlockFromSelection(editor)
+      if (!block) {
+        return
+      }
+
+      deleteTopLevelBlock(editor, block)
     },
   },
   {

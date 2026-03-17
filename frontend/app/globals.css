@@ -323,12 +323,12 @@
 
 .notion-editor-frame {
   @apply relative flex-1 min-h-[24rem] px-3 pb-6 pt-5;
-  --notion-block-handle-offset: 1.25rem;
+  --notion-block-gutter: 6.5rem;
 }
 
 .notion-block-handle {
   @apply absolute z-20 flex items-center gap-1 rounded-2xl border border-neutral-slate-200 bg-white/95 p-1 shadow-lg backdrop-blur-sm;
-  left: calc(var(--notion-block-handle-offset) * -1);
+  left: 0.5rem;
 }
 
 .notion-block-handle-button {
@@ -372,8 +372,8 @@
   }
 
   .notion-editor-frame {
-    --notion-block-handle-offset: 1rem;
-    padding-left: 6.25rem;
+    --notion-block-gutter: 7.75rem;
+    padding-left: var(--notion-block-gutter);
     padding-right: 2rem;
   }
 }
@@ -397,7 +397,7 @@
   }
 
   .notion-editor-frame {
-    padding-left: 5rem;
+    padding-left: var(--notion-block-gutter);
     padding-right: 1rem;
   }
 

@@ -102,7 +102,7 @@ function ToolbarHelp({ isMobile }: { isMobile: boolean }) {
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs text-xs leading-5">
-          <div>좌측 rail: 삽입, 이동, 블록 작업</div>
+          <div>좌측 rail: 블록 이동</div>
           <div>`/` 명령어와 `Cmd/Ctrl+K` 팔레트는 그대로 사용할 수 있습니다.</div>
         </TooltipContent>
       </Tooltip>
@@ -396,7 +396,7 @@ export function EditorToolbar({
           </DrawerHeader>
           <div className="space-y-5 overflow-y-auto px-5">
             <div className="rounded-2xl border border-neutral-slate-200 bg-neutral-slate-50/70 p-4 text-sm text-neutral-slate-600">
-              <div>좌측 rail: 블록 삽입, 이동, 작업</div>
+              <div>좌측 rail: 블록 이동</div>
               <div>`/` 명령어와 `Cmd/Ctrl+K` 팔레트도 그대로 사용할 수 있습니다.</div>
             </div>
             <div className="grid gap-2">
