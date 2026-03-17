@@ -22,7 +22,13 @@ import {
 } from "lucide-react"
 
 export type InsertDialogMode = "image" | "link" | "math" | "youtube"
-export type EditorActionSurface = "floating" | "slash" | "palette" | "block"
+export type EditorActionSurface =
+  | "floating"
+  | "slash"
+  | "palette"
+  | "block-insert"
+  | "block-actions"
+  | "mobile-overflow"
 export type EditorActionGroup = "기본" | "삽입" | "미디어" | "정렬" | "문서"
 
 export interface EditorDocumentActions {
@@ -62,7 +68,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "기본",
     icon: Type,
     keywords: ["paragraph", "text", "본문"],
-    surfaces: ["slash", "palette", "block"],
+    surfaces: ["slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive("paragraph"),
     run: ({ editor }) => {
       editor.chain().focus().setParagraph().run()
@@ -75,7 +81,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "기본",
     icon: Heading1,
     keywords: ["h1", "heading", "title", "제목"],
-    surfaces: ["floating", "slash", "palette", "block"],
+    surfaces: ["floating", "slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive("heading", { level: 1 }),
     run: ({ editor }) => {
       editor.chain().focus().toggleHeading({ level: 1 }).run()
@@ -88,7 +94,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "기본",
     icon: Heading2,
     keywords: ["h2", "heading", "subtitle", "제목"],
-    surfaces: ["floating", "slash", "palette", "block"],
+    surfaces: ["floating", "slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive("heading", { level: 2 }),
     run: ({ editor }) => {
       editor.chain().focus().toggleHeading({ level: 2 }).run()
@@ -101,7 +107,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "기본",
     icon: List,
     keywords: ["unordered", "bullet", "list", "목록"],
-    surfaces: ["floating", "slash", "palette", "block"],
+    surfaces: ["floating", "slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive("bulletList"),
     run: ({ editor }) => {
       editor.chain().focus().toggleBulletList().run()
@@ -114,7 +120,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "기본",
     icon: ListOrdered,
     keywords: ["ordered", "numbered", "list", "번호", "목록"],
-    surfaces: ["floating", "slash", "palette", "block"],
+    surfaces: ["floating", "slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive("orderedList"),
     run: ({ editor }) => {
       editor.chain().focus().toggleOrderedList().run()
@@ -127,7 +133,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "기본",
     icon: ListTodo,
     keywords: ["task", "todo", "checklist", "체크", "할일"],
-    surfaces: ["floating", "slash", "palette", "block"],
+    surfaces: ["floating", "slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive("taskList"),
     run: ({ editor }) => {
       editor.chain().focus().toggleTaskList().run()
@@ -140,7 +146,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "기본",
     icon: Quote,
     keywords: ["quote", "blockquote", "인용"],
-    surfaces: ["floating", "slash", "palette", "block"],
+    surfaces: ["floating", "slash", "palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive("blockquote"),
     run: ({ editor }) => {
       editor.chain().focus().toggleBlockquote().run()
@@ -153,7 +159,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "삽입",
     icon: Code2,
     keywords: ["code", "snippet", "코드"],
-    surfaces: ["floating", "slash", "palette", "block"],
+    surfaces: ["floating", "slash", "palette", "block-insert", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive("codeBlock"),
     run: ({ editor }) => {
       editor.chain().focus().toggleCodeBlock().run()
@@ -166,7 +172,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "삽입",
     icon: Minus,
     keywords: ["divider", "horizontal rule", "hr", "구분선"],
-    surfaces: ["floating", "slash", "palette", "block"],
+    surfaces: ["floating", "slash", "palette", "block-insert", "mobile-overflow"],
     run: ({ editor }) => {
       editor.chain().focus().setHorizontalRule().run()
     },
@@ -178,7 +184,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "미디어",
     icon: ImageIcon,
     keywords: ["image", "upload", "photo", "그림", "이미지"],
-    surfaces: ["floating", "slash", "palette", "block"],
+    surfaces: ["floating", "slash", "palette", "block-insert", "mobile-overflow"],
     run: ({ openImagePicker }) => {
       openImagePicker()
     },
@@ -190,7 +196,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "삽입",
     icon: TableIcon,
     keywords: ["table", "grid", "표"],
-    surfaces: ["slash", "palette", "block"],
+    surfaces: ["slash", "palette", "block-insert", "mobile-overflow"],
     run: ({ insertTable }) => {
       insertTable()
     },
@@ -202,7 +208,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "미디어",
     icon: Code2,
     keywords: ["math", "latex", "equation", "수식"],
-    surfaces: ["slash", "palette", "block"],
+    surfaces: ["slash", "palette", "block-insert", "mobile-overflow"],
     run: ({ openInsertDialog }) => {
       openInsertDialog("math")
     },
@@ -214,7 +220,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "미디어",
     icon: Video,
     keywords: ["youtube", "video", "embed", "영상"],
-    surfaces: ["slash", "palette", "block"],
+    surfaces: ["slash", "palette", "block-insert", "mobile-overflow"],
     run: ({ openInsertDialog }) => {
       openInsertDialog("youtube")
     },
@@ -226,7 +232,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "정렬",
     icon: AlignLeft,
     keywords: ["align", "left", "정렬", "왼쪽"],
-    surfaces: ["palette", "block"],
+    surfaces: ["palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive({ textAlign: "left" }),
     run: ({ editor }) => {
       editor.chain().focus().setTextAlign("left").run()
@@ -239,7 +245,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "정렬",
     icon: AlignCenter,
     keywords: ["align", "center", "정렬", "가운데"],
-    surfaces: ["palette", "block"],
+    surfaces: ["palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive({ textAlign: "center" }),
     run: ({ editor }) => {
       editor.chain().focus().setTextAlign("center").run()
@@ -252,7 +258,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "정렬",
     icon: AlignRight,
     keywords: ["align", "right", "정렬", "오른쪽"],
-    surfaces: ["palette", "block"],
+    surfaces: ["palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive({ textAlign: "right" }),
     run: ({ editor }) => {
       editor.chain().focus().setTextAlign("right").run()
@@ -265,7 +271,7 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     group: "정렬",
     icon: AlignJustify,
     keywords: ["align", "justify", "정렬", "양쪽"],
-    surfaces: ["palette", "block"],
+    surfaces: ["palette", "block-actions", "mobile-overflow"],
     isActive: (editor) => editor.isActive({ textAlign: "justify" }),
     run: ({ editor }) => {
       editor.chain().focus().setTextAlign("justify").run()

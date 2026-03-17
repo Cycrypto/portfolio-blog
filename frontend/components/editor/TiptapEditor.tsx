@@ -7,6 +7,7 @@ import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus"
 import { CellSelection } from "@tiptap/pm/tables"
 import { Button } from "@/components/ui/button"
 import { BlockHandleMenu } from "@/components/editor/BlockHandleMenu"
+import { EditorToolbar } from "@/components/editor/EditorToolbar"
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { EditorCommandPalette } from "@/components/editor/EditorCommandPalette"
 import { SlashCommandMenu } from "@/components/editor/SlashCommandMenu"
+import { useIsMobile } from "@/components/ui/use-mobile"
 import { uploadMedia } from "@/lib/api"
 import {
   EDITOR_ACTIONS,
@@ -33,8 +35,11 @@ import {
   duplicateTopLevelBlock,
   focusAfterTopLevelBlock,
   focusTopLevelBlock,
+  getTopLevelBlockAtCoords,
+  getTopLevelBlockFromSelection,
   getTopLevelBlockFromTarget,
   insertParagraphBelowTopLevelBlock,
+  moveTopLevelBlock,
 } from "@/lib/tiptap/block-helpers"
 import type { TopLevelBlockRange } from "@/lib/tiptap/block-helpers"
 import { getEditorExtensions } from "@/lib/tiptap/editor-extensions"
@@ -50,29 +55,7 @@ import {
   setCurrentRowHeight,
 } from "@/lib/tiptap/table-controls"
 import { normalizeUrl } from "@/lib/utils/url"
-import {
-  AlignCenter,
-  AlignJustify,
-  AlignLeft,
-  AlignRight,
-  Bold,
-  Code2,
-  Heading1,
-  Heading2,
-  Highlighter,
-  Image,
-  Italic,
-  Link2,
-  List,
-  ListOrdered,
-  ListTodo,
-  Palette,
-  PlusSquare,
-  Quote,
-  Strikethrough,
-  Table as TableIcon,
-  Video,
-} from "lucide-react"
+import { Bold, Code2, Italic, Link2, Strikethrough } from "lucide-react"
 
 interface TiptapEditorProps {
   className?: string
@@ -92,23 +75,15 @@ interface SlashCommandState {
 
 interface HoveredBlockState {
   block: TopLevelBlockRange
+  height: number
   top: number
 }
 
-const BLOCK_TRANSFORM_ACTION_IDS = new Set([
-  "paragraph",
-  "heading-1",
-  "heading-2",
-  "bullet-list",
-  "ordered-list",
-  "task-list",
-  "blockquote",
-  "code-block",
-  "align-left",
-  "align-center",
-  "align-right",
-  "align-justify",
-])
+interface BlockDropIndicatorState {
+  placement: "before" | "after"
+  targetIndex: number
+  top: number
+}
 
 const INSERT_DIALOG_COPY: Record<
   InsertDialogMode,
@@ -176,6 +151,7 @@ export function TiptapEditor({
   onError,
   onUploadStateChange,
 }: TiptapEditorProps) {
+  const isMobile = useIsMobile()
   const [editorVersion, setEditorVersion] = useState(0)
   const [insertDialogMode, setInsertDialogMode] = useState<InsertDialogMode | null>(null)
   const [insertError, setInsertError] = useState<string | null>(null)
@@ -185,18 +161,16 @@ export function TiptapEditor({
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0)
-  const [showColorPicker, setShowColorPicker] = useState(false)
-  const [showHighlightPicker, setShowHighlightPicker] = useState(false)
   const [dismissedSlashText, setDismissedSlashText] = useState<string | null>(null)
   const [hoveredBlock, setHoveredBlock] = useState<HoveredBlockState | null>(null)
+  const [draggedBlock, setDraggedBlock] = useState<HoveredBlockState | null>(null)
+  const [dropIndicator, setDropIndicator] = useState<BlockDropIndicatorState | null>(null)
   const editorFrameRef = useRef<HTMLDivElement | null>(null)
   const [hasTextSelection, setHasTextSelection] = useState(false)
   const [tableSelection, setTableSelection] = useState<ReturnType<typeof getTableSelectionState>>(null)
   const [rowHeightInput, setRowHeightInput] = useState("")
   const [columnWidthInput, setColumnWidthInput] = useState("")
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const colorPickerRef = useRef<HTMLDivElement | null>(null)
-  const highlightPickerRef = useRef<HTMLDivElement | null>(null)
   const latestSelectedSlashIndexRef = useRef(0)
   const latestSlashActionsRef = useRef<EditorAction[]>([])
   const latestSlashStateRef = useRef<SlashCommandState | null>(null)
@@ -469,18 +443,6 @@ export function TiptapEditor({
     setColumnWidthInput(String(tableSelection.columnWidth))
   }
 
-  const textColors = [
-    "#000000", "#374151", "#dc2626", "#ea580c", "#d97706", "#ca8a04",
-    "#65a30d", "#16a34a", "#059669", "#0891b2", "#0284c7", "#2563eb",
-    "#4f46e5", "#7c3aed", "#9333ea", "#c026d3", "#db2777", "#e11d48",
-  ]
-
-  const highlightColors = [
-    "transparent", "#fef3c7", "#fecaca", "#fed7aa", "#fde68a", "#fef08a",
-    "#d9f99d", "#bbf7d0", "#a7f3d0", "#99f6e4", "#a5f3fc", "#bfdbfe",
-    "#c7d2fe", "#ddd6fe", "#e9d5ff", "#f3e8ff", "#fce7f3", "#fecdd3",
-  ]
-
   const actionContext = editor
     ? {
         documentActions,
@@ -509,12 +471,12 @@ export function TiptapEditor({
     return getActionsForSurface(EDITOR_ACTIONS, actionContext, "palette")
   }, [actionContext, editorVersion])
 
-  const blockActions = useMemo(() => {
+  const mobileOverflowActions = useMemo(() => {
     if (!actionContext) {
       return []
     }
 
-    return getActionsForSurface(EDITOR_ACTIONS, actionContext, "block")
+    return getActionsForSurface(EDITOR_ACTIONS, actionContext, "mobile-overflow")
   }, [actionContext, editorVersion])
 
   const slashActions = useMemo(() => {
@@ -526,18 +488,25 @@ export function TiptapEditor({
     return filterEditorActions(visibleActions, slashState.query)
   }, [actionContext, slashState])
 
-  const blockInsertActions = useMemo(
-    () => blockActions.filter((action) => !BLOCK_TRANSFORM_ACTION_IDS.has(action.id)),
-    [blockActions],
-  )
+  const blockInsertActions = useMemo(() => {
+    if (!actionContext) {
+      return []
+    }
+
+    return getActionsForSurface(EDITOR_ACTIONS, actionContext, "block-insert")
+  }, [actionContext, editorVersion])
 
   const blockTransformActions = useMemo(() => {
     if (!hoveredBlock || !canTransformTopLevelBlock(hoveredBlock.block)) {
       return []
     }
 
-    return blockActions.filter((action) => BLOCK_TRANSFORM_ACTION_IDS.has(action.id))
-  }, [blockActions, hoveredBlock])
+    if (!actionContext) {
+      return []
+    }
+
+    return getActionsForSurface(EDITOR_ACTIONS, actionContext, "block-actions")
+  }, [actionContext, editorVersion, hoveredBlock])
 
   const isSlashMenuOpen = Boolean(
     slashState &&
@@ -545,6 +514,7 @@ export function TiptapEditor({
     slashState.blockText !== dismissedSlashText,
   )
   const isBlockMenuOpen = isBlockInsertMenuOpen || isBlockTransformMenuOpen
+  const isDraggingBlock = draggedBlock !== null
 
   const runEditorAction = (action: EditorAction, options?: { clearSlash?: boolean }) => {
     if (!actionContext) {
@@ -559,21 +529,29 @@ export function TiptapEditor({
     action.run(actionContext)
   }
 
-  const updateHoveredBlock = (target: EventTarget | null) => {
-    if (!editor || !editorFrameRef.current) {
-      return
+  const createHoveredBlockState = (block: TopLevelBlockRange, element: HTMLElement) => {
+    if (!editorFrameRef.current) {
+      return null
     }
 
-    const hit = getTopLevelBlockFromTarget(editor, target)
+    const frameRect = editorFrameRef.current.getBoundingClientRect()
+    const blockRect = element.getBoundingClientRect()
+
+    return {
+      block,
+      height: blockRect.height,
+      top: blockRect.top - frameRect.top,
+    }
+  }
+
+  const setHoveredBlockFromHit = (hit: { block: TopLevelBlockRange; element: HTMLElement } | null) => {
     if (!hit) {
       return
     }
 
-    const frameRect = editorFrameRef.current.getBoundingClientRect()
-    const blockRect = hit.element.getBoundingClientRect()
-    const nextHoveredBlock = {
-      block: hit.block,
-      top: blockRect.top - frameRect.top,
+    const nextHoveredBlock = createHoveredBlockState(hit.block, hit.element)
+    if (!nextHoveredBlock) {
+      return
     }
 
     setHoveredBlock((currentBlock) => {
@@ -590,12 +568,36 @@ export function TiptapEditor({
     })
   }
 
+  const updateHoveredBlock = (target: EventTarget | null, clientX?: number, clientY?: number) => {
+    if (!editor || !editorFrameRef.current) {
+      return
+    }
+
+    const hit =
+      typeof clientX === "number" && typeof clientY === "number"
+        ? getTopLevelBlockAtCoords(editor, { clientX, clientY }) || getTopLevelBlockFromTarget(editor, target)
+        : getTopLevelBlockFromTarget(editor, target)
+
+    if (hit) {
+      setHoveredBlockFromHit(hit)
+      return
+    }
+
+    if (!isMobile) {
+      setHoveredBlock(null)
+    }
+  }
+
   const handleEditorFrameMouseMove = (event: ReactMouseEvent<HTMLDivElement>) => {
-    updateHoveredBlock(event.target)
+    if (isBlockMenuOpen || isDraggingBlock) {
+      return
+    }
+
+    updateHoveredBlock(event.target, event.clientX, event.clientY)
   }
 
   const handleEditorFrameMouseLeave = () => {
-    if (!isBlockMenuOpen) {
+    if (!isBlockMenuOpen && !isDraggingBlock && !isMobile) {
       setHoveredBlock(null)
     }
   }
@@ -618,6 +620,50 @@ export function TiptapEditor({
     focusAfterTopLevelBlock(editor, hoveredBlock.block)
     setHoveredBlock(null)
     runEditorAction(action)
+  }
+
+  const clearDragState = () => {
+    setDraggedBlock(null)
+    setDropIndicator(null)
+  }
+
+  const updateDropIndicatorFromPoint = (clientX: number, clientY: number) => {
+    if (!editor || !editorFrameRef.current || !draggedBlock) {
+      return
+    }
+
+    const hit = getTopLevelBlockAtCoords(editor, { clientX, clientY })
+
+    if (!hit) {
+      setDropIndicator(null)
+      return
+    }
+
+    const nextHoveredBlock = createHoveredBlockState(hit.block, hit.element)
+    if (nextHoveredBlock) {
+      setHoveredBlock(nextHoveredBlock)
+    }
+
+    const frameRect = editorFrameRef.current.getBoundingClientRect()
+    const blockRect = hit.element.getBoundingClientRect()
+    const placement = clientY < blockRect.top + blockRect.height / 2 ? "before" : "after"
+
+    setDropIndicator({
+      placement,
+      targetIndex: hit.block.index,
+      top: blockRect.top - frameRect.top + (placement === "after" ? blockRect.height : 0),
+    })
+  }
+
+  const handleBlockDragStart = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    if (!editor || !hoveredBlock) {
+      return
+    }
+
+    event.preventDefault()
+    focusTopLevelBlock(editor, hoveredBlock.block)
+    setDraggedBlock(hoveredBlock)
+    setDropIndicator(null)
   }
 
   const insertParagraphBelow = () => {
@@ -696,23 +742,65 @@ export function TiptapEditor({
   }, [dismissedSlashText, slashState])
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
-        setShowColorPicker(false)
-      }
-      if (highlightPickerRef.current && !highlightPickerRef.current.contains(event.target as Node)) {
-        setShowHighlightPicker(false)
-      }
+    if (!draggedBlock) {
+      return
     }
 
-    if (showColorPicker || showHighlightPicker) {
-      document.addEventListener("mousedown", handleClickOutside)
+    const handleMouseMove = (event: MouseEvent) => {
+      updateDropIndicatorFromPoint(event.clientX, event.clientY)
     }
+
+    const handleMouseUp = () => {
+      if (editor && draggedBlock && dropIndicator) {
+        moveTopLevelBlock(editor, draggedBlock.block.index, dropIndicator.targetIndex, dropIndicator.placement)
+        syncEditorUiState(editor)
+        setEditorVersion((currentVersion) => currentVersion + 1)
+      }
+
+      clearDragState()
+    }
+
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mouseup", handleMouseUp)
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handleMouseUp)
     }
-  }, [showColorPicker, showHighlightPicker])
+  }, [draggedBlock, dropIndicator, editor])
+
+  useEffect(() => {
+    if (!editor || isBlockMenuOpen || isDraggingBlock) {
+      return
+    }
+
+    if (!isMobile) {
+      return
+    }
+
+    const selectedBlock = getTopLevelBlockFromSelection(editor)
+    if (!selectedBlock) {
+      return
+    }
+
+    const element = editor.view.dom.children[selectedBlock.index]
+    if (element instanceof HTMLElement) {
+      const nextHoveredBlock = createHoveredBlockState(selectedBlock, element)
+      if (nextHoveredBlock) {
+        setHoveredBlock(nextHoveredBlock)
+      }
+    }
+  }, [editor, editorVersion, isBlockMenuOpen, isDraggingBlock, isMobile])
+
+  useEffect(() => {
+    if (isMobile) {
+      return
+    }
+
+    if (!isBlockMenuOpen && !isDraggingBlock) {
+      setHoveredBlock(null)
+    }
+  }, [isBlockMenuOpen, isDraggingBlock, isMobile])
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
@@ -736,300 +824,29 @@ export function TiptapEditor({
 
   return (
     <div className={`notion-shell ${className}`}>
-      <div className="notion-toolbar">
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("bold")}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          title="굵게 (Ctrl+B)"
-        >
-          <Bold className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("italic")}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          title="기울임 (Ctrl+I)"
-        >
-          <Italic className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("strike")}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          title="취소선"
-        >
-          <Strikethrough className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("code")}
-          onClick={() => editor.chain().focus().toggleCode().run()}
-          title="인라인 코드"
-        >
-          <Code2 className="h-4 w-4" />
-        </button>
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("heading", { level: 1 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          title="제목 1"
-        >
-          <Heading1 className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("heading", { level: 2 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          title="제목 2"
-        >
-          <Heading2 className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("heading", { level: 3 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          title="제목 3"
-        >
-          <span className="text-xs font-semibold">H3</span>
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("heading", { level: 4 })}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
-          title="제목 4"
-        >
-          <span className="text-xs font-semibold">H4</span>
-        </button>
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("bulletList")}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          title="불릿 리스트"
-        >
-          <List className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("orderedList")}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          title="번호 리스트"
-        >
-          <ListOrdered className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("taskList")}
-          onClick={() => editor.chain().focus().toggleTaskList().run()}
-          title="체크리스트"
-        >
-          <ListTodo className="h-4 w-4" />
-        </button>
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("blockquote")}
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          title="인용구"
-        >
-          <Quote className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive("link")}
-          onClick={() => openInsertDialog("link")}
-          title="링크"
-        >
-          <Link2 className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          title="이미지 업로드"
-        >
-          <Image className="h-4 w-4" />
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) {
-              void addUploadedImage(file)
-            }
-            event.currentTarget.value = ""
-          }}
+      {actionContext ? (
+        <EditorToolbar
+          editor={editor}
+          actionContext={actionContext}
+          isUploading={isUploading}
+          mobileOverflowActions={mobileOverflowActions}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onRunAction={runEditorAction}
         />
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-        <div className="relative">
-          <button
-            type="button"
-            className="notion-toolbar-button"
-            onClick={() => setShowColorPicker(!showColorPicker)}
-            title="텍스트 색상"
-          >
-            <Palette className="h-4 w-4" />
-          </button>
-          {showColorPicker && (
-            <div
-              ref={colorPickerRef}
-              className="absolute top-full mt-2 p-2 bg-white rounded-lg shadow-lg border border-brand-indigo-500 z-50"
-              style={{ minWidth: "200px" }}
-            >
-              <div className="grid grid-cols-6 gap-1">
-                {textColors.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className="w-6 h-6 rounded border border-brand-indigo-500 hover:scale-110 transition-transform"
-                    style={{ backgroundColor: color }}
-                    onClick={() => {
-                      editor.chain().focus().setColor(color).run()
-                      setShowColorPicker(false)
-                    }}
-                    title={color}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                className="mt-2 w-full text-xs text-gray-600 hover:text-gray-900 py-1"
-                onClick={() => {
-                  editor.chain().focus().unsetColor().run()
-                  setShowColorPicker(false)
-                }}
-              >
-                색상 제거
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="relative">
-          <button
-            type="button"
-            className="notion-toolbar-button"
-            data-active={editor.isActive("highlight")}
-            onClick={() => setShowHighlightPicker(!showHighlightPicker)}
-            title="형광펜"
-          >
-            <Highlighter className="h-4 w-4" />
-          </button>
-          {showHighlightPicker && (
-            <div
-              ref={highlightPickerRef}
-              className="absolute top-full mt-2 p-2 bg-white rounded-lg shadow-lg border border-brand-indigo-500 z-50"
-              style={{ minWidth: "200px" }}
-            >
-              <div className="grid grid-cols-6 gap-1">
-                {highlightColors.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className="w-6 h-6 rounded border border-brand-indigo-500 hover:scale-110 transition-transform"
-                    style={{ backgroundColor: color }}
-                    onClick={() => {
-                      if (color === "transparent") {
-                        editor.chain().focus().unsetHighlight().run()
-                      } else {
-                        editor.chain().focus().setHighlight({ color }).run()
-                      }
-                      setShowHighlightPicker(false)
-                    }}
-                    title={color === "transparent" ? "하이라이트 제거" : color}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          onClick={insertTable}
-          title="표 삽입"
-        >
-          <TableIcon className="h-4 w-4" />
-        </button>
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive({ textAlign: "left" })}
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
-          title="왼쪽 정렬"
-        >
-          <AlignLeft className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive({ textAlign: "center" })}
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
-          title="가운데 정렬"
-        >
-          <AlignCenter className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive({ textAlign: "right" })}
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
-          title="오른쪽 정렬"
-        >
-          <AlignRight className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          data-active={editor.isActive({ textAlign: "justify" })}
-          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
-          title="양쪽 정렬"
-        >
-          <AlignJustify className="h-4 w-4" />
-        </button>
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          onClick={() => openInsertDialog("math")}
-          title="수식 삽입"
-        >
-          <PlusSquare className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          className="notion-toolbar-button"
-          onClick={() => openInsertDialog("youtube")}
-          title="YouTube 삽입"
-        >
-          <Video className="h-4 w-4" />
-        </button>
-        <div className="ml-auto flex items-center gap-2 text-xs text-neutral-slate-500">
-          {isUploading && <span>이미지 업로드 중...</span>}
-          <span>마크다운 문법도 사용 가능</span>
-          <span> / 명령어</span>
-          <span>Cmd/Ctrl+K</span>
-        </div>
-      </div>
+      ) : null}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          if (file) {
+            void addUploadedImage(file)
+          }
+          event.currentTarget.value = ""
+        }}
+      />
       <BubbleMenu
         editor={editor}
         shouldShow={({ editor: activeEditor }) => activeEditor.isEditable && (hasTextSelection || tableSelection !== null)}
@@ -1285,9 +1102,11 @@ export function TiptapEditor({
       >
         {hoveredBlock ? (
           <BlockHandleMenu
+            isDragging={isDraggingBlock}
             top={hoveredBlock.top}
             insertActions={blockInsertActions}
             transformActions={blockTransformActions}
+            onDragHandleMouseDown={handleBlockDragStart}
             onInsertActionSelect={runBlockInsertAction}
             onTransformActionSelect={runBlockTransformAction}
             onInsertParagraphBelow={insertParagraphBelow}
@@ -1295,6 +1114,12 @@ export function TiptapEditor({
             onDeleteBlock={deleteBlock}
             onInsertMenuOpenChange={setIsBlockInsertMenuOpen}
             onTransformMenuOpenChange={setIsBlockTransformMenuOpen}
+          />
+        ) : null}
+        {dropIndicator ? (
+          <div
+            className="notion-block-drop-indicator"
+            style={{ top: dropIndicator.top }}
           />
         ) : null}
         <EditorContent editor={editor} />

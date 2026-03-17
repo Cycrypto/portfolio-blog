@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Copy, GripVertical, Plus, Trash2 } from "lucide-react"
+import type { MouseEvent as ReactMouseEvent } from "react"
+import { Copy, Ellipsis, GripVertical, Plus, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +15,11 @@ import {
 import { EditorAction, groupEditorActions } from "@/lib/tiptap/editor-actions"
 
 interface BlockHandleMenuProps {
+  isDragging?: boolean
   insertActions: EditorAction[]
   onDeleteBlock: () => void
   onDuplicateBlock: () => void
+  onDragHandleMouseDown: (event: ReactMouseEvent<HTMLButtonElement>) => void
   onInsertActionSelect: (action: EditorAction) => void
   onInsertMenuOpenChange: (open: boolean) => void
   onInsertParagraphBelow: () => void
@@ -27,9 +30,11 @@ interface BlockHandleMenuProps {
 }
 
 export function BlockHandleMenu({
+  isDragging = false,
   insertActions,
   onDeleteBlock,
   onDuplicateBlock,
+  onDragHandleMouseDown,
   onInsertActionSelect,
   onInsertMenuOpenChange,
   onInsertParagraphBelow,
@@ -54,6 +59,17 @@ export function BlockHandleMenu({
 
   return (
     <div className="notion-block-handle" style={{ top }}>
+      <button
+        type="button"
+        className="notion-block-handle-button notion-block-drag-button"
+        aria-label="블록 이동"
+        data-dragging={isDragging}
+        onMouseDown={onDragHandleMouseDown}
+      >
+        <GripVertical className="h-4 w-4" />
+        <span className="sr-only">{isDragging ? "블록 이동 중" : "블록 이동"}</span>
+      </button>
+
       <DropdownMenu open={insertOpen} onOpenChange={setInsertOpen}>
         <DropdownMenuTrigger asChild>
           <button type="button" className="notion-block-handle-button" aria-label="아래에 블록 삽입">
@@ -93,7 +109,7 @@ export function BlockHandleMenu({
       <DropdownMenu open={transformOpen} onOpenChange={setTransformOpen}>
         <DropdownMenuTrigger asChild>
           <button type="button" className="notion-block-handle-button" aria-label="블록 작업">
-            <GripVertical className="h-4 w-4" />
+            <Ellipsis className="h-4 w-4" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="notion-block-menu-content w-80" sideOffset={10}>

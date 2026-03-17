@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { JSONContent } from '@tiptap/react';
-import { ArrowLeft, Clock3, FileText, Save, Settings2 } from 'lucide-react';
+import { Save, Settings2 } from 'lucide-react';
 
-import { AutoResizeTitleTextarea } from '@/components/admin/post-editor/AutoResizeTitleTextarea';
+import { PostEditorLayout } from '@/components/admin/post-editor/PostEditorLayout';
 import { PostSettingsDialog } from '@/components/admin/post-editor/PostSettingsDialog';
 import { Button } from '@/components/ui/button';
 import { TiptapEditor } from '@/components/editor/TiptapEditor';
@@ -264,132 +264,105 @@ export default function NewPost() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSave, isSaving, isUploadingMedia]);
 
+  const notices = (
+    <>
+      {restoredDraft && (
+        <div className="rounded-2xl border border-brand-blue-200 bg-brand-blue-50 p-4 text-sm text-brand-blue-700">
+          브라우저 임시 저장본을 복구했습니다.
+        </div>
+      )}
+
+      {error && !settingsOpen && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-500">
+          {error}
+        </div>
+      )}
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-white">
-      <div className="w-full">
-        <div className="sticky top-0 z-20 border-b border-brand-indigo-500 bg-white px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <Button variant="ghost" size="sm" onClick={handleExit}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              나가기
-            </Button>
+    <PostEditorLayout
+      title={title}
+      onTitleChange={setTitle}
+      onExit={handleExit}
+      statusLabel={hasUnsavedChanges ? '작성 중' : '초안 비어있음'}
+      statusTone={hasUnsavedChanges ? 'accent' : 'neutral'}
+      metrics={metrics}
+      secondaryMeta={
+        lastDraftSavedAt ? (
+          <span className="text-neutral-slate-400">
+            브라우저 임시저장{' '}
+            {new Date(lastDraftSavedAt).toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+        ) : null
+      }
+      notices={notices}
+      actions={
+        <>
+          <Button
+            onClick={() => void handleSave('draft')}
+            variant="outline"
+            disabled={isSaving || isUploadingMedia}
+          >
+            <Save className="h-4 w-4" />
+            <span className="hidden sm:inline">{getActionLabel('draft', isSaving)}</span>
+          </Button>
 
-            <div className="hidden items-center gap-3 text-xs text-neutral-slate-500 md:flex">
-              <span className="inline-flex items-center rounded-full border border-brand-blue-200 bg-brand-blue-50 px-2 py-1 text-brand-blue-700">
-                {hasUnsavedChanges ? '작성 중' : '초안 비어있음'}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <FileText className="h-3.5 w-3.5" /> {metrics.characterCount}자
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Clock3 className="h-3.5 w-3.5" /> 예상{' '}
-                {metrics.estimatedReadTime}분
-              </span>
-              <span>Ctrl/Cmd+S</span>
-            </div>
-
-            <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={isSaving || isUploadingMedia}
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings2 className="h-4 w-4" />
+            <span className="hidden sm:inline">게시 설정</span>
+          </Button>
+          <PostSettingsDialog
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+            authorMessage={
+              <>
+                작성자는 <strong>{DEFAULT_AUTHOR}</strong>로 자동 지정됩니다.
+              </>
+            }
+            category={category}
+            onCategoryChange={setCategory}
+            tags={tags}
+            onTagsChange={setTags}
+            featuredImage={featuredImage}
+            featuredImagePreview={normalizedFeaturedImage}
+            onFeaturedImageChange={setFeaturedImage}
+            onFeaturedImageUpload={handleFeaturedImageUpload}
+            isFeatured={isFeatured}
+            onFeaturedChange={setIsFeatured}
+            featuredOrder={featuredOrder}
+            onFeaturedOrderChange={setFeaturedOrder}
+            isUploadingImage={isUploadingFeaturedImage}
+            isSaving={isSaving}
+            error={error}
+            footer={
               <Button
-                onClick={() => void handleSave('draft')}
-                variant="outline"
+                onClick={() => void handleSave('published')}
+                className="w-full"
                 disabled={isSaving || isUploadingMedia}
               >
-                <Save className="mr-2 h-4 w-4" />
-                {getActionLabel('draft', isSaving)}
+                {getActionLabel('published', isSaving)}
               </Button>
-
-              <Button
-                variant="outline"
-                disabled={isSaving || isUploadingMedia}
-                onClick={() => setSettingsOpen(true)}
-              >
-                <Settings2 className="mr-2 h-4 w-4" />
-                게시 설정
-              </Button>
-              <PostSettingsDialog
-                open={settingsOpen}
-                onOpenChange={setSettingsOpen}
-                authorMessage={
-                  <>
-                    작성자는 <strong>{DEFAULT_AUTHOR}</strong>로 자동
-                    지정됩니다.
-                  </>
-                }
-                category={category}
-                onCategoryChange={setCategory}
-                tags={tags}
-                onTagsChange={setTags}
-                featuredImage={featuredImage}
-                featuredImagePreview={normalizedFeaturedImage}
-                onFeaturedImageChange={setFeaturedImage}
-                onFeaturedImageUpload={handleFeaturedImageUpload}
-                isFeatured={isFeatured}
-                onFeaturedChange={setIsFeatured}
-                featuredOrder={featuredOrder}
-                onFeaturedOrderChange={setFeaturedOrder}
-                isUploadingImage={isUploadingFeaturedImage}
-                isSaving={isSaving}
-                error={error}
-                footer={
-                  <Button
-                    onClick={() => void handleSave('published')}
-                    className="w-full"
-                    disabled={isSaving || isUploadingMedia}
-                  >
-                    {getActionLabel('published', isSaving)}
-                  </Button>
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="mx-auto w-full max-w-4xl px-8 py-8">
-          {restoredDraft && (
-            <div className="mb-4 rounded-md border border-brand-blue-200 bg-brand-blue-50 p-3 text-sm text-brand-blue-700">
-              브라우저 임시 저장본을 복구했습니다.
-            </div>
-          )}
-
-          {error && !settingsOpen && (
-            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-500">
-              {error}
-            </div>
-          )}
-
-          <div className="mb-6 flex flex-wrap items-center gap-2 text-xs text-neutral-slate-500">
-            <span className="inline-flex items-center rounded-full border border-brand-blue-200 bg-white px-2 py-1 text-brand-blue-700">
-              단어 {metrics.wordCount}
-            </span>
-            <span className="inline-flex items-center rounded-full border border-brand-blue-200 bg-white px-2 py-1 text-brand-blue-700">
-              글자 {metrics.characterCount}
-            </span>
-            <span className="inline-flex items-center rounded-full border border-brand-blue-200 bg-white px-2 py-1 text-brand-blue-700">
-              예상 {metrics.estimatedReadTime}분
-            </span>
-            {lastDraftSavedAt && (
-              <span className="text-neutral-slate-400">
-                브라우저 임시저장{' '}
-                {new Date(lastDraftSavedAt).toLocaleTimeString('ko-KR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
-            )}
-          </div>
-
-          <AutoResizeTitleTextarea value={title} onChange={setTitle} />
-
-          <TiptapEditor
-            content={contentJson}
-            onChange={setContentJson}
-            className="notion-fullscreen"
-            onError={setError}
-            onUploadStateChange={setIsUploadingEditorMedia}
-            documentActions={editorDocumentActions}
+            }
           />
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <TiptapEditor
+        content={contentJson}
+        onChange={setContentJson}
+        className="notion-fullscreen"
+        onError={setError}
+        onUploadStateChange={setIsUploadingEditorMedia}
+        documentActions={editorDocumentActions}
+      />
+    </PostEditorLayout>
   );
 }

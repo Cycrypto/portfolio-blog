@@ -163,23 +163,54 @@
 
 /* Tiptap Editor Styles */
 .notion-shell {
-  @apply w-full h-full flex flex-col;
+  @apply flex w-full flex-col rounded-[28px] border border-neutral-slate-200 bg-white shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)];
 }
 
 .notion-fullscreen {
-  @apply min-h-screen;
+  min-height: max(30rem, 58vh);
 }
 
 .notion-toolbar {
-  @apply sticky top-0 z-10 flex items-center gap-1 px-4 py-2 bg-white border-b border-brand-indigo-500;
+  @apply sticky z-20 flex items-center gap-2 border-b border-neutral-slate-200 bg-white/95 px-3 py-2 backdrop-blur-sm;
+  top: 4rem;
+}
+
+.notion-toolbar-section {
+  @apply flex items-center gap-1;
+}
+
+.notion-toolbar-section-primary,
+.notion-toolbar-section-secondary {
+  @apply shrink-0;
+}
+
+.notion-toolbar-section-desktop {
+  @apply hidden sm:flex;
+}
+
+.notion-toolbar-spacer {
+  @apply ml-auto;
+}
+
+.notion-toolbar-divider {
+  @apply mx-1 hidden h-6 w-px bg-neutral-slate-200 sm:block;
 }
 
 .notion-toolbar-button {
-  @apply px-3 py-2 rounded-md hover:bg-gray-100 transition-colors;
+  @apply flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-neutral-slate-600 transition-colors hover:border-neutral-slate-200 hover:bg-neutral-slate-50 hover:text-neutral-slate-900;
 }
 
 .notion-toolbar-button[data-active="true"] {
-  @apply bg-blue-100 text-blue-600;
+  @apply border-brand-blue-200 bg-brand-blue-50 text-brand-blue-700;
+}
+
+.notion-toolbar-help {
+  @apply hidden h-9 w-9 items-center justify-center rounded-xl border border-transparent text-neutral-slate-500 transition-colors hover:border-neutral-slate-200 hover:bg-neutral-slate-50 hover:text-neutral-slate-800 sm:inline-flex;
+}
+
+.notion-toolbar-popover {
+  @apply absolute right-0 top-full z-50 mt-2 rounded-2xl border border-neutral-slate-200 bg-white p-2 shadow-2xl;
+  min-width: 220px;
 }
 
 .notion-color-control {
@@ -291,19 +322,27 @@
 }
 
 .notion-editor-frame {
-  @apply relative;
+  @apply relative min-h-[24rem] px-3 pb-6 pt-5;
 }
 
 .notion-block-handle {
-  @apply absolute left-0 z-20 hidden items-center gap-1 md:flex;
+  @apply absolute left-0 z-20 flex items-center gap-1 rounded-2xl border border-neutral-slate-200 bg-white/95 p-1 shadow-lg backdrop-blur-sm;
 }
 
 .notion-block-handle-button {
-  @apply flex h-8 w-8 items-center justify-center rounded-lg border border-transparent bg-white text-neutral-slate-500 shadow-sm transition-colors;
+  @apply flex h-8 w-8 items-center justify-center rounded-xl border border-transparent bg-white text-neutral-slate-500 transition-colors;
 }
 
 .notion-block-handle-button:hover {
   @apply border-neutral-slate-200 bg-neutral-slate-50 text-neutral-slate-700;
+}
+
+.notion-block-drag-button {
+  @apply cursor-grab active:cursor-grabbing;
+}
+
+.notion-block-drag-button[data-dragging="true"] {
+  @apply border-brand-blue-200 bg-brand-blue-50 text-brand-blue-700;
 }
 
 .notion-block-menu-content {
@@ -321,14 +360,43 @@
 /* Tiptap Content Styles */
 .notion-content {
   @apply w-full;
-  @apply min-h-screen;
   @apply text-black;
+  min-height: inherit;
 }
 
 @media (min-width: 768px) {
-  .notion-editor-frame {
-    padding-left: 3.5rem;
+  .notion-toolbar {
+    top: 4.75rem;
   }
+
+  .notion-editor-frame {
+    padding-left: 5.25rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .notion-shell {
+    @apply rounded-[22px];
+  }
+
+  .notion-toolbar {
+    @apply overflow-x-auto;
+    scrollbar-width: none;
+  }
+
+  .notion-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .notion-editor-frame {
+    padding-left: 3.75rem;
+    padding-right: 1rem;
+  }
+}
+
+.notion-block-drop-indicator {
+  @apply pointer-events-none absolute left-3 right-3 z-10 h-[3px] rounded-full bg-brand-blue-500 shadow-[0_0_0_4px_rgba(59,130,246,0.12)];
 }
 
 .notion-content h1 {
