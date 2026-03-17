@@ -430,8 +430,8 @@ export function AnalyticsOverviewPanel() {
                     groupedTopPages.map((page) => (
                       <div key={page.label} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg border border-brand-blue-50 px-3 py-3 text-sm">
                         <span className="truncate text-neutral-slate-700">{page.label}</span>
-                        <span className="text-neutral-slate-500">PV {formatInteger(page.pageviews)}</span>
-                        <span className="text-neutral-slate-500">UV {formatInteger(page.visitors)}</span>
+                        <span className="text-neutral-slate-500">조회수 {formatInteger(page.pageviews)}</span>
+                        <span className="text-neutral-slate-500">방문자 {formatInteger(page.visitors)}</span>
                       </div>
                     ))
                   ) : (
