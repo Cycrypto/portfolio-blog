@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { EditorAction, groupEditorActions } from "@/lib/tiptap/editor-actions"
 import { cn } from "@/lib/utils"
 
@@ -17,7 +18,19 @@ export function SlashCommandMenu({
   selectedIndex,
 }: SlashCommandMenuProps) {
   const groupedActions = groupEditorActions(actions)
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
   let actionIndex = -1
+
+  useEffect(() => {
+    const activeItem = itemRefs.current[selectedIndex]
+    if (!activeItem) {
+      return
+    }
+
+    activeItem.scrollIntoView({
+      block: "nearest",
+    })
+  }, [selectedIndex, actions])
 
   return (
     <div className="notion-slash-menu">
@@ -41,6 +54,9 @@ export function SlashCommandMenu({
               return (
                 <button
                   key={action.id}
+                  ref={(element) => {
+                    itemRefs.current[currentActionIndex] = element
+                  }}
                   type="button"
                   data-selected={isSelected}
                   className={cn("notion-slash-item", isSelected && "notion-slash-item-selected")}
