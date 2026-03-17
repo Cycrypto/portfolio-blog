@@ -195,6 +195,9 @@ docker-compose.prod.yml
 # Hugo (static site generator)
 .hugo_build.lock
 public/
+!frontend/public/
+!frontend/public/fonts/
+!frontend/public/fonts/AppleMyungjo.ttf
 resources/_gen/
 
 # ============================================
