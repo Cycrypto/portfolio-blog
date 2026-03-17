@@ -5,12 +5,22 @@ import { motion } from "framer-motion"
 import { useMobile } from "@/hooks/use-mobile"
 import { getExperiences, Experience } from "@/lib/api"
 
-export function Timeline() {
+interface TimelineProps {
+  initialExperiences?: Experience[]
+}
+
+export function Timeline({ initialExperiences = [] }: TimelineProps) {
   const isMobile = useMobile()
-  const [experiences, setExperiences] = useState<Experience[]>([])
-  const [loading, setLoading] = useState(true)
+  const [experiences, setExperiences] = useState<Experience[]>(initialExperiences)
+  const [loading, setLoading] = useState(initialExperiences.length === 0)
 
   useEffect(() => {
+    if (initialExperiences.length > 0) {
+      setExperiences(initialExperiences)
+      setLoading(false)
+      return
+    }
+
     const load = async () => {
       try {
         const data = await getExperiences()
@@ -22,7 +32,7 @@ export function Timeline() {
       }
     }
     load()
-  }, [])
+  }, [initialExperiences])
 
   const sorted = useMemo(() => {
     return [...experiences].sort((a, b) => {
