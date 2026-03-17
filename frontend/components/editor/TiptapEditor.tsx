@@ -79,6 +79,11 @@ interface BlockDropIndicatorState {
   top: number
 }
 
+interface SlashMenuPosition {
+  left: number
+  top: number
+}
+
 const INSERT_DIALOG_COPY: Record<
   InsertDialogMode,
   { title: string; description: string; placeholder: string; submitLabel: string }
@@ -111,6 +116,8 @@ const INSERT_DIALOG_COPY: Record<
 
 const BLOCK_HANDLE_HEIGHT = 42
 const MOBILE_BLOCK_HANDLE_HEIGHT = 38
+const DESKTOP_SLASH_MENU_WIDTH = 352
+const MOBILE_SLASH_MENU_WIDTH = 320
 const TEXT_ANCHOR_SELECTOR = "p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, figcaption, td, th"
 
 function getBlockAnchorRect(element: HTMLElement) {
@@ -498,6 +505,21 @@ export function TiptapEditor({
     slashState.blockText !== dismissedSlashText,
   )
   const isDraggingBlock = draggedBlock !== null
+
+  const slashMenuPosition: SlashMenuPosition | null =
+    editor && editorFrameRef.current && isSlashMenuOpen
+      ? (() => {
+          const frameRect = editorFrameRef.current!.getBoundingClientRect()
+          const cursorCoords = editor.view.coordsAtPos(editor.state.selection.from)
+          const menuWidth = isMobile ? MOBILE_SLASH_MENU_WIDTH : DESKTOP_SLASH_MENU_WIDTH
+          const maxLeft = Math.max(12, frameRect.width - menuWidth - 12)
+
+          return {
+            left: Math.min(Math.max(12, cursorCoords.left - frameRect.left - 18), maxLeft),
+            top: cursorCoords.bottom - frameRect.top + 10,
+          }
+        })()
+      : null
 
   const runEditorAction = (action: EditorAction, options?: { clearSlash?: boolean }) => {
     if (!actionContext) {
@@ -998,39 +1020,26 @@ export function TiptapEditor({
             return false
           }
 
-          if (isSlashMenuOpen) {
-            return true
-          }
-
           return state.selection.$from.parent.textContent.trim().length === 0
         }}
       >
-        {isSlashMenuOpen ? (
-          <SlashCommandMenu
-            actions={slashActions}
-            selectedIndex={selectedSlashIndex}
-            onHoverIndexChange={setSelectedSlashIndex}
-            onSelect={(action) => runEditorAction(action, { clearSlash: true })}
-          />
-        ) : (
-          <div className="notion-floating-menu">
-            {floatingActions.map((action) => {
-              const Icon = action.icon
-              return (
-                <button
-                  key={action.id}
-                  type="button"
-                  data-active={action.isActive?.(editor)}
-                  onClick={() => runEditorAction(action)}
-                  className="notion-menu-button"
-                  title={action.title}
-                >
-                  <Icon className="h-4 w-4" />
-                </button>
-              )
-            })}
-          </div>
-        )}
+        <div className="notion-floating-menu">
+          {floatingActions.map((action) => {
+            const Icon = action.icon
+            return (
+              <button
+                key={action.id}
+                type="button"
+                data-active={action.isActive?.(editor)}
+                onClick={() => runEditorAction(action)}
+                className="notion-menu-button"
+                title={action.title}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            )
+          })}
+        </div>
       </FloatingMenu>
 
       <div
@@ -1051,6 +1060,19 @@ export function TiptapEditor({
             className="notion-block-drop-indicator"
             style={{ top: dropIndicator.top }}
           />
+        ) : null}
+        {isSlashMenuOpen && slashMenuPosition ? (
+          <div
+            className="notion-slash-menu-layer"
+            style={{ left: slashMenuPosition.left, top: slashMenuPosition.top }}
+          >
+            <SlashCommandMenu
+              actions={slashActions}
+              selectedIndex={selectedSlashIndex}
+              onHoverIndexChange={setSelectedSlashIndex}
+              onSelect={(action) => runEditorAction(action, { clearSlash: true })}
+            />
+          </div>
         ) : null}
         <EditorContent editor={editor} />
       </div>
