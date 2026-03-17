@@ -1,6 +1,7 @@
 import {MiddlewareConsumer, Module, NestModule} from '@nestjs/common';
 import {ConfigModule, ConfigService} from '@nestjs/config';
 import {TypeOrmModule} from '@nestjs/typeorm';
+import { join } from 'path';
 import {AppController} from './app.controller';
 import {AppService} from './app.service';
 import {LoggerMiddleware} from "./common/middleware/logger.middleware";
@@ -43,6 +44,11 @@ function parseBooleanEnv(value: string | undefined, defaultValue: boolean): bool
                     password: configService.get<string>('DB_PASSWORD'),
                     database: configService.get<string>('DB_DATABASE'),
                     entities: [__dirname + '/**/*.entity{.ts,.js}'],
+                    migrations: [join(__dirname, 'database/migrations/*{.ts,.js}')],
+                    migrationsRun: parseBooleanEnv(
+                        configService.get<string>('DB_MIGRATIONS_RUN'),
+                        isProduction,
+                    ),
                     synchronize: parseBooleanEnv(configService.get<string>('DB_SYNCHRONIZE'), !isProduction),
                     logging: parseBooleanEnv(configService.get<string>('DB_LOGGING'), !isProduction),
                 };
