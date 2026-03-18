@@ -1,5 +1,9 @@
 import { getExperiences, getPosts, getProjects } from '@/lib/api';
 import {
+  calculateCareerMonths,
+  formatCareerDuration,
+} from '@/lib/experience/utils';
+import {
   profileService,
   type ProfileData,
 } from '@/lib/api/services/profile';
@@ -21,7 +25,8 @@ export interface PortfolioSnapshot {
   allProjects: Project[];
   featuredPosts: Post[];
   allPosts: Post[];
-  yearsOfExperience: number;
+  careerDurationMonths: number;
+  careerDurationLabel: string;
   metrics: PortfolioMetric[];
   availableForWork: boolean;
 }
@@ -85,24 +90,6 @@ function sanitizeProfile(profile: ProfileData): ProfileData {
   };
 }
 
-function getYearsOfExperience(experiences: Experience[]): number {
-  if (experiences.length === 0) {
-    return 0;
-  }
-
-  const earliest = [...experiences]
-    .map((experience) => new Date(experience.startDate).getTime())
-    .filter((value) => !Number.isNaN(value))
-    .sort((a, b) => a - b)[0];
-
-  if (!earliest) {
-    return 0;
-  }
-
-  const diff = Date.now() - earliest;
-  return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24 * 365)));
-}
-
 export async function buildPortfolioSnapshot(): Promise<PortfolioSnapshot> {
   const [postsResult, projectsResult, profileResult, experiencesResult] =
     await Promise.allSettled([
@@ -136,13 +123,14 @@ export async function buildPortfolioSnapshot(): Promise<PortfolioSnapshot> {
   const fallbackPosts = featuredPosts.length > 0
     ? featuredPosts
     : sortedPosts.slice(0, 3);
-  const yearsOfExperience = getYearsOfExperience(experiences);
+  const careerDurationMonths = calculateCareerMonths(experiences);
+  const careerDurationLabel = formatCareerDuration(careerDurationMonths);
 
   const metrics: PortfolioMetric[] = [
     {
-      label: '경력',
-      value: yearsOfExperience > 0 ? `${yearsOfExperience}+년` : '성장 중',
-      description: '실무 경험 기준',
+      label: '실무 경력',
+      value: careerDurationLabel || '정리 중',
+      description: 'career 타입 기준',
     },
     {
       label: '대표 프로젝트',
@@ -168,7 +156,8 @@ export async function buildPortfolioSnapshot(): Promise<PortfolioSnapshot> {
     allProjects: sortedProjects,
     featuredPosts: fallbackPosts.slice(0, 3),
     allPosts: sortedPosts,
-    yearsOfExperience,
+    careerDurationMonths,
+    careerDurationLabel,
     metrics,
     availableForWork: Boolean(profile.isAvailable),
   };

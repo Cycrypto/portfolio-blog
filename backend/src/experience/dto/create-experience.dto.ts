@@ -1,13 +1,18 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { EXPERIENCE_TYPES, ExperienceType } from '../experience.constants';
 
 export class CreateExperienceDto {
+  @IsString()
+  @IsIn(EXPERIENCE_TYPES)
+  type: ExperienceType;
+
   @IsString()
   @IsNotEmpty()
   title: string;
 
   @IsString()
   @IsNotEmpty()
-  company: string;
+  organization: string;
 
   @IsString()
   @IsNotEmpty()

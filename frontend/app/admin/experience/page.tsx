@@ -2,35 +2,54 @@
 
 import { useEffect, useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  EXPERIENCE_TYPE_OPTIONS,
+  formatExperiencePeriod,
+  getExperienceTypeLabel,
+  getExperienceTypeTheme,
+  sortExperiences,
+} from "@/lib/experience/utils"
 import { createExperience, deleteExperience, getExperiences, updateExperience } from "@/lib/api"
-import { Experience } from "@/lib/types/api"
+import { CreateExperienceRequest, Experience, ExperienceType } from "@/lib/types/api"
 import { useToast } from "@/hooks/use-toast"
 import { AdminShell } from "@/components/admin/AdminShell"
+import { cn } from "@/lib/utils"
+
+const EMPTY_FORM: CreateExperienceRequest = {
+  type: "career",
+  title: "",
+  organization: "",
+  startDate: "",
+  endDate: "",
+  description: "",
+}
 
 export default function AdminExperience() {
   const [experiences, setExperiences] = useState<Experience[]>([])
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [form, setForm] = useState({ title: "", company: "", startDate: "", endDate: "", description: "" })
+  const [form, setForm] = useState<CreateExperienceRequest>(EMPTY_FORM)
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
   const resetForm = () => {
     setEditingId(null)
-    setForm({ title: "", company: "", startDate: "", endDate: "", description: "" })
+    setForm(EMPTY_FORM)
   }
 
   const load = async () => {
     try {
       const data = await getExperiences()
-      setExperiences(data)
+      setExperiences(sortExperiences(data))
     } catch {
-      toast({ title: "로드 실패", description: "경력을 불러오지 못했습니다.", variant: "destructive" })
+      toast({ title: "로드 실패", description: "경험을 불러오지 못했습니다.", variant: "destructive" })
     }
   }
 
@@ -39,23 +58,23 @@ export default function AdminExperience() {
   }, [])
 
   const handleSubmit = async () => {
-    if (!form.title.trim() || !form.company.trim() || !form.startDate.trim()) {
-      toast({ title: "필수 입력 누락", description: "직책, 회사, 시작일을 입력하세요.", variant: "destructive" })
+    if (!form.title.trim() || !form.organization.trim() || !form.startDate.trim()) {
+      toast({ title: "필수 입력 누락", description: "직책, 조직명, 시작일을 입력하세요.", variant: "destructive" })
       return
     }
     try {
       setLoading(true)
       if (editingId) {
         await updateExperience(editingId.toString(), form)
-        toast({ title: "수정 완료", description: "경력이 수정되었습니다." })
+        toast({ title: "수정 완료", description: "경험이 수정되었습니다." })
       } else {
         await createExperience(form)
-        toast({ title: "등록 완료", description: "경력이 추가되었습니다." })
+        toast({ title: "등록 완료", description: "경험이 추가되었습니다." })
       }
       resetForm()
       load()
     } catch {
-      toast({ title: "저장 실패", description: "경력 저장 중 오류가 발생했습니다.", variant: "destructive" })
+      toast({ title: "저장 실패", description: "경험 저장 중 오류가 발생했습니다.", variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -64,8 +83,9 @@ export default function AdminExperience() {
   const handleEdit = (exp: Experience) => {
     setEditingId(exp.id)
     setForm({
+      type: exp.type || "career",
       title: exp.title || "",
-      company: exp.company || "",
+      organization: exp.organization || "",
       startDate: exp.startDate || "",
       endDate: exp.endDate || "",
       description: exp.description || "",
@@ -76,7 +96,7 @@ export default function AdminExperience() {
     if (!confirm("삭제하시겠습니까?")) return
     try {
       await deleteExperience(id.toString())
-      toast({ title: "삭제 완료", description: "경력이 삭제되었습니다." })
+      toast({ title: "삭제 완료", description: "경험이 삭제되었습니다." })
       load()
     } catch {
       toast({ title: "삭제 실패", description: "삭제 중 오류가 발생했습니다.", variant: "destructive" })
@@ -84,22 +104,41 @@ export default function AdminExperience() {
   }
 
   return (
-    <AdminShell active="experience" title="경력 관리" description="타임라인에 노출될 경력 정보를 관리합니다">
+    <AdminShell active="experience" title="경험 관리" description="타임라인과 PDF에 노출될 경험 정보를 관리합니다">
       <div className="space-y-6">
         <Card className="surface-default shadow-none">
           <CardHeader className="border-b border-brand-blue-100">
-            <CardTitle className="text-xl text-neutral-slate-800">{editingId ? "경력 수정" : "새 경력 추가"}</CardTitle>
-            <CardDescription>최신순으로 타임라인에 노출됩니다</CardDescription>
+            <CardTitle className="text-xl text-neutral-slate-800">{editingId ? "경험 수정" : "새 경험 추가"}</CardTitle>
+            <CardDescription>경력, 팀 프로젝트, 동아리를 하나의 경험 모델로 관리합니다</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="type">타입</Label>
+                <Select value={form.type} onValueChange={(value) => setForm({ ...form, type: value as ExperienceType })}>
+                  <SelectTrigger id="type">
+                    <SelectValue placeholder="타입 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXPERIENCE_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label htmlFor="title">직책/역할</Label>
                 <Input id="title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
               </div>
               <div>
-                <Label htmlFor="company">회사/조직</Label>
-                <Input id="company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
+                <Label htmlFor="organization">조직/회사/팀명</Label>
+                <Input
+                  id="organization"
+                  value={form.organization}
+                  onChange={(e) => setForm({ ...form, organization: e.target.value })}
+                />
               </div>
               <div>
                 <Label htmlFor="start">시작일 (YYYY-MM 또는 YYYY-MM-DD)</Label>
@@ -122,7 +161,7 @@ export default function AdminExperience() {
               )}
               <Button onClick={handleSubmit} disabled={loading} className="bg-brand-blue-600 text-white hover:bg-brand-blue-700">
                 <Plus className="mr-2 h-4 w-4" />
-                {loading ? "저장 중..." : editingId ? "경력 수정" : "경력 추가"}
+                {loading ? "저장 중..." : editingId ? "경험 수정" : "경험 추가"}
               </Button>
             </div>
           </CardContent>
@@ -130,19 +169,20 @@ export default function AdminExperience() {
 
         <Card className="surface-default shadow-none">
           <CardHeader className="border-b border-brand-blue-100">
-            <CardTitle className="text-xl text-neutral-slate-800">경력 목록</CardTitle>
-            <CardDescription>시작일 기준 최신순</CardDescription>
+            <CardTitle className="text-xl text-neutral-slate-800">경험 목록</CardTitle>
+            <CardDescription>현재 진행 중 우선, 이후 종료일 기준 최신순</CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             {experiences.length === 0 ? (
-              <div className="py-12 text-center text-neutral-slate-500">등록된 경력이 없습니다</div>
+              <div className="py-12 text-center text-neutral-slate-500">등록된 경험이 없습니다</div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>타입</TableHead>
                       <TableHead>직책/역할</TableHead>
-                      <TableHead>회사</TableHead>
+                      <TableHead>조직</TableHead>
                       <TableHead>기간</TableHead>
                       <TableHead>설명</TableHead>
                       <TableHead className="text-right">작업</TableHead>
@@ -151,12 +191,17 @@ export default function AdminExperience() {
                   <TableBody>
                     {experiences.map((exp) => (
                       <TableRow key={exp.id}>
-                        <TableCell className="font-semibold text-neutral-slate-800">{exp.title}</TableCell>
-                        <TableCell className="text-neutral-slate-700">{exp.company}</TableCell>
-                        <TableCell className="text-sm text-neutral-slate-600">
-                          {exp.startDate} - {exp.endDate || "현재"}
+                        <TableCell>
+                          <Badge className={cn("border", getExperienceTypeTheme(exp.type).badgeClassName)}>
+                            {getExperienceTypeLabel(exp.type)}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="max-w-md truncate text-neutral-slate-600">{exp.description}</TableCell>
+                        <TableCell className="font-semibold text-neutral-slate-800">{exp.title}</TableCell>
+                        <TableCell className="text-neutral-slate-700">{exp.organization}</TableCell>
+                        <TableCell className="text-sm text-neutral-slate-600">
+                          {formatExperiencePeriod(exp.startDate, exp.endDate)}
+                        </TableCell>
+                        <TableCell className="max-w-md truncate text-neutral-slate-600">{exp.description || "-"}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleEdit(exp)}>

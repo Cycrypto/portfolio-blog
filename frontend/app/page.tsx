@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '박준하 | 백엔드 포트폴리오',
     description:
-      '대표 프로젝트, 기술 기록, 경력과 함께 보는 채용형 포트폴리오입니다.',
+      '대표 프로젝트, 기술 기록, 경험과 함께 보는 채용형 포트폴리오입니다.',
     url: absoluteUrl('/'),
     siteName: '박준하 포트폴리오',
     locale: 'ko_KR',
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '박준하 | 백엔드 포트폴리오',
     description:
-      '대표 프로젝트, 기술 기록, 경력과 함께 보는 채용형 포트폴리오입니다.',
+      '대표 프로젝트, 기술 기록, 경험과 함께 보는 채용형 포트폴리오입니다.',
   },
 };
 
@@ -65,7 +65,7 @@ export default async function PortfolioPage() {
     featuredPosts,
     featuredProjects,
     experiences,
-    yearsOfExperience,
+    careerDurationLabel,
     availableForWork,
   } = snapshot;
 
@@ -256,9 +256,9 @@ export default async function PortfolioPage() {
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">
-                    <p className="text-xs text-neutral-slate-500">경력</p>
+                    <p className="text-xs text-neutral-slate-500">실무 경력</p>
                     <p className="mt-1 text-lg font-semibold text-neutral-slate-800">
-                      {yearsOfExperience > 0 ? `${yearsOfExperience}+년` : '정리 중'}
+                      {careerDurationLabel || '정리 중'}
                     </p>
                   </div>
                   <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">

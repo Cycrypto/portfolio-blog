@@ -2,8 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
+import { Badge } from "@/components/ui/badge"
 import { useMobile } from "@/hooks/use-mobile"
+import {
+  formatExperiencePeriod,
+  getExperienceTypeLabel,
+  getExperienceTypeTheme,
+  sortExperiences,
+} from "@/lib/experience/utils"
 import { getExperiences, Experience } from "@/lib/api"
+import { cn } from "@/lib/utils"
 
 interface TimelineProps {
   initialExperiences?: Experience[]
@@ -35,11 +43,7 @@ export function Timeline({ initialExperiences = [] }: TimelineProps) {
   }, [initialExperiences])
 
   const sorted = useMemo(() => {
-    return [...experiences].sort((a, b) => {
-      const aDate = new Date(a.startDate).getTime()
-      const bDate = new Date(b.startDate).getTime()
-      return bDate - aDate
-    })
+    return sortExperiences(experiences)
   }, [experiences])
 
   if (loading) {
@@ -52,7 +56,7 @@ export function Timeline({ initialExperiences = [] }: TimelineProps) {
   }
 
   if (sorted.length === 0) {
-    return <div className="surface-default px-6 py-8 text-center text-neutral-slate-500">등록된 경력 정보가 없습니다.</div>
+    return <div className="surface-default px-6 py-8 text-center text-neutral-slate-500">등록된 경험 정보가 없습니다.</div>
   }
 
   return (
@@ -75,26 +79,40 @@ export function Timeline({ initialExperiences = [] }: TimelineProps) {
             transition={{ duration: 0.35 }}
             viewport={{ once: true }}
           >
-            <div className="surface-elevated p-6">
-              <h3 className="text-xl font-bold text-neutral-slate-800">{experience.title}</h3>
-              <div className="text-neutral-slate-600 mb-4">
-                {experience.company} | {experience.startDate}
-                {experience.endDate ? ` - ${experience.endDate}` : " - 현재"}
+            <div
+              className={cn(
+                "surface-elevated border-l-4 p-6",
+                getExperienceTypeTheme(experience.type).cardAccentClassName,
+              )}
+            >
+              <div className="mb-3 flex flex-wrap items-center gap-3">
+                <Badge className={cn("border", getExperienceTypeTheme(experience.type).badgeClassName)}>
+                  {getExperienceTypeLabel(experience.type)}
+                </Badge>
+                <span className="text-sm text-neutral-slate-500">
+                  {formatExperiencePeriod(experience.startDate, experience.endDate)}
+                </span>
               </div>
-              <p className="text-neutral-slate-700">{experience.description}</p>
+              <h3 className="text-xl font-bold text-neutral-slate-800">{experience.title}</h3>
+              <div className="mb-4 text-neutral-slate-600">{experience.organization}</div>
+              <p className="text-neutral-slate-700">{experience.description || "설명을 준비 중입니다."}</p>
             </div>
           </motion.div>
 
           {!isMobile && (
             <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center">
               <motion.div
-                className="w-6 h-6 rounded-full bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 z-10 flex items-center justify-center"
+                className={cn(
+                  "z-10 flex h-6 w-6 items-center justify-center rounded-full ring-4",
+                  getExperienceTypeTheme(experience.type).dotClassName,
+                  getExperienceTypeTheme(experience.type).dotRingClassName,
+                )}
                 initial={{ scale: 0 }}
                 whileInView={{ scale: 1 }}
                 transition={{ duration: 0.3 }}
                 viewport={{ once: true }}
               >
-                <div className="w-2 h-2 rounded-full bg-white"></div>
+                <div className="h-2 w-2 rounded-full bg-white"></div>
               </motion.div>
             </div>
           )}

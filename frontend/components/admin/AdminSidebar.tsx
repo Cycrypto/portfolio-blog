@@ -30,7 +30,7 @@ export const ADMIN_MENU_ITEMS: Array<{
   { key: "posts", label: "블로그 포스트", icon: Edit, href: "/admin/posts" },
   { key: "projects", label: "프로젝트", icon: FolderOpen, href: "/admin/projects" },
   { key: "resume", label: "이력서", icon: FileBadge2, href: "/admin/resume" },
-  { key: "experience", label: "경력 관리", icon: Briefcase, href: "/admin/experience" },
+  { key: "experience", label: "경험 관리", icon: Briefcase, href: "/admin/experience" },
   { key: "comments", label: "댓글 관리", icon: MessageSquare, href: "/admin/comments" },
   { key: "contacts", label: "문의 메시지", icon: Mail, href: "/admin/contacts" },
   { key: "profile", label: "프로필 편집", icon: User, href: "/admin/profile" },

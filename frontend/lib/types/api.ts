@@ -200,18 +200,22 @@ export interface CreateProjectRequest {
 
 export interface UpdateProjectRequest extends Partial<CreateProjectRequest> {}
 
+export type ExperienceType = 'career' | 'team_project' | 'club'
+
 export interface Experience {
   id: number;
+  type: ExperienceType;
   title: string;
-  company: string;
+  organization: string;
   startDate: string;
   endDate?: string;
   description?: string;
 }
 
 export interface CreateExperienceRequest {
+  type: ExperienceType;
   title: string;
-  company: string;
+  organization: string;
   startDate: string;
   endDate?: string;
   description?: string;

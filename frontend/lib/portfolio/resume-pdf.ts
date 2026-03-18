@@ -3,6 +3,12 @@ import path from 'node:path';
 
 import PDFDocument from 'pdfkit';
 
+import {
+  formatExperiencePeriod,
+  getExperienceTypeLabel,
+  getExperienceTypeTheme,
+  sortExperiences,
+} from '@/lib/experience/utils';
 import { absoluteUrl } from '@/lib/site';
 import { normalizeImageUrl } from '@/lib/utils/image';
 
@@ -357,36 +363,62 @@ function drawSkillsSection(
 }
 
 function drawExperienceSection(doc: PDFKit.PDFDocument, snapshot: ResumeSnapshot, y: number): number {
-  let cursor = drawSectionHeading(doc, '경력', y);
-  const experiences = [...snapshot.experiences]
-    .sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())
-    .slice(0, 4);
+  let cursor = drawSectionHeading(doc, '경험', y);
+  const experiences = sortExperiences(snapshot.experiences);
 
   if (experiences.length === 0) {
-    doc.fontSize(10).fillColor(COLORS.muted).text('등록된 경력 정보가 없습니다.', PAGE_MARGIN_X, cursor, {
+    doc.fontSize(10).fillColor(COLORS.muted).text('등록된 경험 정보가 없습니다.', PAGE_MARGIN_X, cursor, {
       width: CONTENT_WIDTH,
     });
     return doc.y + 18;
   }
 
   for (const experience of experiences) {
-    cursor = ensurePage(doc, cursor, 70);
-    const period = formatPeriod(experience.startDate, experience.endDate);
-    const titleWidth = CONTENT_WIDTH - 124;
-    const title = unique([experience.company, experience.title]).join(' | ');
+    const theme = getExperienceTypeTheme(experience.type);
+    const title = cleanText(experience.title) || '경험 정보';
+    const details = unique([
+      experience.organization,
+      formatExperiencePeriod(experience.startDate, experience.endDate),
+    ]).join('  |  ');
+    const bullets = toBulletItems([experience.description], 3, 116);
+    const titleWidth = CONTENT_WIDTH - 138;
+    const estimatedHeight =
+      44 +
+      doc.heightOfString(title, { width: titleWidth }) +
+      (details ? doc.heightOfString(details, { width: CONTENT_WIDTH - 18 }) + 8 : 0) +
+      bullets.length * 18;
 
-    doc.fontSize(11).fillColor(COLORS.text).text(title || '경력 정보', PAGE_MARGIN_X, cursor, {
+    cursor = ensurePage(doc, cursor, estimatedHeight);
+
+    doc
+      .save()
+      .roundedRect(PAGE_MARGIN_X, cursor + 2, 10, 10, 3)
+      .fill(theme.pdfColor)
+      .restore();
+
+    doc
+      .save()
+      .roundedRect(PAGE_MARGIN_X + 18, cursor - 1, 56, 18, 9)
+      .fill(theme.pdfTint)
+      .restore();
+
+    doc.fontSize(9).fillColor(theme.pdfColor).text(getExperienceTypeLabel(experience.type), PAGE_MARGIN_X + 18, cursor + 3, {
+      width: 56,
+      align: 'center',
+    });
+
+    doc.fontSize(11).fillColor(COLORS.text).text(title, PAGE_MARGIN_X + 84, cursor, {
       width: titleWidth,
     });
-    if (period) {
-      doc.fontSize(9.5).fillColor(COLORS.subtle).text(period, PAGE_MARGIN_X + titleWidth + 16, cursor + 1, {
-        width: 108,
-        align: 'right',
-      });
-    }
 
     cursor = Math.max(doc.y, cursor + 16) + 4;
-    const bullets = toBulletItems([experience.description], 2, 116);
+    if (details) {
+      doc.fontSize(9.5).fillColor(COLORS.muted).text(details, PAGE_MARGIN_X + 18, cursor, {
+        width: CONTENT_WIDTH - 18,
+      });
+      cursor = doc.y + 5;
+    }
+
     cursor = bullets.length > 0
       ? drawBulletList(doc, bullets, cursor, CONTENT_WIDTH, 10)
       : cursor;

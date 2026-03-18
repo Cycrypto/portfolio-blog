@@ -12,7 +12,7 @@ export class ExperienceController {
   constructor(private readonly experienceService: ExperienceService) {}
 
   @Get()
-  @ApiOperation({ summary: '경력 목록 조회 (최신순)' })
+  @ApiOperation({ summary: '경험 목록 조회 (최신순)' })
   async findAll() {
     const data = await this.experienceService.findAll();
     return { data };
@@ -22,7 +22,7 @@ export class ExperienceController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtRoleGuard)
   @Roles('admin')
-  @ApiOperation({ summary: '경력 생성 (관리자)' })
+  @ApiOperation({ summary: '경험 생성 (관리자)' })
   async create(@Body() dto: CreateExperienceDto) {
     const data = await this.experienceService.create(dto);
     return { data };
@@ -32,8 +32,8 @@ export class ExperienceController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtRoleGuard)
   @Roles('admin')
-  @ApiOperation({ summary: '경력 수정 (관리자)' })
-  @ApiParam({ name: 'id', description: '경력 ID' })
+  @ApiOperation({ summary: '경험 수정 (관리자)' })
+  @ApiParam({ name: 'id', description: '경험 ID' })
   async update(@Param('id') id: string, @Body() dto: UpdateExperienceDto) {
     const data = await this.experienceService.update(parseInt(id, 10), dto);
     return { data };
@@ -43,8 +43,8 @@ export class ExperienceController {
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtRoleGuard)
   @Roles('admin')
-  @ApiOperation({ summary: '경력 삭제 (관리자)' })
-  @ApiParam({ name: 'id', description: '경력 ID' })
+  @ApiOperation({ summary: '경험 삭제 (관리자)' })
+  @ApiParam({ name: 'id', description: '경험 ID' })
   async remove(@Param('id') id: string) {
     await this.experienceService.remove(parseInt(id, 10));
     return { message: '삭제되었습니다.' };

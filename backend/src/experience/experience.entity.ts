@@ -1,22 +1,26 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { ExperienceType } from './experience.constants';
 
 @Entity('experiences')
 export class Experience {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ default: 'career' })
+  type: ExperienceType;
+
   @Column()
   title: string;
 
   @Column()
-  company: string;
+  organization: string;
 
   @Column()
   startDate: string; // ISO string or YYYY-MM
 
   @Column({ nullable: true })
-  endDate?: string; // nullable for current
+  endDate?: string | null; // nullable for current
 
   @Column({ type: 'text', nullable: true })
-  description?: string;
+  description?: string | null;
 }
