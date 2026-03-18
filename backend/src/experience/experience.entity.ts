@@ -18,7 +18,7 @@ export class Experience {
   @Column()
   startDate: string; // ISO string or YYYY-MM
 
-  @Column({ nullable: true })
+  @Column({ type: 'character varying', nullable: true })
   endDate?: string | null; // nullable for current
 
   @Column({ type: 'text', nullable: true })
