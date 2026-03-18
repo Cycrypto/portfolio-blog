@@ -155,9 +155,9 @@ export function Timeline({ initialExperiences = [] }: TimelineProps) {
     hasToggle && !expanded
       ? {
           WebkitMaskImage:
-            "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 68%, rgba(0,0,0,0.94) 78%, rgba(0,0,0,0.68) 88%, rgba(0,0,0,0.22) 96%, transparent 100%)",
+            "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 64%, rgba(0,0,0,0.96) 75%, rgba(0,0,0,0.8) 84%, rgba(0,0,0,0.46) 92%, rgba(0,0,0,0.14) 98%, transparent 100%)",
           maskImage:
-            "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 68%, rgba(0,0,0,0.94) 78%, rgba(0,0,0,0.68) 88%, rgba(0,0,0,0.22) 96%, transparent 100%)",
+            "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 64%, rgba(0,0,0,0.96) 75%, rgba(0,0,0,0.8) 84%, rgba(0,0,0,0.46) 92%, rgba(0,0,0,0.14) 98%, transparent 100%)",
         }
       : undefined
 
@@ -238,10 +238,9 @@ export function Timeline({ initialExperiences = [] }: TimelineProps) {
         </div>
 
         {hasToggle && !expanded ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36">
-            <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-b from-white/0 via-white/18 to-neutral-slate-50/70" />
-            <div className="absolute inset-x-4 bottom-3 h-24 rounded-[28px] border border-white/45 bg-white/28 shadow-[0_18px_45px_-28px_rgba(84,119,146,0.65)] backdrop-blur-xl" />
-            <div className="absolute inset-x-8 bottom-8 h-10 rounded-full bg-white/35 blur-2xl" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24">
+            <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-white/14 to-neutral-slate-50/58 backdrop-blur-[2px]" />
+            <div className="absolute inset-x-10 bottom-4 h-8 rounded-full bg-white/22 blur-2xl" />
           </div>
         ) : null}
       </div>
