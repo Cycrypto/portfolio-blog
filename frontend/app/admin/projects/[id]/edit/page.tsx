@@ -15,11 +15,12 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ArrowLeft, Save, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
 import Link from "next/link"
-import { getAdminPosts, getProject, updateProject, uploadMedia } from "@/lib/api"
-import { Post, Project } from "@/lib/types/api"
+import { getAdminPosts, getExperiences, getProject, updateProject, uploadMedia } from "@/lib/api"
+import { Experience, Post, Project } from "@/lib/types/api"
 import { AdminShell } from "@/components/admin/AdminShell"
 import { normalizeImageUrl } from "@/lib/utils/image"
 import { generateSlug } from "@/lib/utils/slug"
+import { formatExperiencePeriod } from "@/lib/experience/utils"
 
 export default function EditProject() {
   const router = useRouter()
@@ -51,10 +52,13 @@ export default function EditProject() {
   const [newResumeHighlight, setNewResumeHighlight] = useState("")
   const [linkedPostIds, setLinkedPostIds] = useState<number[]>([])
   const [adminPosts, setAdminPosts] = useState<Post[]>([])
+  const [experiences, setExperiences] = useState<Experience[]>([])
   const [postSearch, setPostSearch] = useState("")
   const [isLoadingPosts, setIsLoadingPosts] = useState(false)
+  const [isLoadingExperiences, setIsLoadingExperiences] = useState(false)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [experienceId, setExperienceId] = useState("none")
   const [githubUrl, setGithubUrl] = useState("")
   const [liveUrl, setLiveUrl] = useState("")
   const [images, setImages] = useState<string[]>([])
@@ -92,6 +96,7 @@ export default function EditProject() {
         setResumeHighlights(data.resumeHighlights || [])
         setStartDate(data.startDate || "")
         setEndDate(data.endDate || "")
+        setExperienceId(data.experienceId ? String(data.experienceId) : "none")
         setGithubUrl(data.githubUrl || "")
         setLiveUrl(data.liveUrl || "")
         setLinkedPostIds((data.linkedPosts || []).map((post) => post.id))
@@ -102,6 +107,23 @@ export default function EditProject() {
     }
     if (id) load()
   }, [id])
+
+  useEffect(() => {
+    const loadExperiences = async () => {
+      try {
+        setIsLoadingExperiences(true)
+        const result = await getExperiences()
+        setExperiences(result)
+      } catch (loadError) {
+        console.error(loadError)
+        setError("연결 가능한 경험을 불러오지 못했습니다.")
+      } finally {
+        setIsLoadingExperiences(false)
+      }
+    }
+
+    void loadExperiences()
+  }, [])
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -215,6 +237,7 @@ export default function EditProject() {
         resumeHighlights,
         startDate,
         endDate,
+        experienceId: experienceId === "none" ? null : Number(experienceId),
         githubUrl,
         liveUrl,
         images: images.map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image)),
@@ -671,6 +694,24 @@ export default function EditProject() {
                         <SelectItem value="tool">도구/유틸리티</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="experience">연결 경험</Label>
+                    <Select value={experienceId} onValueChange={setExperienceId}>
+                      <SelectTrigger id="experience">
+                        <SelectValue placeholder={isLoadingExperiences ? "경험 불러오는 중..." : "경험 선택"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">연결 안 함</SelectItem>
+                        {experiences.map((experience) => (
+                          <SelectItem key={experience.id} value={String(experience.id)}>
+                            {experience.title} · {experience.organization} · {formatExperiencePeriod(experience.startDate, experience.endDate)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-2 text-xs text-neutral-slate-500">프로젝트는 하나의 경험에만 연결됩니다.</p>
                   </div>
 
                   <div>

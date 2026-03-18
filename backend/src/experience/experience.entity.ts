@@ -1,5 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { ExperienceType } from './experience.constants';
+import { Project } from '../projects/project.entity';
 
 @Entity('experiences')
 export class Experience {
@@ -23,4 +24,7 @@ export class Experience {
 
   @Column({ type: 'text', nullable: true })
   description?: string | null;
+
+  @OneToMany(() => Project, (project) => project.experience)
+  projects?: Project[];
 }

@@ -11,6 +11,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { normalizeUrlFieldsInPlace } from '../common/utils/url.util';
 import { generateSlug } from '../common/utils/slug.util';
 import { Post } from '../posts/entity/post.entity';
+import { Experience } from '../experience/experience.entity';
 
 @Injectable()
 export class ProjectsService {
@@ -53,6 +54,29 @@ export class ProjectsService {
     }
 
     return [...new Set(linkedPostIds.filter((postId) => Number.isInteger(postId) && postId > 0))];
+  }
+
+  private async resolveExperienceId(
+    experienceId: number | null | undefined,
+    manager: EntityManager,
+  ): Promise<number | null | undefined> {
+    if (experienceId === undefined) {
+      return undefined;
+    }
+
+    if (experienceId === null) {
+      return null;
+    }
+
+    const experience = await manager.getRepository(Experience).findOne({
+      where: { id: experienceId },
+    });
+
+    if (!experience) {
+      throw new BadRequestException('연결할 경험을 찾을 수 없습니다.');
+    }
+
+    return experience.id;
   }
 
   private async syncLinkedPosts(
@@ -110,10 +134,14 @@ export class ProjectsService {
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
     normalizeUrlFieldsInPlace(createProjectDto, ['githubUrl', 'liveUrl']);
     return this.projectRepository.manager.transaction(async (manager) => {
-      const { linkedPostIds, ...projectPayload } = createProjectDto;
+      const { linkedPostIds, experienceId, ...projectPayload } = createProjectDto;
       const requestedSlug =
         projectPayload.slug?.trim() || generateSlug(projectPayload.title);
       const slug = await this.resolveUniqueSlug(requestedSlug, undefined, manager);
+      const resolvedExperienceId = await this.resolveExperienceId(
+        experienceId,
+        manager,
+      );
       const projectRepository = manager.getRepository(Project);
       const project = projectRepository.create({
         ...projectPayload,
@@ -125,6 +153,7 @@ export class ProjectsService {
         impactMetrics: projectPayload.impactMetrics || [],
         resumeHighlights: projectPayload.resumeHighlights || [],
         images: projectPayload.images || [],
+        experienceId: resolvedExperienceId ?? null,
       });
       const savedProject = await projectRepository.save(project);
 
@@ -138,6 +167,7 @@ export class ProjectsService {
 
   async findAll(): Promise<Project[]> {
     const projects = await this.projectRepository.find({
+      relations: ['experience'],
       order: {
         isFeatured: 'DESC',
         featuredOrder: 'ASC',
@@ -163,7 +193,10 @@ export class ProjectsService {
   }
 
   async findOne(id: number): Promise<Project | null> {
-    const project = await this.projectRepository.findOne({ where: { id } });
+    const project = await this.projectRepository.findOne({
+      where: { id },
+      relations: ['experience'],
+    });
 
     if (!project) {
       return null;
@@ -190,7 +223,7 @@ export class ProjectsService {
 
     const detailedProject = await this.projectRepository.findOne({
       where: { id: basicProject.id },
-      relations: ['posts', 'posts.tags'],
+      relations: ['posts', 'posts.tags', 'experience'],
     });
 
     if (!detailedProject) {
@@ -220,6 +253,7 @@ export class ProjectsService {
     if (!project) {
       project = await this.projectRepository.findOne({
         where: { slug: normalizedIdentifier },
+        relations: ['experience'],
       });
     }
 
@@ -260,7 +294,9 @@ export class ProjectsService {
       }
 
       normalizeUrlFieldsInPlace(updateProjectDto, ['githubUrl', 'liveUrl']);
-      const { linkedPostIds, ...projectPayload } = updateProjectDto;
+      const { linkedPostIds, experienceId, ...restProjectPayload } =
+        updateProjectDto;
+      const projectPayload: Partial<Project> = { ...restProjectPayload };
 
       if (
         projectPayload.slug !== undefined ||
@@ -273,6 +309,13 @@ export class ProjectsService {
         projectPayload.slug = await this.resolveUniqueSlug(
           requestedSlug,
           project.id,
+          manager,
+        );
+      }
+
+      if ('experienceId' in updateProjectDto) {
+        projectPayload.experienceId = await this.resolveExperienceId(
+          experienceId,
           manager,
         );
       }

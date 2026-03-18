@@ -80,6 +80,51 @@ describe('CommentsService', () => {
     );
   });
 
+  it('returns a flat admin comment list with post metadata', async () => {
+    const createdAt = new Date('2026-03-18T00:00:00.000Z');
+    const updatedAt = new Date('2026-03-18T01:00:00.000Z');
+
+    commentRepository.find!.mockResolvedValue([
+      {
+        id: 'comment-admin-1',
+        postId: 42,
+        content: '관리자 목록 댓글',
+        authorName: '관리자',
+        parentId: 'parent-comment',
+        isDeleted: true,
+        createdAt,
+        updatedAt,
+        post: {
+          id: 42,
+          title: '테스트 포스트',
+          slug: 'test-post',
+        },
+      } as Comment,
+    ]);
+
+    const comments = await service.getAdminComments(42);
+
+    expect(commentRepository.find).toHaveBeenCalledWith({
+      where: { postId: 42 },
+      relations: { post: true },
+      order: { createdAt: 'DESC' },
+    });
+    expect(comments).toEqual([
+      {
+        id: 'comment-admin-1',
+        postId: 42,
+        postTitle: '테스트 포스트',
+        postSlug: 'test-post',
+        content: '관리자 목록 댓글',
+        authorName: '관리자',
+        parentId: 'parent-comment',
+        isDeleted: true,
+        createdAt,
+        updatedAt,
+      },
+    ]);
+  });
+
   it('updates a legacy email-based comment and upgrades the stored credential to a hash', async () => {
     const legacyComment = {
       id: 'comment-1',

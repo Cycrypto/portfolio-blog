@@ -17,6 +17,19 @@ interface DeleteCommentActor {
   roles?: string[];
 }
 
+export interface AdminCommentListItem {
+  id: string;
+  postId: number;
+  postTitle: string;
+  postSlug?: string | null;
+  content: string;
+  authorName: string;
+  parentId?: string;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 @Injectable()
 export class CommentsService {
   private static readonly BCRYPT_HASH_PATTERN =
@@ -88,6 +101,27 @@ export class CommentsService {
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
+  }
+
+  async getAdminComments(postId?: number): Promise<AdminCommentListItem[]> {
+    const comments = await this.commentRepository.find({
+      where: postId !== undefined ? { postId } : undefined,
+      relations: { post: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    return comments.map((comment) => ({
+      id: comment.id,
+      postId: comment.postId,
+      postTitle: comment.post?.title ?? `포스트 #${comment.postId}`,
+      postSlug: comment.post?.slug ?? null,
+      content: comment.content,
+      authorName: comment.authorName,
+      parentId: comment.parentId,
+      isDeleted: comment.isDeleted,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+    }));
   }
 
   private async buildReplyTreeFromList(

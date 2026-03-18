@@ -1,4 +1,13 @@
-import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { EXPERIENCE_TYPES, ExperienceType } from '../experience.constants';
 
 export class CreateExperienceDto {
@@ -25,4 +34,11 @@ export class CreateExperienceDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  linkedProjectIds?: number[];
 }

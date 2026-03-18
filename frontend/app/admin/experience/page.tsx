@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   EXPERIENCE_TYPE_OPTIONS,
   formatExperiencePeriod,
@@ -17,8 +18,8 @@ import {
   getExperienceTypeTheme,
   sortExperiences,
 } from "@/lib/experience/utils"
-import { createExperience, deleteExperience, getExperiences, updateExperience } from "@/lib/api"
-import { CreateExperienceRequest, Experience, ExperienceType } from "@/lib/types/api"
+import { createExperience, deleteExperience, getExperiences, getProjects, updateExperience } from "@/lib/api"
+import { CreateExperienceRequest, Experience, ExperienceType, Project } from "@/lib/types/api"
 import { useToast } from "@/hooks/use-toast"
 import { AdminShell } from "@/components/admin/AdminShell"
 import { cn } from "@/lib/utils"
@@ -30,18 +31,23 @@ const EMPTY_FORM: CreateExperienceRequest = {
   startDate: "",
   endDate: "",
   description: "",
+  linkedProjectIds: [],
 }
 
 export default function AdminExperience() {
   const [experiences, setExperiences] = useState<Experience[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<CreateExperienceRequest>(EMPTY_FORM)
   const [loading, setLoading] = useState(false)
+  const [loadingProjects, setLoadingProjects] = useState(false)
+  const [projectSearch, setProjectSearch] = useState("")
   const { toast } = useToast()
 
   const resetForm = () => {
     setEditingId(null)
     setForm(EMPTY_FORM)
+    setProjectSearch("")
   }
 
   const load = async () => {
@@ -53,8 +59,21 @@ export default function AdminExperience() {
     }
   }
 
+  const loadProjects = async () => {
+    try {
+      setLoadingProjects(true)
+      const data = await getProjects()
+      setProjects(data)
+    } catch {
+      toast({ title: "로드 실패", description: "프로젝트를 불러오지 못했습니다.", variant: "destructive" })
+    } finally {
+      setLoadingProjects(false)
+    }
+  }
+
   useEffect(() => {
-    load()
+    void load()
+    void loadProjects()
   }, [])
 
   const handleSubmit = async () => {
@@ -72,7 +91,7 @@ export default function AdminExperience() {
         toast({ title: "등록 완료", description: "경험이 추가되었습니다." })
       }
       resetForm()
-      load()
+      await Promise.all([load(), loadProjects()])
     } catch {
       toast({ title: "저장 실패", description: "경험 저장 중 오류가 발생했습니다.", variant: "destructive" })
     } finally {
@@ -89,6 +108,7 @@ export default function AdminExperience() {
       startDate: exp.startDate || "",
       endDate: exp.endDate || "",
       description: exp.description || "",
+      linkedProjectIds: (exp.linkedProjects || []).map((project) => project.id),
     })
   }
 
@@ -97,11 +117,38 @@ export default function AdminExperience() {
     try {
       await deleteExperience(id.toString())
       toast({ title: "삭제 완료", description: "경험이 삭제되었습니다." })
-      load()
+      await Promise.all([load(), loadProjects()])
     } catch {
       toast({ title: "삭제 실패", description: "삭제 중 오류가 발생했습니다.", variant: "destructive" })
     }
   }
+
+  const toggleLinkedProject = (projectId: number) => {
+    setForm((current) => {
+      const linkedProjectIds = current.linkedProjectIds || []
+
+      return {
+        ...current,
+        linkedProjectIds: linkedProjectIds.includes(projectId)
+          ? linkedProjectIds.filter((id) => id !== projectId)
+          : [...linkedProjectIds, projectId],
+      }
+    })
+  }
+
+  const linkedProjectIds = form.linkedProjectIds || []
+  const filteredProjects = projects
+    .filter((project) => project.title.toLowerCase().includes(projectSearch.toLowerCase()))
+    .sort((left, right) => {
+      const rightDate = new Date(right.endDate || right.startDate || 0).getTime()
+      const leftDate = new Date(left.endDate || left.startDate || 0).getTime()
+
+      if (leftDate !== rightDate) {
+        return rightDate - leftDate
+      }
+
+      return right.id - left.id
+    })
 
   return (
     <AdminShell active="experience" title="경험 관리" description="타임라인과 PDF에 노출될 경험 정보를 관리합니다">
@@ -153,6 +200,62 @@ export default function AdminExperience() {
               <Label htmlFor="desc">설명</Label>
               <Textarea id="desc" rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="project-search">연결 프로젝트</Label>
+                <p className="mt-1 text-sm text-neutral-slate-500">이 경험에 속하는 프로젝트를 여러 개 연결할 수 있습니다.</p>
+              </div>
+              <Input
+                id="project-search"
+                placeholder="프로젝트 제목으로 검색"
+                value={projectSearch}
+                onChange={(e) => setProjectSearch(e.target.value)}
+              />
+              <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-brand-blue-100 p-3">
+                {loadingProjects ? (
+                  <p className="text-sm text-neutral-slate-500">프로젝트를 불러오는 중...</p>
+                ) : filteredProjects.length === 0 ? (
+                  <p className="text-sm text-neutral-slate-500">조건에 맞는 프로젝트가 없습니다.</p>
+                ) : (
+                  filteredProjects.map((project) => {
+                    const checked = linkedProjectIds.includes(project.id)
+                    const assignedToOtherExperience = Boolean(project.experienceId && project.experienceId !== editingId)
+                    const disabled = assignedToOtherExperience && !checked
+
+                    return (
+                      <label
+                        key={project.id}
+                        className={cn(
+                          "flex cursor-pointer items-start gap-3 rounded-md border p-3",
+                          disabled
+                            ? "border-neutral-slate-200 bg-neutral-slate-50 text-neutral-slate-400"
+                            : "border-brand-blue-100 hover:bg-brand-blue-50/50",
+                        )}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          disabled={disabled}
+                          onCheckedChange={() => toggleLinkedProject(project.id)}
+                          className="mt-0.5"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-neutral-slate-800">{project.title}</p>
+                          <p className="mt-1 text-xs text-neutral-slate-500">
+                            {[project.category, formatExperiencePeriod(project.startDate, project.endDate)].filter(Boolean).join(" · ") || "기간 정보 없음"}
+                          </p>
+                          {assignedToOtherExperience ? (
+                            <p className="mt-1 text-xs text-amber-600">
+                              다른 경험에 연결됨: {project.experience?.title || `ID ${project.experienceId}`}
+                            </p>
+                          ) : null}
+                        </div>
+                      </label>
+                    )
+                  })
+                )}
+              </div>
+              <p className="text-xs text-neutral-slate-500">선택됨: {linkedProjectIds.length}개</p>
+            </div>
             <div className="flex justify-end gap-2">
               {editingId && (
                 <Button variant="outline" onClick={resetForm}>
@@ -185,6 +288,7 @@ export default function AdminExperience() {
                       <TableHead>조직</TableHead>
                       <TableHead>기간</TableHead>
                       <TableHead>설명</TableHead>
+                      <TableHead>연결 프로젝트</TableHead>
                       <TableHead className="text-right">작업</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -202,6 +306,19 @@ export default function AdminExperience() {
                           {formatExperiencePeriod(exp.startDate, exp.endDate)}
                         </TableCell>
                         <TableCell className="max-w-md truncate text-neutral-slate-600">{exp.description || "-"}</TableCell>
+                        <TableCell className="max-w-sm">
+                          {(exp.linkedProjects || []).length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {(exp.linkedProjects || []).map((project) => (
+                                <Badge key={project.id} variant="outline" className="border-brand-blue-200 bg-brand-blue-50 text-brand-blue-700">
+                                  {project.title}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-neutral-slate-400">-</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleEdit(exp)}>

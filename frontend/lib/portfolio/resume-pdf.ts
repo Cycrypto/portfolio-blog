@@ -380,12 +380,21 @@ function drawExperienceSection(doc: PDFKit.PDFDocument, snapshot: ResumeSnapshot
       experience.organization,
       formatExperiencePeriod(experience.startDate, experience.endDate),
     ]).join('  |  ');
+    const linkedProjectTitles = (experience.linkedProjects || [])
+      .map((project) => cleanText(project.title))
+      .filter(Boolean);
+    const linkedProjectLine = linkedProjectTitles.length > 0
+      ? `관련 프로젝트: ${linkedProjectTitles.slice(0, 3).join(', ')}${linkedProjectTitles.length > 3 ? ` 외 ${linkedProjectTitles.length - 3}개` : ''}`
+      : '';
     const bullets = toBulletItems([experience.description], 3, 116);
     const titleWidth = CONTENT_WIDTH - 138;
     const estimatedHeight =
       44 +
       doc.heightOfString(title, { width: titleWidth }) +
       (details ? doc.heightOfString(details, { width: CONTENT_WIDTH - 18 }) + 8 : 0) +
+      (linkedProjectLine
+        ? doc.heightOfString(linkedProjectLine, { width: CONTENT_WIDTH - 18 }) + 8
+        : 0) +
       bullets.length * 18;
 
     cursor = ensurePage(doc, cursor, estimatedHeight);
@@ -414,6 +423,13 @@ function drawExperienceSection(doc: PDFKit.PDFDocument, snapshot: ResumeSnapshot
     cursor = Math.max(doc.y, cursor + 16) + 4;
     if (details) {
       doc.fontSize(9.5).fillColor(COLORS.muted).text(details, PAGE_MARGIN_X + 18, cursor, {
+        width: CONTENT_WIDTH - 18,
+      });
+      cursor = doc.y + 5;
+    }
+
+    if (linkedProjectLine) {
+      doc.fontSize(9.5).fillColor(COLORS.subtle).text(linkedProjectLine, PAGE_MARGIN_X + 18, cursor, {
         width: CONTENT_WIDTH - 18,
       });
       cursor = doc.y + 5;

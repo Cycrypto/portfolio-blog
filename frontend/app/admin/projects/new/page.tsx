@@ -15,11 +15,12 @@ import { Switch } from "@/components/ui/switch"
 import { ArrowLeft, Save, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { createProject, getAdminPosts, uploadMedia } from "@/lib/api"
+import { createProject, getAdminPosts, getExperiences, uploadMedia } from "@/lib/api"
 import { AdminShell } from "@/components/admin/AdminShell"
 import { normalizeImageUrl } from "@/lib/utils/image"
 import { generateSlug } from "@/lib/utils/slug"
-import { Post } from "@/lib/types/api"
+import { Experience, Post } from "@/lib/types/api"
+import { formatExperiencePeriod } from "@/lib/experience/utils"
 
 export default function NewProject() {
   const router = useRouter()
@@ -47,10 +48,13 @@ export default function NewProject() {
   const [newResumeHighlight, setNewResumeHighlight] = useState("")
   const [linkedPostIds, setLinkedPostIds] = useState<number[]>([])
   const [adminPosts, setAdminPosts] = useState<Post[]>([])
+  const [experiences, setExperiences] = useState<Experience[]>([])
   const [postSearch, setPostSearch] = useState("")
   const [isLoadingPosts, setIsLoadingPosts] = useState(false)
+  const [isLoadingExperiences, setIsLoadingExperiences] = useState(false)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [experienceId, setExperienceId] = useState("none")
   const [githubUrl, setGithubUrl] = useState("")
   const [liveUrl, setLiveUrl] = useState("")
   const [images, setImages] = useState<string[]>([])
@@ -59,6 +63,23 @@ export default function NewProject() {
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const slugPreview = useMemo(() => generateSlug(title), [title])
+
+  useEffect(() => {
+    const loadExperiences = async () => {
+      try {
+        setIsLoadingExperiences(true)
+        const result = await getExperiences()
+        setExperiences(result)
+      } catch (loadError) {
+        console.error(loadError)
+        setError("연결 가능한 경험을 불러오지 못했습니다.")
+      } finally {
+        setIsLoadingExperiences(false)
+      }
+    }
+
+    void loadExperiences()
+  }, [])
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -173,6 +194,7 @@ export default function NewProject() {
         resumeHighlights,
         startDate,
         endDate,
+        experienceId: experienceId === "none" ? null : Number(experienceId),
         githubUrl,
         liveUrl,
         images: images.map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image)),
@@ -553,6 +575,24 @@ export default function NewProject() {
                         <SelectItem value="tool">도구/유틸리티</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="experience">연결 경험</Label>
+                    <Select value={experienceId} onValueChange={setExperienceId}>
+                      <SelectTrigger id="experience">
+                        <SelectValue placeholder={isLoadingExperiences ? "경험 불러오는 중..." : "경험 선택"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">연결 안 함</SelectItem>
+                        {experiences.map((experience) => (
+                          <SelectItem key={experience.id} value={String(experience.id)}>
+                            {experience.title} · {experience.organization} · {formatExperiencePeriod(experience.startDate, experience.endDate)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-2 text-xs text-neutral-slate-500">프로젝트는 하나의 경험에만 연결됩니다.</p>
                   </div>
 
                   <div>
