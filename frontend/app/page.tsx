@@ -18,7 +18,7 @@ import { FloatingNav } from '@/components/common/layout/floating-nav';
 import { SectionHeading } from '@/components/common/section-heading';
 import { SkillBadge } from '@/components/common/skill-badge';
 import { Timeline } from '@/components/home/timeline';
-import { ProjectCard } from '@/components/project/project-card';
+import { ProjectList } from '@/components/project/project-list';
 import { Button } from '@/components/ui/button';
 import { buildPortfolioSnapshot } from '@/lib/portfolio/build-portfolio-snapshot';
 import { absoluteUrl } from '@/lib/site';
@@ -431,27 +431,15 @@ export default async function PortfolioPage() {
         <div className="container">
           <SectionHeading
             title="대표 프로젝트"
-            subtitle="무엇을 만들었고 어떤 결과를 냈는지"
+            subtitle="프로젝트 제목과 연결된 기술 글로 보는 구현 기록"
           />
 
           {featuredProjects.length > 0 ? (
             <>
-              <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {featuredProjects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    id={project.id}
-                    slug={project.slug}
-                    title={project.title}
-                    description={project.description || project.problem || ''}
-                    tags={project.techStack || []}
-                    image={project.images?.[0]}
-                    demoUrl={project.liveUrl}
-                    repoUrl={project.githubUrl}
-                    trackingLocation="home_project_card"
-                  />
-                ))}
-              </div>
+              <ProjectList
+                projects={featuredProjects}
+                trackingLocation="home_projects"
+              />
               <div className="mt-10 text-center">
                 <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
                   <TrackedLink

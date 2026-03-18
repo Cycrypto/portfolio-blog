@@ -456,7 +456,10 @@ function drawExperienceSection(doc: PDFKit.PDFDocument, snapshot: ResumeSnapshot
 
 function projectBulletLines(project: Project): string[] {
   const summary = cleanText(
-    project.resumeSummary || project.description || project.problem || project.longDescription,
+    project.resumeSummary ||
+      project.description ||
+      project.problem ||
+      project.approach,
   );
 
   const bullets = toBulletItems(
