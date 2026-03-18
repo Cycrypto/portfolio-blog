@@ -52,6 +52,11 @@ export class NormalizeCommentRelations20260318000200
             WHERE "post_id" IS NULL
               AND NULLIF("postId", '') IS NOT NULL
               AND "postId" ~ '^[0-9]+$'
+              AND EXISTS (
+                SELECT 1
+                FROM "posts"
+                WHERE "posts"."id" = CAST("comments"."postId" AS integer)
+              )
           `);
         } else {
           await queryRunner.query(`
@@ -66,6 +71,11 @@ export class NormalizeCommentRelations20260318000200
             UPDATE "comments"
             SET "post_id" = "postId"
             WHERE "post_id" IS NULL
+              AND EXISTS (
+                SELECT 1
+                FROM "posts"
+                WHERE "posts"."id" = "comments"."postId"
+              )
           `);
         }
       }
@@ -165,6 +175,11 @@ export class NormalizeCommentRelations20260318000200
             SET "parent_id" = "parentId"
             WHERE "parent_id" IS NULL
               AND "parentId" IS NOT NULL
+              AND EXISTS (
+                SELECT 1
+                FROM "comments" parent_comment
+                WHERE parent_comment."id" = "comments"."parentId"
+              )
           `);
         }
       }
