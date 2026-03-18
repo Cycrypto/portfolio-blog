@@ -280,15 +280,15 @@ export default function AdminExperience() {
               <div className="py-12 text-center text-neutral-slate-500">등록된 경험이 없습니다</div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[1120px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>타입</TableHead>
-                      <TableHead>직책/역할</TableHead>
-                      <TableHead>조직</TableHead>
-                      <TableHead>기간</TableHead>
-                      <TableHead>설명</TableHead>
-                      <TableHead>연결 프로젝트</TableHead>
+                      <TableHead className="w-[140px] whitespace-nowrap">타입</TableHead>
+                      <TableHead className="w-[240px] whitespace-nowrap">직책/역할</TableHead>
+                      <TableHead className="w-[220px] whitespace-nowrap">조직</TableHead>
+                      <TableHead className="w-[170px] whitespace-nowrap">기간</TableHead>
+                      <TableHead className="min-w-[260px]">설명</TableHead>
+                      <TableHead className="w-[160px] whitespace-nowrap">연결 프로젝트</TableHead>
                       <TableHead className="text-right">작업</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -296,7 +296,13 @@ export default function AdminExperience() {
                     {experiences.map((exp) => (
                       <TableRow key={exp.id}>
                         <TableCell>
-                          <Badge className={cn("border", getExperienceTypeTheme(exp.type).badgeClassName)}>
+                          <Badge
+                            className={cn(
+                              "min-w-[88px] justify-center whitespace-nowrap px-3 py-1 text-[13px] leading-none",
+                              "border",
+                              getExperienceTypeTheme(exp.type).badgeClassName,
+                            )}
+                          >
                             {getExperienceTypeLabel(exp.type)}
                           </Badge>
                         </TableCell>
@@ -306,15 +312,14 @@ export default function AdminExperience() {
                           {formatExperiencePeriod(exp.startDate, exp.endDate)}
                         </TableCell>
                         <TableCell className="max-w-md truncate text-neutral-slate-600">{exp.description || "-"}</TableCell>
-                        <TableCell className="max-w-sm">
+                        <TableCell>
                           {(exp.linkedProjects || []).length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                              {(exp.linkedProjects || []).map((project) => (
-                                <Badge key={project.id} variant="outline" className="border-brand-blue-200 bg-brand-blue-50 text-brand-blue-700">
-                                  {project.title}
-                                </Badge>
-                              ))}
-                            </div>
+                            <Badge
+                              variant="outline"
+                              className="min-w-[56px] justify-center whitespace-nowrap border-brand-blue-200 bg-brand-blue-50 px-2.5 py-1 text-[13px] leading-none text-brand-blue-700"
+                            >
+                              {(exp.linkedProjects || []).length}개
+                            </Badge>
                           ) : (
                             <span className="text-sm text-neutral-slate-400">-</span>
                           )}
