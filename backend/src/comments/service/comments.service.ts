@@ -30,6 +30,8 @@ export interface AdminCommentListItem {
   updatedAt: Date;
 }
 
+type AdminPostMetadata = Pick<Post, 'id' | 'title' | 'slug'>;
+
 @Injectable()
 export class CommentsService {
   private static readonly BCRYPT_HASH_PATTERN =
@@ -106,15 +108,26 @@ export class CommentsService {
   async getAdminComments(postId?: number): Promise<AdminCommentListItem[]> {
     const comments = await this.commentRepository.find({
       where: postId !== undefined ? { postId } : undefined,
-      relations: { post: true },
       order: { createdAt: 'DESC' },
     });
 
+    const postIds = Array.from(
+      new Set(
+        comments
+          .map((comment) => Number(comment.postId))
+          .filter((commentPostId) => Number.isInteger(commentPostId)),
+      ),
+    );
+    const posts = await this.getAdminPostMetadata(postIds);
+    const postsById = new Map(posts.map((post) => [post.id, post]));
+
     return comments.map((comment) => ({
       id: comment.id,
-      postId: comment.postId,
-      postTitle: comment.post?.title ?? `포스트 #${comment.postId}`,
-      postSlug: comment.post?.slug ?? null,
+      postId: Number(comment.postId),
+      postTitle:
+        postsById.get(Number(comment.postId))?.title ??
+        `포스트 #${comment.postId}`,
+      postSlug: postsById.get(Number(comment.postId))?.slug ?? null,
       content: comment.content,
       authorName: comment.authorName,
       parentId: comment.parentId,
@@ -122,6 +135,20 @@ export class CommentsService {
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
     }));
+  }
+
+  private async getAdminPostMetadata(
+    postIds: number[],
+  ): Promise<AdminPostMetadata[]> {
+    if (postIds.length === 0) {
+      return [];
+    }
+
+    return this.postRepository
+      .createQueryBuilder('post')
+      .select(['post.id', 'post.title', 'post.slug'])
+      .where('post.id IN (:...postIds)', { postIds })
+      .getMany();
   }
 
   private async buildReplyTreeFromList(

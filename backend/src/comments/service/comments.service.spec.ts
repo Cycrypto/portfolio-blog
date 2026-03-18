@@ -20,6 +20,14 @@ function createQueryBuilderResult(comment: Comment | null) {
   };
 }
 
+function createPostMetadataQueryBuilderResult(posts: Partial<Post>[]) {
+  return {
+    select: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    getMany: jest.fn().mockResolvedValue(posts),
+  };
+}
+
 describe('CommentsService', () => {
   let service: CommentsService;
   let commentRepository: MockRepository<Comment>;
@@ -39,6 +47,7 @@ describe('CommentsService', () => {
     postRepository = {
       findOne: jest.fn(),
       update: jest.fn(),
+      createQueryBuilder: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -83,6 +92,13 @@ describe('CommentsService', () => {
   it('returns a flat admin comment list with post metadata', async () => {
     const createdAt = new Date('2026-03-18T00:00:00.000Z');
     const updatedAt = new Date('2026-03-18T01:00:00.000Z');
+    const postMetadataQueryBuilder = createPostMetadataQueryBuilderResult([
+      {
+        id: 42,
+        title: '테스트 포스트',
+        slug: 'test-post',
+      },
+    ]);
 
     commentRepository.find!.mockResolvedValue([
       {
@@ -94,21 +110,26 @@ describe('CommentsService', () => {
         isDeleted: true,
         createdAt,
         updatedAt,
-        post: {
-          id: 42,
-          title: '테스트 포스트',
-          slug: 'test-post',
-        },
       } as Comment,
     ]);
+    postRepository.createQueryBuilder!.mockReturnValue(postMetadataQueryBuilder);
 
     const comments = await service.getAdminComments(42);
 
     expect(commentRepository.find).toHaveBeenCalledWith({
       where: { postId: 42 },
-      relations: { post: true },
       order: { createdAt: 'DESC' },
     });
+    expect(postRepository.createQueryBuilder).toHaveBeenCalledWith('post');
+    expect(postMetadataQueryBuilder.select).toHaveBeenCalledWith([
+      'post.id',
+      'post.title',
+      'post.slug',
+    ]);
+    expect(postMetadataQueryBuilder.where).toHaveBeenCalledWith(
+      'post.id IN (:...postIds)',
+      { postIds: [42] },
+    );
     expect(comments).toEqual([
       {
         id: 'comment-admin-1',
