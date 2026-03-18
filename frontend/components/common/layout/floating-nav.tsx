@@ -67,12 +67,12 @@ export function FloatingNav() {
   return (
     <>
       <motion.div
-        className={`fixed left-1/2 top-4 z-50 -translate-x-1/2 ${isVisible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        className={`pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-3 ${isVisible ? "opacity-100" : "opacity-0"}`}
         initial={{ y: -100 }}
         animate={{ y: isVisible ? 0 : -100 }}
         transition={{ duration: 0.25 }}
       >
-        <div className="surface-default relative rounded-full px-3 py-2 shadow-lg">
+        <div className="surface-default pointer-events-auto relative w-fit max-w-full rounded-full px-3 py-2 shadow-lg">
 
           {isMobile ? (
             <div className="relative">
@@ -128,14 +128,14 @@ export function FloatingNav() {
             </div>
           ) : (
             <div className="relative flex items-center gap-1">
-              <Link href="/" className="mr-2 px-2 font-semibold text-neutral-slate-800">
+              <Link href="/" className="mr-2 shrink-0 whitespace-nowrap px-2 font-semibold text-neutral-slate-800">
                 박준하 블로그
               </Link>
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="rounded-full px-3 py-1 text-sm font-medium text-neutral-slate-600 transition-colors hover:bg-brand-blue-50 hover:text-brand-blue-700"
+                  className="shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium text-neutral-slate-600 transition-colors hover:bg-brand-blue-50 hover:text-brand-blue-700"
                   onClick={() => handleNavClick(item.href)}
                 >
                   {item.name}
@@ -144,7 +144,7 @@ export function FloatingNav() {
               <Button
                 size="sm"
                 variant="outline"
-                className="ml-1 border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
+                className="ml-1 shrink-0 whitespace-nowrap border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
                 asChild
               >
                 <a href="/api/resume">
@@ -160,7 +160,7 @@ export function FloatingNav() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="ml-1 border-brand-blue-200 bg-brand-blue-50 text-brand-blue-700 hover:bg-brand-blue-100"
+                        className="ml-1 shrink-0 whitespace-nowrap border-brand-blue-200 bg-brand-blue-50 text-brand-blue-700 hover:bg-brand-blue-100"
                       >
                         <Settings className="h-4 w-4 mr-1" />
                         관리
