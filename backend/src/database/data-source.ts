@@ -43,7 +43,7 @@ function parseBooleanEnv(value: string | undefined, defaultValue: boolean): bool
 
 const isProduction = process.env.NODE_ENV === "production";
 
-export const AppDataSource = new DataSource({
+const AppDataSource = new DataSource({
     type: "postgres",
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT || "5432", 10),
