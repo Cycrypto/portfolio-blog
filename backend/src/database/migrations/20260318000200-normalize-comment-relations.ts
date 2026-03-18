@@ -37,17 +37,45 @@ export class NormalizeCommentRelations20260318000200
           legacyPostIdType === 'text'
         ) {
           await queryRunner.query(`
+            DELETE FROM "comments"
+            WHERE NULLIF("postId", '') IS NULL
+              OR "postId" !~ '^[0-9]+$'
+              OR NOT EXISTS (
+                SELECT 1
+                FROM "posts"
+                WHERE "posts"."id" = CAST("comments"."postId" AS integer)
+              )
+          `);
+          await queryRunner.query(`
             UPDATE "comments"
             SET "post_id" = CAST("postId" AS integer)
             WHERE "post_id" IS NULL
               AND NULLIF("postId", '') IS NOT NULL
               AND "postId" ~ '^[0-9]+$'
+              AND EXISTS (
+                SELECT 1
+                FROM "posts"
+                WHERE "posts"."id" = CAST("comments"."postId" AS integer)
+              )
           `);
         } else {
+          await queryRunner.query(`
+            DELETE FROM "comments"
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM "posts"
+              WHERE "posts"."id" = "comments"."postId"
+            )
+          `);
           await queryRunner.query(`
             UPDATE "comments"
             SET "post_id" = "postId"
             WHERE "post_id" IS NULL
+              AND EXISTS (
+                SELECT 1
+                FROM "posts"
+                WHERE "posts"."id" = "comments"."postId"
+              )
           `);
         }
       }
@@ -147,6 +175,11 @@ export class NormalizeCommentRelations20260318000200
             SET "parent_id" = "parentId"
             WHERE "parent_id" IS NULL
               AND "parentId" IS NOT NULL
+              AND EXISTS (
+                SELECT 1
+                FROM "comments" parent_comment
+                WHERE parent_comment."id" = "comments"."parentId"
+              )
           `);
         }
       }
