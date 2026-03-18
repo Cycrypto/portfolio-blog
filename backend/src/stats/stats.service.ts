@@ -19,10 +19,15 @@ export class StatsService {
   ) {}
 
   async getTotals() {
-    const [posts, projects, comments, viewsResult] = await Promise.all([
+    const [posts, projects, commentsResult, viewsResult] = await Promise.all([
       this.postRepository.count(),
       this.projectRepository.count(),
-      this.commentRepository.count({ where: { isDeleted: false } }),
+      this.commentRepository
+        .createQueryBuilder('comment')
+        .innerJoin('comment.post', 'post')
+        .select('COUNT(comment.id)', 'totalComments')
+        .where('comment.isDeleted = :isDeleted', { isDeleted: false })
+        .getRawOne<{ totalComments: string | null }>(),
       this.postRepository
         .createQueryBuilder('post')
         .select('COALESCE(SUM(post.views), 0)', 'totalViews')
@@ -32,7 +37,7 @@ export class StatsService {
     return {
       posts,
       projects,
-      comments,
+      comments: Number(commentsResult?.totalComments ?? 0),
       views: Number(viewsResult?.totalViews ?? 0),
     };
   }

@@ -72,7 +72,7 @@ export default function AdminDashboard() {
     {
       title: '총 댓글',
       value: stats?.totals.comments ?? '-',
-      description: '삭제 제외',
+      description: '삭제된 댓글 제외',
       icon: MessageSquare,
       link: '/admin/comments',
     },
@@ -131,10 +131,18 @@ export default function AdminDashboard() {
         <CardHeader className="border-b border-brand-blue-100">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <CardTitle className="text-xl text-neutral-slate-800">행동 통계</CardTitle>
-              <CardDescription>Umami에서 프로젝트 관심, 글 몰입, 문의 전환 퍼널을 확인합니다.</CardDescription>
+              <CardTitle className="text-xl text-neutral-slate-800">
+                행동 통계
+              </CardTitle>
+              <CardDescription>
+                Umami에서 프로젝트 관심, 글 몰입, 문의 전환 퍼널을 확인합니다.
+              </CardDescription>
             </div>
-            <Button asChild variant="outline" className="border-brand-blue-200 text-brand-blue-700">
+            <Button
+              asChild
+              variant="outline"
+              className="border-brand-blue-200 text-brand-blue-700"
+            >
               <Link href="/admin/analytics">
                 열기
                 <ArrowUpRight className="ml-2 h-4 w-4" />
@@ -150,8 +158,12 @@ export default function AdminDashboard() {
                   <BarChart3 className="h-4 w-4 text-brand-blue-700" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-neutral-slate-800">프로젝트 관심</p>
-                  <p className="mt-1 text-xs text-neutral-slate-500">카드 클릭, 상세 진입, 서비스/코드 보기</p>
+                  <p className="text-sm font-medium text-neutral-slate-800">
+                    프로젝트 관심
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-slate-500">
+                    카드 클릭, 상세 진입, 서비스/코드 보기
+                  </p>
                 </div>
               </div>
             </div>
@@ -161,8 +173,12 @@ export default function AdminDashboard() {
                   <Eye className="h-4 w-4 text-brand-blue-700" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-neutral-slate-800">콘텐츠 몰입</p>
-                  <p className="mt-1 text-xs text-neutral-slate-500">검색, 태그 필터, 읽기 완료, 공유, 좋아요</p>
+                  <p className="text-sm font-medium text-neutral-slate-800">
+                    콘텐츠 몰입
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-slate-500">
+                    검색, 태그 필터, 읽기 완료, 공유, 좋아요
+                  </p>
                 </div>
               </div>
             </div>
@@ -172,8 +188,12 @@ export default function AdminDashboard() {
                   <MessageSquare className="h-4 w-4 text-brand-blue-700" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-neutral-slate-800">리드 전환</p>
-                  <p className="mt-1 text-xs text-neutral-slate-500">문의 폼 시작과 실제 문의 성공 분리 추적</p>
+                  <p className="text-sm font-medium text-neutral-slate-800">
+                    리드 전환
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-slate-500">
+                    문의 폼 시작과 실제 문의 성공 분리 추적
+                  </p>
                 </div>
               </div>
             </div>
