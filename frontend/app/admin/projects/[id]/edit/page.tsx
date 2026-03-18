@@ -15,7 +15,7 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ArrowLeft, Save, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
 import Link from "next/link"
-import { getAdminPosts, getExperiences, getProject, updateProject, uploadMedia } from "@/lib/api"
+import { getAllAdminPosts, getExperiences, getProject, updateProject, uploadMedia } from "@/lib/api"
 import { Experience, Post, Project } from "@/lib/types/api"
 import { AdminShell } from "@/components/admin/AdminShell"
 import { normalizeImageUrl } from "@/lib/utils/image"
@@ -129,7 +129,7 @@ export default function EditProject() {
     const loadPosts = async () => {
       try {
         setIsLoadingPosts(true)
-        const result = await getAdminPosts(1, 200)
+        const result = await getAllAdminPosts()
         setAdminPosts(result.posts || [])
       } catch (loadError) {
         console.error(loadError)
@@ -280,7 +280,7 @@ export default function EditProject() {
               <Card>
                 <CardHeader>
                   <CardTitle>기본 정보</CardTitle>
-                  <CardDescription>프로젝트의 기본 정보를 입력하세요</CardDescription>
+                  <CardDescription>프로젝트명과 짧은 맥락만 먼저 정리하세요</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -300,10 +300,10 @@ export default function EditProject() {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">간단한 설명</Label>
+                    <Label htmlFor="description">짧은 소개 (선택)</Label>
                     <Textarea
                       id="description"
-                      placeholder="프로젝트에 대한 간단한 설명을 입력하세요"
+                      placeholder="비워두면 연결된 글 제목이 프로젝트 맥락을 대신합니다"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={3}
@@ -311,14 +311,13 @@ export default function EditProject() {
                   </div>
 
                   <div>
-                    <Label htmlFor="long-description">상세 설명</Label>
+                    <Label htmlFor="long-description">추가 메모 (선택)</Label>
                     <Textarea
                       id="long-description"
-                      placeholder="프로젝트에 대한 상세한 설명을 마크다운으로 작성하세요"
+                      placeholder="상세 설명을 길게 적지 않아도 됩니다. 필요할 때만 보조 메모를 남기세요"
                       value={longDescription}
                       onChange={(e) => setLongDescription(e.target.value)}
-                      rows={10}
-                      className="font-mono"
+                      rows={4}
                     />
                   </div>
                 </CardContent>
@@ -458,7 +457,7 @@ export default function EditProject() {
               <Card>
                 <CardHeader>
                   <CardTitle>연결할 블로그 글</CardTitle>
-                  <CardDescription>이미 다른 프로젝트에 연결된 글은 선택할 수 없습니다</CardDescription>
+                  <CardDescription>상세 설명 대신 이 글 제목들이 프로젝트를 설명합니다</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Input

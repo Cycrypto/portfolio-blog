@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { ProjectGallery } from '@/components/project/project-gallery';
 import { RelatedProjects } from '@/components/project/related-projects';
@@ -58,15 +57,24 @@ async function getProjectOr404(identifier: string) {
   }
 }
 
+function getLinkedPostSummary(project: Awaited<ReturnType<typeof getProject>>) {
+  return (project.linkedPosts || [])
+    .filter((post) => post.status === 'published')
+    .slice(0, 2)
+    .map((post) => post.title)
+    .join(', ');
+}
+
 export async function generateMetadata({
   params,
 }: ProjectPageProps): Promise<Metadata> {
   const { slug } = await params;
   const project = await getProjectOr404(slug);
+  const linkedPostSummary = getLinkedPostSummary(project);
   const description =
     project.description ||
     project.problem ||
-    project.longDescription ||
+    linkedPostSummary ||
     `${project.title} 프로젝트 소개`;
   const image = normalizeImageUrl(project.images?.[0]);
   const canonicalPath = getProjectPath(project);
@@ -96,17 +104,15 @@ export async function generateMetadata({
 function DetailSection({
   title,
   content,
-  fallback,
 }: {
   title: string;
-  content?: string;
-  fallback: string;
+  content: string;
 }) {
   return (
     <section className="rounded-2xl border border-brand-blue-200/70 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-bold text-neutral-slate-900">{title}</h2>
       <p className="mt-4 whitespace-pre-line text-sm leading-7 text-neutral-slate-700">
-        {content?.trim() || fallback}
+        {content}
       </p>
     </section>
   );
@@ -128,6 +134,27 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const projectId = String(project.id ?? slug);
   const linkedPublishedPosts = (project.linkedPosts || []).filter(
     (post) => post.status === 'published',
+  );
+  const detailSections = [
+    {
+      title: '문제',
+      content: project.problem?.trim() || '',
+    },
+    {
+      title: '내 역할',
+      content: project.role?.trim() || '',
+    },
+    {
+      title: '접근',
+      content: project.approach?.trim() || '',
+    },
+    {
+      title: '성과',
+      content: project.outcomes?.trim() || '',
+    },
+  ].filter(
+    (section): section is { title: string; content: string } =>
+      section.content.length > 0,
   );
 
   return (
@@ -230,6 +257,60 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               </div>
             </section>
 
+            {linkedPublishedPosts.length > 0 ? (
+              <section className="rounded-2xl border border-brand-blue-200/70 bg-white p-6 shadow-sm">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-blue-500">
+                      Readings
+                    </p>
+                    <h2 className="mt-2 text-xl font-bold text-neutral-slate-900">
+                      이 프로젝트를 설명하는 글
+                    </h2>
+                  </div>
+                  <p className="text-sm text-neutral-slate-500">
+                    공개 글 {linkedPublishedPosts.length}개
+                  </p>
+                </div>
+                <div className="mt-5 divide-y divide-brand-blue-100">
+                  {linkedPublishedPosts.map((post) => (
+                    <TrackedLink
+                      key={post.id}
+                      href={getPostPath({ id: post.id, slug: post.slug })}
+                      className="group flex items-start justify-between gap-4 py-4"
+                      eventName="cta_click"
+                      eventPayload={{
+                        location: 'project_detail_post',
+                        target: 'blog',
+                        content_id: post.slug || String(post.id),
+                      }}
+                    >
+                      <div className="min-w-0">
+                        <h3 className="text-base font-semibold text-neutral-slate-900 transition-colors group-hover:text-brand-blue-700">
+                          {post.title}
+                        </h3>
+                        {post.excerpt ? (
+                          <p className="mt-2 line-clamp-2 text-sm leading-6 text-neutral-slate-600">
+                            {post.excerpt}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-shrink-0 flex-col items-end gap-2 text-xs text-neutral-slate-400">
+                        {post.publishDate ? (
+                          <span>
+                            {new Date(post.publishDate).toLocaleDateString(
+                              'ko-KR',
+                            )}
+                          </span>
+                        ) : null}
+                        {post.readTime ? <span>{post.readTime}분 읽기</span> : null}
+                      </div>
+                    </TrackedLink>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             {images.length > 0 ? (
               <ProjectGallery
                 projectId={projectId}
@@ -238,28 +319,17 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               />
             ) : null}
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <DetailSection
-                title="문제"
-                content={project.problem || project.description}
-                fallback="이 프로젝트가 해결하려던 문제를 정리 중입니다."
-              />
-              <DetailSection
-                title="내 역할"
-                content={project.role}
-                fallback="프로젝트에서 맡았던 역할을 정리 중입니다."
-              />
-              <DetailSection
-                title="접근"
-                content={project.approach || project.longDescription}
-                fallback="설계와 구현 접근 방식을 정리 중입니다."
-              />
-              <DetailSection
-                title="성과"
-                content={project.outcomes}
-                fallback="결과와 회고를 정리 중입니다."
-              />
-            </div>
+            {detailSections.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2">
+                {detailSections.map((section) => (
+                  <DetailSection
+                    key={section.title}
+                    title={section.title}
+                    content={section.content}
+                  />
+                ))}
+              </div>
+            ) : null}
 
             {(project.impactMetrics || []).length > 0 ? (
               <section className="rounded-2xl border border-brand-blue-200/70 bg-white p-6 shadow-sm">
@@ -317,61 +387,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   </Link>
                 </div>
               </section>
-            ) : null}
-
-            {linkedPublishedPosts.length > 0 ? (
-              <section className="rounded-2xl border border-brand-blue-200/70 bg-white p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-neutral-slate-900">
-                  관련 기술 글
-                </h2>
-                <p className="mt-3 text-sm leading-7 text-neutral-slate-600">
-                  이 프로젝트 구현 과정과 연결된 공개 기술 글입니다.
-                </p>
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {linkedPublishedPosts.map((post) => (
-                    <Link
-                      key={post.id}
-                      href={getPostPath({ id: post.id, slug: post.slug })}
-                      className="rounded-xl border border-brand-blue-200/70 p-4 transition-colors hover:bg-brand-blue-50/60"
-                    >
-                      <h3 className="font-semibold text-neutral-slate-900">
-                        {post.title}
-                      </h3>
-                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-neutral-slate-600">
-                        {post.excerpt || '요약을 준비 중입니다.'}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-slate-500">
-                        {post.publishDate ? (
-                          <span className="rounded-full border border-brand-blue-200 bg-white px-2 py-1">
-                            {new Date(post.publishDate).toLocaleDateString(
-                              'ko-KR',
-                            )}
-                          </span>
-                        ) : null}
-                        {post.readTime ? (
-                          <span className="rounded-full border border-brand-blue-200 bg-white px-2 py-1">
-                            {post.readTime}분 읽기
-                          </span>
-                        ) : null}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            {project.longDescription ? (
-              <>
-                <Separator />
-                <section className="rounded-2xl border border-brand-blue-200/70 bg-white p-6 shadow-sm">
-                  <h2 className="text-xl font-bold text-neutral-slate-900">
-                    추가 설명
-                  </h2>
-                  <p className="mt-4 whitespace-pre-line text-sm leading-7 text-neutral-slate-700">
-                    {project.longDescription}
-                  </p>
-                </section>
-              </>
             ) : null}
           </div>
 

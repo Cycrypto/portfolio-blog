@@ -15,6 +15,8 @@ import {
 } from '../../posts/exceptions';
 import { ApiError } from '../client/base';
 
+const ADMIN_POSTS_PAGE_SIZE = 100;
+
 export async function getPosts(
   page: number = 1,
   pageSize: number = 9,
@@ -43,7 +45,7 @@ export async function getPosts(
 
 export async function getAdminPosts(
   page: number = 1,
-  pageSize: number = 100,
+  pageSize: number = ADMIN_POSTS_PAGE_SIZE,
 ): Promise<{ posts: Post[]; totalCount: number }> {
   try {
     const result = await apiRequest<{
@@ -62,6 +64,39 @@ export async function getAdminPosts(
     }
     throw error;
   }
+}
+
+export async function getAllAdminPosts(): Promise<{
+  posts: Post[];
+  totalCount: number;
+}> {
+  let page = 1;
+  let mergedPosts: Post[] = [];
+  let totalCount = 0;
+
+  while (true) {
+    const { posts, totalCount: nextTotalCount } = await getAdminPosts(
+      page,
+      ADMIN_POSTS_PAGE_SIZE,
+    );
+
+    mergedPosts = [...mergedPosts, ...posts];
+    totalCount = nextTotalCount;
+
+    if (
+      mergedPosts.length >= totalCount ||
+      posts.length < ADMIN_POSTS_PAGE_SIZE
+    ) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return {
+    posts: mergedPosts,
+    totalCount,
+  };
 }
 
 export async function createPost(postData: CreatePostRequest): Promise<Post> {

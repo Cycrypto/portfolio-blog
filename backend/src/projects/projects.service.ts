@@ -167,7 +167,7 @@ export class ProjectsService {
 
   async findAll(): Promise<Project[]> {
     const projects = await this.projectRepository.find({
-      relations: ['experience'],
+      relations: ['experience', 'posts'],
       order: {
         isFeatured: 'DESC',
         featuredOrder: 'ASC',
@@ -182,6 +182,13 @@ export class ProjectsService {
           project.slug = generateSlug(project.title);
           shouldSave = true;
         }
+
+        project.posts =
+          project.posts?.sort(
+            (a, b) =>
+              new Date(b.publishDate || 0).getTime() -
+              new Date(a.publishDate || 0).getTime(),
+          ) || [];
 
         shouldSave =
           normalizeUrlFieldsInPlace(project, ['githubUrl', 'liveUrl']) ||

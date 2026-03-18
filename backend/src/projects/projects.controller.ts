@@ -6,6 +6,7 @@ import { ProjectsService } from './projects.service';
 import { JwtRoleGuard } from '../auth/common/jwt-role.guard';
 import { Roles } from '../auth/decorator/auth-role.decorator';
 import { Project } from './project.entity';
+import { Post as BlogPost } from '../posts/entity/post.entity';
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -77,6 +78,8 @@ export class ProjectsController {
   }
 
   private toProjectResponse(project: Project) {
+    const linkedPosts = this.toLinkedPostResponse(project.posts);
+
     return {
       id: project.id,
       title: project.title,
@@ -114,7 +117,18 @@ export class ProjectsController {
             endDate: project.experience.endDate,
           }
         : null,
-      linkedPosts: (project.posts || []).map((post) => ({
+      linkedPosts,
+    };
+  }
+
+  private toLinkedPostResponse(posts?: BlogPost[]) {
+    return [...(posts || [])]
+      .sort(
+        (a, b) =>
+          new Date(b.publishDate || 0).getTime() -
+          new Date(a.publishDate || 0).getTime(),
+      )
+      .map((post) => ({
         id: post.id,
         title: post.title,
         slug: post.slug,
@@ -124,7 +138,6 @@ export class ProjectsController {
         readTime: post.readTime,
         status: post.status,
         tags: post.tags ? post.tags.map((tag) => tag.name) : [],
-      })),
-    };
+      }));
   }
 }
