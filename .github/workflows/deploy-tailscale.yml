@@ -101,5 +101,8 @@ jobs:
               DC="docker-compose"
             fi
 
-            $DC -f "${{ env.COMPOSE_FILE }}" up -d --build
+            $DC -f "${{ env.COMPOSE_FILE }}" build backend frontend
+            $DC -f "${{ env.COMPOSE_FILE }}" up -d db minio
+            $DC -f "${{ env.COMPOSE_FILE }}" run --rm backend npm run migration:run:prod
+            $DC -f "${{ env.COMPOSE_FILE }}" up -d backend frontend minio minio-init
             $DC -f "${{ env.COMPOSE_FILE }}" ps
