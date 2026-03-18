@@ -21,6 +21,24 @@ export async function getComments(postId: string): Promise<{success: boolean, da
   }
 }
 
+export async function getAdminComments(postId?: string | number): Promise<Comment[]> {
+  try {
+    const query = postId !== undefined && postId !== null && String(postId).trim()
+      ? `?postId=${encodeURIComponent(String(postId).trim())}`
+      : '';
+    const result = await apiRequest<{ data: { data: Comment[] } }>(
+      `/comments/admin/list${query}`,
+      {
+        cache: 'no-store',
+      }
+    );
+
+    return result.data?.data || [];
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function createComment(commentData: CreateCommentRequest): Promise<Comment> {
   if (!commentData.content?.trim()) {
     throw new CommentValidationException('content', commentData.content);

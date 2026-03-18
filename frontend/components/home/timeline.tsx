@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { ChevronDown, ChevronUp } from "lucide-react"
@@ -13,6 +14,7 @@ import {
   sortExperiences,
 } from "@/lib/experience/utils"
 import { getExperiences, Experience } from "@/lib/api"
+import { getProjectPath } from "@/lib/projects/project-url"
 import { cn } from "@/lib/utils"
 
 interface TimelineProps {
@@ -212,6 +214,22 @@ export function Timeline({ initialExperiences = [] }: TimelineProps) {
                     <h3 className="text-xl font-bold text-neutral-slate-800">{experience.title}</h3>
                     <div className="mb-4 text-neutral-slate-600">{experience.organization}</div>
                     <p className="text-neutral-slate-700">{experience.description || "설명을 준비 중입니다."}</p>
+                    {(experience.linkedProjects || []).length > 0 ? (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-xs font-semibold tracking-[0.12em] text-neutral-slate-500">연결 프로젝트</p>
+                        <div className="flex flex-wrap gap-2">
+                          {(experience.linkedProjects || []).map((project) => (
+                            <Link
+                              key={project.id}
+                              href={getProjectPath({ id: project.id, slug: project.slug })}
+                              className="rounded-full border border-brand-blue-200 bg-white px-3 py-1 text-sm font-medium text-brand-blue-700 transition-colors hover:bg-brand-blue-50"
+                            >
+                              {project.title}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </motion.div>
 

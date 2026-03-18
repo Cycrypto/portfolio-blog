@@ -3,6 +3,23 @@ import { ApiError } from '../client/base'
 import { Project, CreateProjectRequest, UpdateProjectRequest } from '../../types/api'
 import { normalizeUrlFields } from '@/lib/utils/url'
 
+function normalizeLinkedExperience(raw: any) {
+  if (!raw) {
+    return null
+  }
+
+  const type = raw?.type === 'team_project' || raw?.type === 'club' ? raw.type : 'career'
+
+  return {
+    id: Number(raw?.id || 0),
+    type,
+    title: raw?.title || '',
+    organization: raw?.organization || '',
+    startDate: raw?.startDate || '',
+    endDate: raw?.endDate || undefined,
+  }
+}
+
 export async function getProjects(): Promise<Project[]> {
   const result = await apiRequest<{ data: Project[] }>('/projects', {
     requireAuth: false,
@@ -48,5 +65,11 @@ export async function deleteProject(id: string): Promise<void> {
 }
 
 function normalizeProjectLinks<T extends Partial<Project>>(project: T): T {
-  return normalizeUrlFields(project, ['githubUrl', 'liveUrl'])
+  const normalized = normalizeUrlFields(project, ['githubUrl', 'liveUrl'])
+
+  if ('experience' in normalized) {
+    ;(normalized as Project).experience = normalizeLinkedExperience((normalized as Project).experience)
+  }
+
+  return normalized
 }

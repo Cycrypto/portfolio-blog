@@ -12,6 +12,17 @@ export interface LinkedProjectSummary {
   slug?: string;
   category?: string;
   status?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface LinkedExperienceSummary {
+  id: number;
+  type: ExperienceType;
+  title: string;
+  organization: string;
+  startDate: string;
+  endDate?: string;
 }
 
 export interface LinkedPostSummary {
@@ -112,7 +123,9 @@ export interface UpdatePostRequest {
 
 export interface Comment {
   id: string;
-  postId: string;
+  postId: string | number;
+  postTitle?: string;
+  postSlug?: string | null;
   content: string;
   authorName: string;
   parentId?: string;
@@ -166,6 +179,8 @@ export interface Project {
   endDate?: string;
   githubUrl?: string;
   liveUrl?: string;
+  experienceId?: number | null;
+  experience?: LinkedExperienceSummary | null;
   images: string[];
   linkedPosts?: LinkedPostSummary[];
 }
@@ -194,6 +209,7 @@ export interface CreateProjectRequest {
   endDate?: string;
   githubUrl?: string;
   liveUrl?: string;
+  experienceId?: number | null;
   images?: string[];
   linkedPostIds?: number[];
 }
@@ -210,6 +226,7 @@ export interface Experience {
   startDate: string;
   endDate?: string;
   description?: string;
+  linkedProjects?: LinkedProjectSummary[];
 }
 
 export interface CreateExperienceRequest {
@@ -219,6 +236,7 @@ export interface CreateExperienceRequest {
   startDate: string;
   endDate?: string;
   description?: string;
+  linkedProjectIds?: number[];
 }
 
 export interface UpdateExperienceRequest extends Partial<CreateExperienceRequest> {}

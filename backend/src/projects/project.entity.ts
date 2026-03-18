@@ -1,5 +1,13 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Post } from '../posts/entity/post.entity';
+import { Experience } from '../experience/experience.entity';
 
 @Entity('projects')
 export class Project {
@@ -77,6 +85,16 @@ export class Project {
 
   @Column('text', { array: true, default: '{}' })
   images: string[];
+
+  @Column({ type: 'integer', nullable: true })
+  experienceId: number | null;
+
+  @ManyToOne(() => Experience, (experience) => experience.projects, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'experienceId' })
+  experience?: Experience | null;
 
   @OneToMany(() => Post, (post) => post.project)
   posts?: Post[];

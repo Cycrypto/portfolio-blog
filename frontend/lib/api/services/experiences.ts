@@ -6,8 +6,23 @@ import {
   UpdateExperienceRequest,
 } from '../../types/api'
 
+function normalizeLinkedProject(raw: any) {
+  return {
+    id: Number(raw?.id || 0),
+    title: raw?.title || '',
+    slug: raw?.slug || undefined,
+    category: raw?.category || undefined,
+    status: raw?.status || undefined,
+    startDate: raw?.startDate || undefined,
+    endDate: raw?.endDate || undefined,
+  }
+}
+
 function normalizeExperience(raw: any): Experience {
   const type = (raw?.type || 'career') as ExperienceType
+  const linkedProjects = Array.isArray(raw?.linkedProjects ?? raw?.projects)
+    ? (raw?.linkedProjects ?? raw?.projects).map(normalizeLinkedProject)
+    : []
 
   return {
     id: Number(raw?.id || 0),
@@ -17,6 +32,7 @@ function normalizeExperience(raw: any): Experience {
     startDate: raw?.startDate || '',
     endDate: raw?.endDate || undefined,
     description: raw?.description || undefined,
+    linkedProjects,
   }
 }
 

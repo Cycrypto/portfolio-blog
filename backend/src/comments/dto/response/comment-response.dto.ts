@@ -19,3 +19,20 @@ export class GetCommentsResponseDto {
     success: boolean;
     data: CommentResponseDto[];
 }
+
+export class AdminCommentResponseDto {
+    id: string;
+    postId: number;
+    postTitle: string;
+    postSlug?: string | null;
+    content: string;
+    authorName: string;
+    parentId?: string;
+    isDeleted: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export class GetAdminCommentsResponseDto {
+    data: AdminCommentResponseDto[];
+}

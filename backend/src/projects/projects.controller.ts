@@ -103,6 +103,17 @@ export class ProjectsController {
       githubUrl: project.githubUrl,
       liveUrl: project.liveUrl,
       images: project.images || [],
+      experienceId: project.experienceId ?? null,
+      experience: project.experience
+        ? {
+            id: project.experience.id,
+            type: project.experience.type,
+            title: project.experience.title,
+            organization: project.experience.organization,
+            startDate: project.experience.startDate,
+            endDate: project.experience.endDate,
+          }
+        : null,
       linkedPosts: (project.posts || []).map((post) => ({
         id: post.id,
         title: post.title,

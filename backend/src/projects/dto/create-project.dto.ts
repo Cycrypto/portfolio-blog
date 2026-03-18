@@ -105,6 +105,11 @@ export class CreateProjectDto {
   liveUrl?: string;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  experienceId?: number | null;
+
+  @IsOptional()
   @IsArray()
   images?: string[];
 

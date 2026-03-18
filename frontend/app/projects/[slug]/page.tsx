@@ -10,6 +10,10 @@ import { TrackedLink } from '@/components/analytics/TrackedLink';
 import { ProjectGallery } from '@/components/project/project-gallery';
 import { RelatedProjects } from '@/components/project/related-projects';
 import { getProject } from '@/lib/api';
+import {
+  formatExperiencePeriod,
+  getExperienceTypeLabel,
+} from '@/lib/experience/utils';
 import { getPostPath } from '@/lib/posts/post-url';
 import { getProjectPath } from '@/lib/projects/project-url';
 import { absoluteUrl } from '@/lib/site';
@@ -226,7 +230,13 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               </div>
             </section>
 
-            {images.length > 0 ? <ProjectGallery images={images} title={project.title} /> : null}
+            {images.length > 0 ? (
+              <ProjectGallery
+                projectId={projectId}
+                images={images}
+                title={project.title}
+              />
+            ) : null}
 
             <div className="grid gap-6 md:grid-cols-2">
               <DetailSection
@@ -266,6 +276,45 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                       {metric}
                     </Badge>
                   ))}
+                </div>
+              </section>
+            ) : null}
+
+            {project.experience ? (
+              <section className="rounded-2xl border border-brand-blue-200/70 bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-neutral-slate-900">
+                  연결된 경험
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-neutral-slate-600">
+                  이 프로젝트가 속한 경력 또는 활동 경험입니다.
+                </p>
+                <div className="mt-5 rounded-xl border border-brand-blue-200/70 bg-brand-blue-50/40 p-5">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Badge
+                      variant="secondary"
+                      className="bg-white text-brand-blue-700"
+                    >
+                      {getExperienceTypeLabel(project.experience.type)}
+                    </Badge>
+                    <span className="text-sm text-neutral-slate-500">
+                      {formatExperiencePeriod(
+                        project.experience.startDate,
+                        project.experience.endDate,
+                      )}
+                    </span>
+                  </div>
+                  <h3 className="mt-3 text-lg font-semibold text-neutral-slate-900">
+                    {project.experience.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-neutral-slate-600">
+                    {project.experience.organization}
+                  </p>
+                  <Link
+                    href="/#experience"
+                    className="mt-4 inline-flex text-sm font-medium text-brand-blue-700 transition-colors hover:text-brand-blue-800"
+                  >
+                    홈 타임라인에서 보기
+                  </Link>
                 </div>
               </section>
             ) : null}
