@@ -37,6 +37,16 @@ export class NormalizeCommentRelations20260318000200
           legacyPostIdType === 'text'
         ) {
           await queryRunner.query(`
+            DELETE FROM "comments"
+            WHERE NULLIF("postId", '') IS NULL
+              OR "postId" !~ '^[0-9]+$'
+              OR NOT EXISTS (
+                SELECT 1
+                FROM "posts"
+                WHERE "posts"."id" = CAST("comments"."postId" AS integer)
+              )
+          `);
+          await queryRunner.query(`
             UPDATE "comments"
             SET "post_id" = CAST("postId" AS integer)
             WHERE "post_id" IS NULL
@@ -44,6 +54,14 @@ export class NormalizeCommentRelations20260318000200
               AND "postId" ~ '^[0-9]+$'
           `);
         } else {
+          await queryRunner.query(`
+            DELETE FROM "comments"
+            WHERE NOT EXISTS (
+              SELECT 1
+              FROM "posts"
+              WHERE "posts"."id" = "comments"."postId"
+            )
+          `);
           await queryRunner.query(`
             UPDATE "comments"
             SET "post_id" = "postId"
