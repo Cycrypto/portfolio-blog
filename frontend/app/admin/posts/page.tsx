@@ -44,7 +44,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { getAdminPosts, deletePost, Post } from '@/lib/api';
+import { getAllAdminPosts, deletePost, Post } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { getPostPath } from '@/lib/posts/post-url';
@@ -64,24 +64,10 @@ export default function AdminPosts() {
       setLoading(true);
       setError(null);
 
-      const pageSize = 100;
-      let page = 1;
-      let mergedPosts: Post[] = [];
-      let nextTotalCount = 0;
+      const { posts: list, totalCount: nextTotalCount } =
+        await getAllAdminPosts();
 
-      while (true) {
-        const { posts: list, totalCount } = await getAdminPosts(page, pageSize);
-        mergedPosts = [...mergedPosts, ...list];
-        nextTotalCount = totalCount;
-
-        if (mergedPosts.length >= totalCount || list.length < pageSize) {
-          break;
-        }
-
-        page += 1;
-      }
-
-      setPosts(mergedPosts);
+      setPosts(list);
       setTotalCount(nextTotalCount);
     } catch (err) {
       setError('게시물을 불러오는데 실패했습니다.');

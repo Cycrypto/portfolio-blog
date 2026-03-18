@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { ArrowLeft, Save, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { createProject, getAdminPosts, getExperiences, uploadMedia } from "@/lib/api"
+import { createProject, getAllAdminPosts, getExperiences, uploadMedia } from "@/lib/api"
 import { AdminShell } from "@/components/admin/AdminShell"
 import { normalizeImageUrl } from "@/lib/utils/image"
 import { generateSlug } from "@/lib/utils/slug"
@@ -85,7 +85,7 @@ export default function NewProject() {
     const loadPosts = async () => {
       try {
         setIsLoadingPosts(true)
-        const result = await getAdminPosts(1, 200)
+        const result = await getAllAdminPosts()
         setAdminPosts(result.posts || [])
       } catch (loadError) {
         console.error(loadError)

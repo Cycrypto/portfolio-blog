@@ -15,7 +15,7 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ArrowLeft, Save, Upload, X, Plus, LinkIcon, Github } from "lucide-react"
 import Link from "next/link"
-import { getAdminPosts, getExperiences, getProject, updateProject, uploadMedia } from "@/lib/api"
+import { getAllAdminPosts, getExperiences, getProject, updateProject, uploadMedia } from "@/lib/api"
 import { Experience, Post, Project } from "@/lib/types/api"
 import { AdminShell } from "@/components/admin/AdminShell"
 import { normalizeImageUrl } from "@/lib/utils/image"
@@ -129,7 +129,7 @@ export default function EditProject() {
     const loadPosts = async () => {
       try {
         setIsLoadingPosts(true)
-        const result = await getAdminPosts(1, 200)
+        const result = await getAllAdminPosts()
         setAdminPosts(result.posts || [])
       } catch (loadError) {
         console.error(loadError)
