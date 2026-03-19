@@ -39,9 +39,9 @@ interface MessageContext {
   sentences: string[];
 }
 
-const MAX_CANDIDATES = 5;
+const MAX_CANDIDATES = 3;
+const TARGET_CANDIDATES = 2;
 const MAX_SNIPPET_LENGTH = 140;
-const GENERIC_FALLBACK_LABEL = '핵심 포인트';
 
 const TECH_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
   { label: 'React', pattern: /\breact\b/i },
@@ -183,19 +183,6 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   database: ['PostgreSQL', 'TypeORM', 'SQL', 'Migration', 'Query', '.sql'],
 };
 
-const ACTION_TITLE_LABELS: Record<string, string> = {
-  에러: '오류',
-  해결: '문제',
-  구현: '기능',
-  비교: '비교 포인트',
-  최적화: '최적화',
-  마이그레이션: '마이그레이션',
-  배포: '배포',
-  리팩토링: '리팩토링',
-  정리: '핵심 포인트',
-  연동: '연동',
-};
-
 export function createSourceFingerprint(
   sourceUrl: string,
   messages: IdeaInputMessage[],
@@ -220,8 +207,6 @@ export function extractIdeaCandidates(input: {
   const sanitizedTitle = sanitizeSourceTitle(input.sourceTitle);
   const contexts = buildMessageContexts(input.messages);
   const technicalStats = collectTechnicalStats(sanitizedTitle, contexts);
-  const actionRanking = collectActionRanking(contexts);
-  const pairScores = collectPairScores(contexts, technicalStats);
   const technicalRanking = [...technicalStats.entries()].sort(
     (left, right) => scoreTokenStats(right[1]) - scoreTokenStats(left[1]),
   );
@@ -229,96 +214,47 @@ export function extractIdeaCandidates(input: {
   const candidates: ExtractedIdeaCandidate[] = [];
   const seenTitles = new Set<string>();
 
-  for (const [pairKey, pairScore] of [...pairScores.entries()].sort(
-    (left, right) => right[1] - left[1],
-  )) {
-    if (candidates.length >= MAX_CANDIDATES) {
+  for (const [techToken, stats] of technicalRanking) {
+    if (candidates.length >= TARGET_CANDIDATES) {
       break;
     }
 
-    const [techToken, actionToken] = pairKey.split('::');
-    const techStats = technicalStats.get(techToken);
-    if (!techStats) {
-      continue;
-    }
-
-    const title = buildCandidateTitle(techToken, actionToken);
-    if (seenTitles.has(title)) {
-      continue;
-    }
-
-    const keywords = buildKeywords(
+    const themeCandidate = buildThemeCandidate({
+      sourceTitle: sanitizedTitle,
       techToken,
-      actionToken,
+      stats,
       contexts,
-      technicalRanking.map(([token]) => token),
-    );
-    const evidenceSnippet = pickEvidenceSnippet(contexts, techToken, actionToken);
-    const tags = keywords.filter((keyword) => isTechnicalKeyword(keyword)).slice(0, 3);
-    const category = inferCategory([techToken, ...keywords], title);
-
-    candidates.push({
-      title,
-      category,
-      tags: tags.length > 0 ? tags : [techToken].slice(0, 3),
-      keywords: keywords.slice(0, 6),
-      evidenceSnippet,
-      score: scoreTokenStats(techStats) + pairScore,
     });
-    seenTitles.add(title);
-  }
 
-  for (const [techToken] of technicalRanking) {
-    if (candidates.length >= MAX_CANDIDATES) {
-      break;
-    }
-
-    const actionToken = actionRanking[0] ?? '정리';
-    const title = buildCandidateTitle(techToken, actionToken);
-    if (seenTitles.has(title)) {
+    if (!themeCandidate) {
       continue;
     }
 
-    candidates.push({
-      title,
-      category: inferCategory([techToken], title),
-      tags: [techToken].slice(0, 3),
-      keywords: [techToken, actionToken],
-      evidenceSnippet: pickEvidenceSnippet(contexts, techToken, actionToken),
-      score: scoreTokenStats(technicalStats.get(techToken)!),
-    });
-    seenTitles.add(title);
+    if (seenTitles.has(themeCandidate.title)) {
+      continue;
+    }
+
+    candidates.push(themeCandidate);
+    seenTitles.add(themeCandidate.title);
   }
 
-  if (candidates.length < 2) {
-    const genericTitle = `${sanitizeGenericLabel(
-      technicalRanking[0]?.[0] || sanitizedTitle || '대화',
-    )} 관련 실전 체크리스트`;
+  if (candidates.length === 0) {
+    const genericCandidate = buildGenericThemeCandidate({
+      sourceTitle: sanitizedTitle,
+      contexts,
+      technicalRanking,
+    });
 
-    if (!seenTitles.has(genericTitle)) {
-      candidates.push({
-        title: genericTitle,
-        category: inferCategory(
-          [technicalRanking[0]?.[0] || sanitizedTitle],
-          genericTitle,
-        ),
-        tags: technicalRanking.slice(0, 3).map(([token]) => token),
-        keywords: [technicalRanking[0]?.[0] || sanitizedTitle, '정리'].filter(
-          Boolean,
-        ) as string[],
-        evidenceSnippet:
-          contexts[0]?.sentences[0] ||
-          sanitizedTitle ||
-          '현재 대화에서 정리할 만한 실전 포인트가 있습니다.',
-        score: 1,
-      });
-      seenTitles.add(genericTitle);
+    if (genericCandidate) {
+      candidates.push(genericCandidate);
+      seenTitles.add(genericCandidate.title);
     }
   }
 
   return candidates
     .map((candidate) => ({
       ...candidate,
+      title: trimThemeSentence(candidate.title),
       evidenceSnippet: trimSnippet(candidate.evidenceSnippet),
       tags: uniqueStrings(candidate.tags).slice(0, 3),
       keywords: uniqueStrings(candidate.keywords).slice(0, 6),
@@ -401,52 +337,6 @@ function collectTechnicalStats(
   return stats;
 }
 
-function collectActionRanking(contexts: MessageContext[]): string[] {
-  const counts = new Map<string, number>();
-
-  for (const context of contexts) {
-    for (const token of context.actionTokens) {
-      counts.set(token, (counts.get(token) || 0) + 1);
-    }
-  }
-
-  return [...counts.entries()]
-    .sort((left, right) => right[1] - left[1])
-    .map(([token]) => token);
-}
-
-function collectPairScores(
-  contexts: MessageContext[],
-  technicalStats: Map<string, TokenStats>,
-): Map<string, number> {
-  const pairScores = new Map<string, number>();
-
-  for (const context of contexts) {
-    const fallbackActions = context.actionTokens.length > 0 ? context.actionTokens : ['정리'];
-
-    for (const techToken of context.techTokens) {
-      for (const actionToken of fallbackActions) {
-        const key = `${techToken}::${actionToken}`;
-        const pairScore =
-          1 +
-          (context.hasCode ? 2 : 0) +
-          (context.hasProblem ? 2 : 0) +
-          (context.hasSolution ? 1 : 0) +
-          Math.min(context.phrases.length, 2);
-
-        pairScores.set(
-          key,
-          (pairScores.get(key) || 0) +
-            pairScore +
-            Math.floor(scoreTokenStats(technicalStats.get(techToken)!) / 3),
-        );
-      }
-    }
-  }
-
-  return pairScores;
-}
-
 function scoreTokenStats(stats: TokenStats): number {
   return (
     stats.turns.size * 3 +
@@ -455,6 +345,257 @@ function scoreTokenStats(stats: TokenStats): number {
     (stats.problemTurns.size > 0 ? 2 : 0) +
     (stats.solutionTurns.size > 0 ? 1 : 0) +
     (stats.titleMatched ? 2 : 0)
+  );
+}
+
+function buildThemeCandidate(input: {
+  sourceTitle: string;
+  techToken: string;
+  stats: TokenStats;
+  contexts: MessageContext[];
+}): ExtractedIdeaCandidate | null {
+  const relevantContexts = input.contexts.filter((context) =>
+    context.techTokens.includes(input.techToken),
+  );
+
+  if (relevantContexts.length === 0) {
+    return null;
+  }
+
+  const actionCounts = new Map<string, number>();
+  const relatedTechCounts = new Map<string, number>();
+  const phraseCounts = new Map<string, number>();
+
+  for (const context of relevantContexts) {
+    const actionTokens =
+      context.actionTokens.length > 0
+        ? context.actionTokens
+        : context.hasProblem
+          ? ['에러']
+          : context.hasSolution
+            ? ['해결']
+            : ['정리'];
+
+    for (const actionToken of actionTokens) {
+      actionCounts.set(actionToken, (actionCounts.get(actionToken) || 0) + 1);
+    }
+
+    for (const relatedToken of context.techTokens) {
+      if (relatedToken === input.techToken) {
+        continue;
+      }
+
+      relatedTechCounts.set(
+        relatedToken,
+        (relatedTechCounts.get(relatedToken) || 0) + 1,
+      );
+    }
+
+    for (const phrase of context.phrases) {
+      if (phrase.toLowerCase().includes(input.techToken.toLowerCase())) {
+        continue;
+      }
+
+      phraseCounts.set(phrase, (phraseCounts.get(phrase) || 0) + 1);
+    }
+  }
+
+  const dominantAction = pickDominantAction(actionCounts);
+  const focusPhrase = pickDominantPhrase(phraseCounts);
+  const relatedTechTokens = [...relatedTechCounts.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .map(([token]) => token)
+    .slice(0, 2);
+  const title = buildThemeSentence(
+    input.techToken,
+    dominantAction,
+    focusPhrase,
+    relatedTechTokens,
+  );
+  const keywords = uniqueStrings(
+    [
+      input.techToken,
+      dominantAction,
+      focusPhrase,
+      ...relatedTechTokens,
+    ].filter(Boolean) as string[],
+  ).slice(0, 6);
+  const tags = keywords.filter((keyword) => isTechnicalKeyword(keyword)).slice(0, 3);
+  const evidenceSnippet = buildThemeReasonSentence({
+    techToken: input.techToken,
+    dominantAction,
+    focusPhrase,
+    relatedTechTokens,
+    stats: input.stats,
+  });
+
+  return {
+    title,
+    category: inferCategory(
+      [input.techToken, focusPhrase, ...relatedTechTokens],
+      title,
+    ),
+    tags: tags.length > 0 ? tags : [input.techToken].slice(0, 3),
+    keywords,
+    evidenceSnippet,
+    score:
+      scoreTokenStats(input.stats) +
+      relevantContexts.length +
+      relatedTechTokens.length +
+      (focusPhrase ? 2 : 0),
+  };
+}
+
+function buildGenericThemeCandidate(input: {
+  sourceTitle: string;
+  contexts: MessageContext[];
+  technicalRanking: Array<[string, TokenStats]>;
+}): ExtractedIdeaCandidate | null {
+  const topSentence =
+    input.contexts.flatMap((context) => context.sentences).find(Boolean) ||
+    input.sourceTitle;
+  const topTechToken = input.technicalRanking[0]?.[0] || '';
+  const focusLabel = sanitizeGenericLabel(topTechToken || topSentence || '대화');
+  const title = trimThemeSentence(
+    `이 대화는 ${focusLabel}를 중심으로 정리하는 흐름이다.`,
+  );
+
+  if (!title) {
+    return null;
+  }
+
+  return {
+    title,
+    category: inferCategory([topTechToken], title),
+    tags: topTechToken ? [topTechToken] : [],
+    keywords: uniqueStrings([topTechToken, focusLabel]).slice(0, 4),
+    evidenceSnippet: trimSnippet(
+      topSentence
+        ? `${sanitizeGenericLabel(topSentence)}가 대화 전반의 핵심 흐름으로 이어졌다.`
+        : '대화 전반에서 같은 주제가 반복적으로 등장했다.',
+    ),
+    score: 1,
+  };
+}
+
+function pickDominantAction(actionCounts: Map<string, number>): string {
+  return [...actionCounts.entries()]
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+
+      return ACTION_PATTERNS.findIndex((item) => item.label === left[0]) -
+        ACTION_PATTERNS.findIndex((item) => item.label === right[0]);
+    })
+    .map(([actionToken]) => actionToken)[0] || '정리';
+}
+
+function pickDominantPhrase(phraseCounts: Map<string, number>): string {
+  return [...phraseCounts.entries()]
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+
+      return right[0].length - left[0].length;
+    })
+    .map(([phrase]) => phrase)
+    .find((phrase) => phrase.length >= 4 && phrase.length <= 30) || '';
+}
+
+function buildThemeSentence(
+  techToken: string,
+  dominantAction: string,
+  focusPhrase: string,
+  relatedTechTokens: string[],
+): string {
+  const scope = buildThemeScope(techToken, focusPhrase, relatedTechTokens);
+
+  if (dominantAction === '에러' || dominantAction === '해결') {
+    return trimThemeSentence(
+      `이 대화는 ${scope} 문제를 분석하고 해결 방향을 정리하는 흐름이다.`,
+    );
+  }
+
+  if (dominantAction === '구현' || dominantAction === '연동') {
+    return trimThemeSentence(
+      `이 대화는 ${scope} 구현 방향을 정리하는 흐름이다.`,
+    );
+  }
+
+  if (
+    dominantAction === '배포' ||
+    dominantAction === '최적화' ||
+    dominantAction === '마이그레이션' ||
+    dominantAction === '리팩토링'
+  ) {
+    return trimThemeSentence(
+      `이 대화는 ${scope} ${dominantAction} 과정을 점검하는 내용이다.`,
+    );
+  }
+
+  return trimThemeSentence(
+    `이 대화는 ${scope}를 중심으로 정리하는 흐름이다.`,
+  );
+}
+
+function buildThemeScope(
+  techToken: string,
+  focusPhrase: string,
+  relatedTechTokens: string[],
+): string {
+  const trimmedFocusPhrase = sanitizeGenericLabel(focusPhrase);
+  if (trimmedFocusPhrase) {
+    return trimmedFocusPhrase
+      .toLowerCase()
+      .includes(techToken.toLowerCase())
+      ? trimmedFocusPhrase
+      : `${techToken} ${trimmedFocusPhrase}`;
+  }
+
+  if (relatedTechTokens.length > 0) {
+    return `${techToken}와 ${relatedTechTokens.join(', ')}`;
+  }
+
+  return techToken;
+}
+
+function buildThemeReasonSentence(input: {
+  techToken: string;
+  dominantAction: string;
+  focusPhrase: string;
+  relatedTechTokens: string[];
+  stats: TokenStats;
+}): string {
+  const reasonTokens = uniqueStrings(
+    [
+      input.techToken,
+      input.focusPhrase,
+      ...input.relatedTechTokens,
+    ].filter(Boolean) as string[],
+  ).slice(0, 3);
+  const reasonSubject =
+    reasonTokens.join(', ') || sanitizeGenericLabel(input.techToken || '핵심 주제');
+  const roleHint =
+    input.stats.roles.has('user') && input.stats.roles.has('assistant')
+      ? 'user와 assistant 양쪽에서'
+      : '대화 전반에서';
+
+  if (input.stats.problemTurns.size > 0 && input.stats.solutionTurns.size > 0) {
+    return trimSnippet(
+      `${reasonSubject}가 ${roleHint} 반복되고 문제와 해결 흐름이 함께 이어졌다.`,
+    );
+  }
+
+  if (input.dominantAction === '구현' || input.dominantAction === '연동') {
+    return trimSnippet(
+      `${reasonSubject}가 ${roleHint} 반복되며 구현 논점이 구체화됐다.`,
+    );
+  }
+
+  return trimSnippet(
+    `${reasonSubject}가 ${roleHint} 반복적으로 등장했다.`,
   );
 }
 
@@ -527,111 +668,6 @@ function splitSentences(text: string): string[] {
     .filter((sentence) => sentence.length >= 10);
 }
 
-function buildCandidateTitle(techToken: string, actionToken: string): string {
-  const actionLabel = ACTION_TITLE_LABELS[actionToken] || GENERIC_FALLBACK_LABEL;
-
-  if (actionToken === '에러' || actionToken === '해결') {
-    return `${techToken}에서 ${actionLabel} 문제 해결하기`;
-  }
-
-  if (actionToken === '구현' || actionToken === '연동') {
-    return `${techToken}로 ${actionLabel} 구현하며 정리한 포인트`;
-  }
-
-  if (
-    actionToken === '최적화' ||
-    actionToken === '마이그레이션' ||
-    actionToken === '배포' ||
-    actionToken === '리팩토링'
-  ) {
-    return `${techToken}를 적용하면서 겪은 ${actionLabel}와 해결 방법`;
-  }
-
-  return `${techToken} 관련 실전 체크리스트`;
-}
-
-function buildKeywords(
-  techToken: string,
-  actionToken: string,
-  contexts: MessageContext[],
-  technicalRanking: string[],
-): string[] {
-  const keywords = new Set<string>([techToken, actionToken]);
-  const relatedTokens = new Map<string, number>();
-
-  for (const context of contexts) {
-    if (!context.techTokens.includes(techToken)) {
-      continue;
-    }
-
-    for (const token of context.techTokens) {
-      if (token !== techToken) {
-        relatedTokens.set(token, (relatedTokens.get(token) || 0) + 1);
-      }
-    }
-
-    for (const phrase of context.phrases) {
-      relatedTokens.set(phrase, (relatedTokens.get(phrase) || 0) + 1);
-    }
-  }
-
-  for (const [token] of [...relatedTokens.entries()].sort(
-    (left, right) => right[1] - left[1],
-  )) {
-    keywords.add(token);
-    if (keywords.size >= 6) {
-      break;
-    }
-  }
-
-  for (const token of technicalRanking) {
-    if (keywords.size >= 6) {
-      break;
-    }
-    keywords.add(token);
-  }
-
-  return [...keywords];
-}
-
-function pickEvidenceSnippet(
-  contexts: MessageContext[],
-  techToken: string,
-  actionToken: string,
-): string {
-  let bestSentence = '';
-  let bestScore = -1;
-
-  for (const context of contexts) {
-    const joinedSentences =
-      context.sentences.length > 0 ? context.sentences : [context.cleanText];
-
-    for (const sentence of joinedSentences) {
-      let score = 0;
-
-      if (sentence.toLowerCase().includes(techToken.toLowerCase())) {
-        score += 3;
-      }
-      if (sentence.includes(actionToken)) {
-        score += 2;
-      }
-      if (context.hasProblem) {
-        score += 2;
-      }
-      if (context.hasSolution) {
-        score += 1;
-      }
-
-      if (score > bestScore) {
-        bestSentence = sentence;
-        bestScore = score;
-      }
-    }
-  }
-
-  return bestSentence || contexts[0]?.cleanText || '관련 대화에서 핵심 포인트를 추렸습니다.';
-}
-
 function inferCategory(tokens: Array<string | undefined>, title: string): string {
   const haystack = [...tokens.filter(Boolean), title].join(' ').toLowerCase();
 
@@ -666,6 +702,18 @@ function sanitizeSourceTitle(title: string): string {
 
 function sanitizeGenericLabel(label: string): string {
   return normalizeWhitespace(label).slice(0, 40) || '대화';
+}
+
+function trimThemeSentence(sentence: string): string {
+  const normalized = normalizeWhitespace(sentence)
+    .replace(/\s+/g, ' ')
+    .replace(/[.。]+$/u, '');
+
+  if (!normalized) {
+    return '';
+  }
+
+  return trimSnippet(`${normalized}.`);
 }
 
 function normalizeTechToken(token: string): string {

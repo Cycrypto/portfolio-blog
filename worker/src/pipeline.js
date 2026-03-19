@@ -13,6 +13,8 @@ const MAX_ROLLING_SUMMARY_CHARS = 1200;
 const MAX_SALIENT_TURN_TEXT_CHARS = 420;
 const MAX_MEMORY_TRANSCRIPT_CHARS = 4000;
 const MAX_REDUCED_MESSAGE_CHARS = 1400;
+const TARGET_THEME_CANDIDATES = 2;
+const MAX_THEME_CANDIDATES = 3;
 
 const TECHNICAL_PATTERN =
   /```|`[^`]+`|[A-Za-z_][A-Za-z0-9_./-]*\([^)]*\)|[A-Za-z0-9_./-]+\.[A-Za-z0-9_-]+|next\.js|react|nestjs|typeorm|postgres|docker|redis|api|cache|auth|cloud/i;
@@ -354,12 +356,17 @@ async function createFinalIdeaAnalysis({
 
   return oauthClient.completeJson({
     systemPrompt: [
-      'You are a blog ideation agent for a personal engineering blog.',
+      'You are a conversation theme extraction agent for a personal engineering blog.',
       'You are given reduced conversation memory, not a full transcript.',
       'Return strict JSON only.',
-      'Summarize the conversation and propose 3 to 5 blog ideas.',
+      'Summarize the conversation with one conversation-wide theme sentence.',
+      'Propose 2 or 3 conversation-wide themes, not blog titles.',
+      'Each candidate title must be one Korean sentence that starts with "이 대화는".',
+      'Each candidate title must describe the overall conversation theme, not a post headline.',
+      'Avoid title-like phrasing such as 체크리스트, 해결하기, 가이드, 방법, 포인트, 법.',
       'Category must be one of frontend, backend, devops, cloud, database, tutorial.',
       'Each candidate must include title, category, tags, keywords, evidenceSnippet, score, continuationBrief, sourceMessageRefs.',
+      'evidenceSnippet must be one short sentence explaining why this theme fits the whole conversation.',
       'sourceMessageRefs must reference the provided salient turn orders.',
     ].join(' '),
     userPrompt: JSON.stringify(finalPayload),
@@ -946,12 +953,20 @@ function buildSalientTranscriptExcerpt(salientTurns, rawMessages) {
 
 function normalizeSummary(response, memory) {
   const rollingSummary = memory?.rollingSummary || {};
+  const fallbackThemeSentence = buildThemeSentenceFromParts({
+    raw: rollingSummary.summaryShort || '',
+    keywords: rollingSummary.technicalTopics || [],
+    fallbackReason: rollingSummary.evidenceSnippets?.[0] || '',
+    maxLength: 180,
+  });
 
   return {
-    summaryShort: trimText(
-      String(response.summaryShort || rollingSummary.summaryShort || ''),
-      200,
-    ),
+    summaryShort: buildThemeSentenceFromParts({
+      raw: String(response.summaryShort || rollingSummary.summaryShort || ''),
+      keywords: rollingSummary.technicalTopics || [],
+      fallbackReason: rollingSummary.evidenceSnippets?.[0] || '',
+      maxLength: 180,
+    }),
     summaryLong: trimText(
       String(
         response.summaryLong ||
@@ -981,37 +996,179 @@ function normalizeSummary(response, memory) {
       response.evidenceSnippets || rollingSummary.evidenceSnippets || [],
       5,
     ),
-    continuationBrief: trimText(String(response.continuationBrief || ''), 2000),
+    continuationBrief: trimText(
+      String(response.continuationBrief || fallbackThemeSentence),
+      2000,
+    ),
   };
 }
 
 function normalizeCandidates(candidates, response, memory) {
   const fallbackSummary =
     response.summaryShort || memory?.rollingSummary?.summaryShort || '';
+  const fallbackKeywords = memory?.rollingSummary?.technicalTopics || [];
+  const normalizedCandidates = candidates
+    .map((candidate) => {
+      const keywords = sanitizeList(candidate.keywords, 8);
+      const tags = sanitizeList(candidate.tags, 5);
+      const title = buildThemeSentenceFromParts({
+        raw: String(candidate.title || ''),
+        keywords: [...tags, ...keywords, ...fallbackKeywords],
+        fallbackReason: String(candidate.evidenceSnippet || fallbackSummary),
+        maxLength: 120,
+      });
 
-  return candidates
-    .map((candidate) => ({
-      title: trimText(String(candidate.title || ''), 120),
-      category: normalizeCategory(candidate.category),
-      tags: sanitizeList(candidate.tags, 5),
-      keywords: sanitizeList(candidate.keywords, 8),
-      evidenceSnippet: trimText(
-        String(candidate.evidenceSnippet || fallbackSummary),
-        240,
-      ),
-      score: Number.isFinite(candidate.score) ? candidate.score : 1,
-      continuationBrief: trimText(
-        String(candidate.continuationBrief || response.continuationBrief || ''),
-        1200,
-      ),
-      sourceMessageRefs: Array.isArray(candidate.sourceMessageRefs)
-        ? candidate.sourceMessageRefs
-            .filter((value) => Number.isInteger(value) && value >= 0)
-            .slice(0, 8)
-        : [],
-    }))
+      return {
+        title,
+        category: normalizeCategory(candidate.category),
+        tags,
+        keywords,
+        evidenceSnippet: buildThemeReasonSentence({
+          raw: String(candidate.evidenceSnippet || ''),
+          title,
+          keywords,
+          fallbackReason: fallbackSummary,
+        }),
+        score: Number.isFinite(candidate.score) ? candidate.score : 1,
+        continuationBrief: trimText(
+          String(candidate.continuationBrief || response.continuationBrief || title),
+          1200,
+        ),
+        sourceMessageRefs: Array.isArray(candidate.sourceMessageRefs)
+          ? candidate.sourceMessageRefs
+              .filter((value) => Number.isInteger(value) && value >= 0)
+              .slice(0, 8)
+          : [],
+      };
+    })
     .filter((candidate) => candidate.title.length > 0)
-    .slice(0, 5);
+    .slice(0, MAX_THEME_CANDIDATES);
+
+  if (normalizedCandidates.length > 0) {
+    return normalizedCandidates;
+  }
+
+  const synthesizedTitle = buildThemeSentenceFromParts({
+    raw: fallbackSummary,
+    keywords: fallbackKeywords,
+    fallbackReason: memory?.rollingSummary?.evidenceSnippets?.[0] || '',
+    maxLength: 120,
+  });
+
+  if (!synthesizedTitle) {
+    return [];
+  }
+
+  return [
+    {
+      title: synthesizedTitle,
+      category: normalizeCategory(memory?.rollingSummary?.technicalTopics?.[0] || 'tutorial'),
+      tags: sanitizeList(memory?.rollingSummary?.technicalTopics || [], 3),
+      keywords: sanitizeList(
+        [
+          ...(memory?.rollingSummary?.technicalTopics || []),
+          ...(memory?.rollingSummary?.keyPoints || []),
+        ],
+        6,
+      ),
+      evidenceSnippet: buildThemeReasonSentence({
+        raw: memory?.rollingSummary?.evidenceSnippets?.[0] || '',
+        title: synthesizedTitle,
+        keywords: memory?.rollingSummary?.technicalTopics || [],
+        fallbackReason: fallbackSummary,
+      }),
+      score: 1,
+      continuationBrief: trimText(String(response.continuationBrief || synthesizedTitle), 1200),
+      sourceMessageRefs: [],
+    },
+  ];
+}
+
+function buildThemeSentenceFromParts({
+  raw,
+  keywords,
+  fallbackReason,
+  maxLength,
+}) {
+  const themeCore = sanitizeThemeCore(raw);
+  const fallbackCore =
+    sanitizeThemeCore(fallbackReason) ||
+    uniqueList(keywords || []).slice(0, 3).join(' ');
+  const subject = trimText(themeCore || fallbackCore || '핵심 주제', 72);
+  const sentence = subject.startsWith('이 대화는')
+    ? subject
+    : `이 대화는 ${subject} 중심으로 정리하는 흐름이다.`;
+
+  return trimText(ensureSentenceEnding(sentence), maxLength);
+}
+
+function buildThemeReasonSentence({
+  raw,
+  title,
+  keywords,
+  fallbackReason,
+}) {
+  const cleanedRaw = trimText(
+    String(raw || '')
+      .replace(/\s+/g, ' ')
+      .replace(/^이 대화는\s*/u, '')
+      .trim(),
+    140,
+  );
+
+  if (cleanedRaw.length >= 12 && !/체크리스트|해결하기|가이드|방법/u.test(cleanedRaw)) {
+    return ensureSentenceEnding(cleanedRaw);
+  }
+
+  const reasonKeywords = uniqueList([
+    ...sanitizeList(keywords || [], 8),
+    sanitizeThemeCore(title),
+    sanitizeThemeCore(fallbackReason || ''),
+  ])
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (reasonKeywords.length === 0) {
+    return '대화 전반에서 같은 주제가 반복적으로 등장했다.';
+  }
+
+  return ensureSentenceEnding(
+    `${reasonKeywords.join(', ')}가 대화 전반에 반복적으로 등장했다`,
+  );
+}
+
+function sanitizeThemeCore(value) {
+  return String(value || '')
+    .replace(/^이 대화는\s*/u, '')
+    .replace(/[:：]\s*/g, ' ')
+    .replace(
+      /\s+(체크리스트|가이드|방법|해결하기|해결 방법|정리한 포인트|실전 포인트|포인트)$/u,
+      '',
+    )
+    .replace(/\s+(흐름|내용|과정)이다[.]?$/u, '')
+    .replace(/\s+중심으로 정리하는$/u, '')
+    .replace(/\s+중심으로$/u, '')
+    .replace(/\s+정리하는$/u, ' 정리')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function ensureSentenceEnding(value) {
+  const trimmed = String(value || '').trim().replace(/[.。]+$/u, '');
+
+  if (!trimmed) {
+    return '';
+  }
+
+  if (/(흐름|내용|과정)이다$/u.test(trimmed)) {
+    return `${trimmed}.`;
+  }
+
+  if (/다$/u.test(trimmed)) {
+    return `${trimmed}.`;
+  }
+
+  return `${trimmed}.`;
 }
 
 function formatTranscript(messages) {

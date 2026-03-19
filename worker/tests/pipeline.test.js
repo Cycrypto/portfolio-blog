@@ -41,7 +41,7 @@ test('createImportAnalysis chunks long transcripts and reduces final prompt size
 
       const payload = JSON.parse(userPrompt);
       return {
-        summaryShort: 'final short summary',
+        summaryShort: 'Next.js 운영 캐시 무효화 전략',
         summaryLong: 'final long summary',
         keyPoints: payload.conversationMemory.keyPoints,
         technicalTopics: payload.conversationMemory.technicalTopics,
@@ -51,7 +51,7 @@ test('createImportAnalysis chunks long transcripts and reduces final prompt size
         continuationBrief: 'Continue with the production debugging timeline.',
         candidates: [
           {
-            title: 'Next.js cache invalidation in production',
+            title: 'Next.js 운영 캐시 무효화 전략',
             category: 'frontend',
             tags: ['Next.js', 'Caching'],
             keywords: ['revalidate', 'stale data'],
@@ -90,6 +90,9 @@ test('createImportAnalysis chunks long transcripts and reduces final prompt size
   assert.equal(result.candidates.length, 1);
   assert.ok(result.memory.chunkSummaries.length >= 2);
   assert.ok(result.memory.salientTurns.length <= 4);
+  assert.match(result.summary.summaryShort, /^이 대화는 /);
+  assert.match(result.candidates[0].title, /^이 대화는 /);
+  assert.ok(result.candidates[0].title.endsWith('.'));
 
   const finalCall = calls[calls.length - 1];
   const finalPayload = JSON.parse(finalCall.userPrompt);
@@ -128,7 +131,7 @@ test('createImportAnalysis retries with smaller chunks after a chunk summary fai
       }
 
       return {
-        summaryShort: 'done',
+        summaryShort: 'Retry flow summary',
         summaryLong: 'done long',
         keyPoints: ['point'],
         technicalTopics: ['next.js'],
@@ -138,7 +141,7 @@ test('createImportAnalysis retries with smaller chunks after a chunk summary fai
         continuationBrief: 'continue',
         candidates: [
           {
-            title: 'Recovered after retry',
+            title: 'cache retry recovery',
             category: 'frontend',
             tags: ['Next.js'],
             keywords: ['retry'],
@@ -167,7 +170,7 @@ test('createImportAnalysis retries with smaller chunks after a chunk summary fai
     config: createConfig({ importChunkChars: 220 }),
   });
 
-  assert.equal(result.candidates[0].title, 'Recovered after retry');
+  assert.match(result.candidates[0].title, /^이 대화는 /);
   assert.equal(result.memory.reducedTranscriptStats.retriedWithSmallerChunks, true);
   assert.ok(chunkAttempt >= 2);
 });

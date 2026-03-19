@@ -24,13 +24,12 @@ import {
   getAiStatus,
   getIdeaCandidates,
   importChatGptIdeas,
-  sendAssistantMessage as sendIdeaAssistantMessage,
-  startIdeaAssistantSession,
   uploadMedia,
 } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeImageUrl } from '@/lib/utils/image';
 import { calculateEditorMetrics } from '@/lib/posts/editor-metrics';
+import { buildSuggestedTitleFromIdea } from '@/lib/posts/idea-title';
 import { DEFAULT_POST_CATEGORY } from '@/lib/posts/post-editor-config';
 import { getPostPath } from '@/lib/posts/post-url';
 import {
@@ -64,11 +63,6 @@ interface IdeaHandoffEventData {
   handoffId?: string;
   payload?: ImportChatGptIdeaRequest;
   type?: string;
-}
-
-interface AssistantChatMessage {
-  content: string;
-  role: 'assistant' | 'user';
 }
 
 const getActionLabel = (status: SaveStatus, isSaving: boolean) => {
@@ -108,15 +102,6 @@ export default function NewPost() {
   const [ideaHandoff, setIdeaHandoff] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState<AiStatusResponse | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [assistantMessages, setAssistantMessages] = useState<
-    AssistantChatMessage[]
-  >([]);
-  const [assistantSessionId, setAssistantSessionId] = useState<number | null>(
-    null,
-  );
-  const [isStartingAssistant, setIsStartingAssistant] = useState(false);
-  const [isSendingAssistantMessage, setIsSendingAssistantMessage] =
-    useState(false);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [isDismissingAllIdeas, setIsDismissingAllIdeas] = useState(false);
   const [isDismissingIdeaId, setIsDismissingIdeaId] = useState<number | null>(
@@ -176,7 +161,7 @@ export default function NewPost() {
       setIdeaCandidates(nextIdeas);
     } catch (err) {
       console.error('Error fetching idea candidates:', err);
-      setIdeasError('글감 후보를 불러오지 못했습니다.');
+      setIdeasError('핵심 주제 후보를 불러오지 못했습니다.');
     } finally {
       setIsIdeasLoading(false);
     }
@@ -201,13 +186,11 @@ export default function NewPost() {
 
   const handleSelectIdea = useCallback((idea: IdeaCandidate) => {
     setSelectedIdea(idea);
-    setTitle(idea.title);
+    setTitle(buildSuggestedTitleFromIdea(idea));
     setCategory(idea.category || DEFAULT_POST_CATEGORY);
     setTags(idea.tags || []);
     setIdeasSheetOpen(false);
     setActionError(null);
-    setAssistantMessages([]);
-    setAssistantSessionId(null);
   }, []);
 
   const handleOpenIdeaSource = useCallback((url: string) => {
@@ -221,7 +204,7 @@ export default function NewPost() {
   const handleDismissIdea = useCallback(
     async (idea: IdeaCandidate) => {
       const shouldDismiss = window.confirm(
-        `"${idea.title}" 글감을 목록에서 삭제할까요?`,
+        `"${idea.title}" 핵심 주제를 목록에서 삭제할까요?`,
       );
 
       if (!shouldDismiss) {
@@ -239,20 +222,18 @@ export default function NewPost() {
 
         if (selectedIdea?.id === idea.id) {
           setSelectedIdea(null);
-          setAssistantMessages([]);
-          setAssistantSessionId(null);
         }
 
         toast({
-          title: '글감 삭제 완료',
-          description: '선택한 글감 후보를 목록에서 제거했습니다.',
+          title: '핵심 주제 삭제 완료',
+          description: '선택한 핵심 주제 후보를 목록에서 제거했습니다.',
         });
       } catch (err) {
         console.error('Error dismissing idea candidate:', err);
         setActionError(
           err instanceof Error
             ? err.message
-            : '글감 후보를 삭제하지 못했습니다.',
+            : '핵심 주제 후보를 삭제하지 못했습니다.',
         );
       } finally {
         setIsDismissingIdeaId(null);
@@ -267,7 +248,7 @@ export default function NewPost() {
     }
 
     const shouldDismiss = window.confirm(
-      '현재 보이는 글감 후보를 모두 삭제할까요?',
+      '현재 보이는 핵심 주제 후보를 모두 삭제할까요?',
     );
 
     if (!shouldDismiss) {
@@ -280,43 +261,21 @@ export default function NewPost() {
       const result = await dismissAllIdeaCandidates();
       setIdeaCandidates([]);
       setSelectedIdea(null);
-      setAssistantMessages([]);
-      setAssistantSessionId(null);
       toast({
         title: '전체 삭제 완료',
-        description: `${result.dismissedCount}개의 글감 후보를 목록에서 제거했습니다.`,
+        description: `${result.dismissedCount}개의 핵심 주제 후보를 목록에서 제거했습니다.`,
       });
     } catch (err) {
       console.error('Error dismissing all idea candidates:', err);
       setActionError(
         err instanceof Error
           ? err.message
-          : '글감 후보를 전체 삭제하지 못했습니다.',
+          : '핵심 주제 후보를 전체 삭제하지 못했습니다.',
       );
     } finally {
       setIsDismissingAllIdeas(false);
     }
   }, [ideaCandidates.length, toast]);
-
-  const updateSelectedIdeaContinuationBrief = useCallback(
-    (ideaId: number, continuationBrief: string) => {
-      setIdeaCandidates((currentIdeas) =>
-        currentIdeas.map((idea) =>
-          idea.id === ideaId ? { ...idea, continuationBrief } : idea,
-        ),
-      );
-
-      setSelectedIdea((currentIdea) =>
-        currentIdea?.id === ideaId
-          ? {
-              ...currentIdea,
-              continuationBrief,
-            }
-          : currentIdea,
-      );
-    },
-    [],
-  );
 
   const handleCopyContinuationBrief = useCallback(async () => {
     const continuationBrief = selectedIdea?.continuationBrief?.trim();
@@ -338,85 +297,9 @@ export default function NewPost() {
     }
   }, [selectedIdea?.continuationBrief, toast]);
 
-  const handleStartAssistant = useCallback(async () => {
-    if (!selectedIdea) {
-      setActionError('먼저 사용할 글감을 선택해주세요.');
-      return;
-    }
-
-    try {
-      setIsStartingAssistant(true);
-      setActionError(null);
-      const session = await startIdeaAssistantSession(selectedIdea.id);
-      setAssistantSessionId(session.sessionId);
-      setAssistantMessages([
-        {
-          role: 'assistant',
-          content: session.starterMessage,
-        },
-      ]);
-      setIdeasSheetOpen(false);
-    } catch (err) {
-      console.error('Error starting assistant session:', err);
-      setActionError(
-        err instanceof Error
-          ? err.message
-          : 'assistant 세션을 시작하지 못했습니다.',
-      );
-    } finally {
-      setIsStartingAssistant(false);
-    }
-  }, [selectedIdea]);
-
-  const handleSendAssistantMessage = useCallback(
-    async (message: string) => {
-      if (!selectedIdea) {
-        setActionError('먼저 사용할 글감을 선택해주세요.');
-        return;
-      }
-
-      if (!assistantSessionId) {
-        setActionError('assistant를 먼저 시작해주세요.');
-        return;
-      }
-
-      try {
-        setIsSendingAssistantMessage(true);
-        setActionError(null);
-        setAssistantMessages((currentMessages) => [
-          ...currentMessages,
-          { role: 'user', content: message },
-        ]);
-
-        const reply = await sendIdeaAssistantMessage(assistantSessionId, message);
-        setAssistantMessages((currentMessages) => [
-          ...currentMessages,
-          { role: 'assistant', content: reply.reply },
-        ]);
-
-        if (reply.continuationBrief) {
-          updateSelectedIdeaContinuationBrief(
-            selectedIdea.id,
-            reply.continuationBrief,
-          );
-        }
-      } catch (err) {
-        console.error('Error sending assistant message:', err);
-        setActionError(
-          err instanceof Error
-            ? err.message
-            : 'assistant에게 메시지를 보내지 못했습니다.',
-        );
-      } finally {
-        setIsSendingAssistantMessage(false);
-      }
-    },
-    [assistantSessionId, selectedIdea, updateSelectedIdeaContinuationBrief],
-  );
-
   const handleGenerateDraft = useCallback(async () => {
     if (!selectedIdea) {
-      setActionError('먼저 사용할 글감을 선택해주세요.');
+      setActionError('먼저 사용할 핵심 주제를 선택해주세요.');
       return;
     }
 
@@ -425,7 +308,6 @@ export default function NewPost() {
       setActionError(null);
 
       const draft = await generateIdeaDraft(selectedIdea.id, {
-        sessionId: assistantSessionId || undefined,
         targetLength: 'medium',
       });
 
@@ -446,7 +328,7 @@ export default function NewPost() {
     } finally {
       setIsGeneratingDraft(false);
     }
-  }, [assistantSessionId, selectedIdea, toast]);
+  }, [selectedIdea, toast]);
 
   const handleSave = useCallback(
     async (saveStatus: SaveStatus) => {
@@ -681,20 +563,20 @@ export default function NewPost() {
             model: null,
             reason:
               currentStatus?.reason ||
-              'AI worker를 사용할 수 없어 fallback 모드로 글감만 생성했습니다.',
+              'AI worker를 사용할 수 없어 fallback 모드로 핵심 주제만 생성했습니다.',
           };
         });
         toast({
-          title: '글감 가져오기 완료',
+          title: '핵심 주제 가져오기 완료',
           description: result.deduped
-            ? '이미 가져온 대화라 기존 글감 후보를 불러왔습니다.'
+            ? '이미 가져온 대화라 기존 핵심 주제 후보를 불러왔습니다.'
             : result.mode === 'worker'
-              ? `${result.candidates.length}개의 AI 글감 후보를 가져왔습니다.`
-              : `${result.candidates.length}개의 fallback 글감 후보를 가져왔습니다.`,
+              ? `${result.candidates.length}개의 AI 핵심 주제 후보를 가져왔습니다.`
+              : `${result.candidates.length}개의 fallback 핵심 주제 후보를 가져왔습니다.`,
         });
       } catch (err) {
         console.error('Error importing idea handoff:', err);
-        setIdeasError('대화에서 글감 후보를 가져오지 못했습니다.');
+        setIdeasError('대화에서 핵심 주제 후보를 가져오지 못했습니다.');
         setAiStatus({
           mode: 'unavailable',
           assistantAvailable: false,
@@ -704,7 +586,7 @@ export default function NewPost() {
           reason: 'AI import 경로를 처리하지 못했습니다.',
         });
         toast({
-          title: '글감 가져오기 실패',
+          title: '핵심 주제 가져오기 실패',
           description: '브라우저 확장에서 전달된 대화를 처리하지 못했습니다.',
           variant: 'destructive',
         });
@@ -787,7 +669,7 @@ export default function NewPost() {
             onClick={() => setIdeasSheetOpen(true)}
           >
             <Lightbulb className="h-4 w-4" />
-            <span className="hidden sm:inline">글감</span>
+            <span className="hidden sm:inline">주제</span>
           </Button>
 
           <Button
@@ -851,23 +733,18 @@ export default function NewPost() {
             <PostIdeasPanel
               actionError={actionError}
               aiStatus={aiStatus}
-              assistantMessages={assistantMessages}
               error={ideasError}
               ideas={ideaCandidates}
               isDismissingAllIdeas={isDismissingAllIdeas}
               isDismissingIdeaId={isDismissingIdeaId}
               isGeneratingDraft={isGeneratingDraft}
               isLoading={isIdeasBusy}
-              isSendingAssistantMessage={isSendingAssistantMessage}
-              isStartingAssistant={isStartingAssistant}
               onDismissAllIdeas={handleDismissAllIdeas}
               onDismissIdea={handleDismissIdea}
               onCopyContinuationBrief={handleCopyContinuationBrief}
               onGenerateDraft={handleGenerateDraft}
               onOpenSource={handleOpenIdeaSource}
               onSelectIdea={handleSelectIdea}
-              onSendAssistantMessage={handleSendAssistantMessage}
-              onStartAssistant={handleStartAssistant}
               selectedIdea={selectedIdea}
             />
           </div>
@@ -877,28 +754,23 @@ export default function NewPost() {
       <Sheet open={ideasSheetOpen} onOpenChange={setIdeasSheetOpen}>
         <SheetContent side="right" className="w-[92vw] max-w-md overflow-y-auto">
           <SheetHeader className="mb-4 text-left">
-            <SheetTitle>최근 글감 후보</SheetTitle>
+            <SheetTitle>최근 핵심 주제 후보</SheetTitle>
           </SheetHeader>
           <PostIdeasPanel
             actionError={actionError}
             aiStatus={aiStatus}
-            assistantMessages={assistantMessages}
             error={ideasError}
             ideas={ideaCandidates}
             isDismissingAllIdeas={isDismissingAllIdeas}
             isDismissingIdeaId={isDismissingIdeaId}
             isGeneratingDraft={isGeneratingDraft}
             isLoading={isIdeasBusy}
-            isSendingAssistantMessage={isSendingAssistantMessage}
-            isStartingAssistant={isStartingAssistant}
             onDismissAllIdeas={handleDismissAllIdeas}
             onDismissIdea={handleDismissIdea}
             onCopyContinuationBrief={handleCopyContinuationBrief}
             onGenerateDraft={handleGenerateDraft}
             onOpenSource={handleOpenIdeaSource}
             onSelectIdea={handleSelectIdea}
-            onSendAssistantMessage={handleSendAssistantMessage}
-            onStartAssistant={handleStartAssistant}
             selectedIdea={selectedIdea}
           />
         </SheetContent>

@@ -1,51 +1,37 @@
 "use client"
 
-import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
 import type {
   AiStatusResponse,
   IdeaCandidate,
 } from "@/lib/types/api"
 import {
-  Bot,
   Copy,
   ExternalLink,
   FilePenLine,
   Lightbulb,
   Loader2,
-  Send,
   Sparkles,
   Trash2,
 } from "lucide-react"
 
-interface AssistantChatMessage {
-  content: string
-  role: "assistant" | "user"
-}
-
 interface PostIdeasPanelProps {
   actionError?: string | null
   aiStatus?: AiStatusResponse | null
-  assistantMessages: AssistantChatMessage[]
   error?: string | null
   ideas: IdeaCandidate[]
   isDismissingAllIdeas?: boolean
   isGeneratingDraft?: boolean
   isDismissingIdeaId?: number | null
   isLoading: boolean
-  isSendingAssistantMessage?: boolean
-  isStartingAssistant?: boolean
   onDismissAllIdeas?: () => void
   onDismissIdea?: (idea: IdeaCandidate) => void
   onCopyContinuationBrief?: () => void
   onGenerateDraft?: () => void
   onOpenSource: (url: string) => void
   onSelectIdea: (idea: IdeaCandidate) => void
-  onSendAssistantMessage?: (message: string) => void
-  onStartAssistant?: () => void
   selectedIdea: IdeaCandidate | null
 }
 
@@ -70,47 +56,28 @@ const AI_STATUS_LABELS: Record<
 export function PostIdeasPanel({
   actionError,
   aiStatus,
-  assistantMessages,
   error,
   ideas,
   isDismissingAllIdeas = false,
   isGeneratingDraft = false,
   isDismissingIdeaId = null,
   isLoading,
-  isSendingAssistantMessage = false,
-  isStartingAssistant = false,
   onDismissAllIdeas,
   onDismissIdea,
   onCopyContinuationBrief,
   onGenerateDraft,
   onOpenSource,
   onSelectIdea,
-  onSendAssistantMessage,
-  onStartAssistant,
   selectedIdea,
 }: PostIdeasPanelProps) {
-  const [assistantInput, setAssistantInput] = useState("")
-
   const remainingIdeas = selectedIdea
     ? ideas.filter((idea) => idea.id !== selectedIdea.id)
     : ideas
 
   const selectedContinuationBrief =
     selectedIdea?.continuationBrief?.trim() || null
-  const canUseAssistant =
-    aiStatus?.assistantAvailable === true && Boolean(selectedIdea)
   const canGenerateDraft =
     aiStatus?.draftAvailable === true && Boolean(selectedIdea)
-
-  const handleAssistantSubmit = () => {
-    const nextMessage = assistantInput.trim()
-    if (!nextMessage || !onSendAssistantMessage) {
-      return
-    }
-
-    void onSendAssistantMessage(nextMessage)
-    setAssistantInput("")
-  }
 
   return (
     <div className="space-y-4">
@@ -119,7 +86,7 @@ export function PostIdeasPanel({
           <div className="flex items-start justify-between gap-3">
             <CardTitle className="flex items-center gap-2 text-base text-neutral-slate-800">
               <Lightbulb className="h-4 w-4 text-brand-blue-600" />
-              최근 글감 후보
+              최근 핵심 주제 후보
             </CardTitle>
 
             <Button
@@ -158,22 +125,22 @@ export function PostIdeasPanel({
 
         <CardContent className="space-y-4">
           {selectedIdea ? (
-            <div className="rounded-2xl border border-brand-blue-200 bg-brand-blue-50 p-4">
-              <div className="mb-2 flex items-start justify-between gap-3">
-                <div>
+            <div className="overflow-hidden rounded-2xl border border-brand-blue-200 bg-brand-blue-50 p-4 sm:p-5">
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold uppercase tracking-wide text-brand-blue-700">
-                    선택한 글감
+                    선택한 핵심 주제
                   </p>
-                  <h3 className="mt-1 text-sm font-semibold text-neutral-slate-800">
+                  <h3 className="mt-1 break-keep text-[15px] font-semibold leading-7 text-neutral-slate-800 sm:text-base">
                     {selectedIdea.title}
                   </h3>
                 </div>
-                <Badge className="bg-white text-brand-blue-700 hover:bg-white">
+                <Badge className="max-w-full self-start bg-white text-brand-blue-700 hover:bg-white">
                   {selectedIdea.category}
                 </Badge>
               </div>
 
-              <p className="text-sm leading-6 text-neutral-slate-600">
+              <p className="break-keep text-sm leading-7 text-neutral-slate-600">
                 {selectedIdea.evidenceSnippet}
               </p>
 
@@ -191,11 +158,11 @@ export function PostIdeasPanel({
                 </div>
               ) : null}
 
-              <div className="mt-4 grid gap-2">
+              <div className="mt-4 space-y-2">
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
+                  className="h-auto w-full whitespace-normal border-red-200 bg-white px-4 py-3 text-red-600 hover:bg-red-50 hover:text-red-700"
                   disabled={isDismissingIdeaId === selectedIdea.id}
                   onClick={() => onDismissIdea?.(selectedIdea)}
                 >
@@ -204,13 +171,13 @@ export function PostIdeasPanel({
                   ) : (
                     <Trash2 className="mr-2 h-4 w-4" />
                   )}
-                  글감 삭제
+                    주제 삭제
                 </Button>
 
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-white"
+                  className="h-auto w-full whitespace-normal border-brand-blue-200 bg-white px-4 py-3 text-brand-blue-700 hover:bg-white"
                   onClick={() => onOpenSource(selectedIdea.sourceUrl)}
                 >
                   <ExternalLink className="mr-2 h-4 w-4" />
@@ -220,6 +187,7 @@ export function PostIdeasPanel({
                 <Button
                   type="button"
                   variant="outline"
+                  className="h-auto w-full whitespace-normal px-4 py-3"
                   disabled={!selectedContinuationBrief}
                   onClick={onCopyContinuationBrief}
                 >
@@ -227,35 +195,19 @@ export function PostIdeasPanel({
                   ChatGPT 이어쓰기 프롬프트 복사
                 </Button>
 
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={!canUseAssistant || isStartingAssistant}
-                    onClick={onStartAssistant}
-                  >
-                    {isStartingAssistant ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Bot className="mr-2 h-4 w-4" />
-                    )}
-                    assistant 시작
-                  </Button>
-
-                  <Button
-                    type="button"
-                    className="bg-brand-blue-600 text-white hover:bg-brand-blue-700"
-                    disabled={!canGenerateDraft || isGeneratingDraft}
-                    onClick={onGenerateDraft}
-                  >
-                    {isGeneratingDraft ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <FilePenLine className="mr-2 h-4 w-4" />
-                    )}
-                    초안 생성
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  className="h-auto w-full whitespace-normal bg-brand-blue-600 px-4 py-3 text-white hover:bg-brand-blue-700"
+                  disabled={!canGenerateDraft || isGeneratingDraft}
+                  onClick={onGenerateDraft}
+                >
+                  {isGeneratingDraft ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FilePenLine className="mr-2 h-4 w-4" />
+                  )}
+                  초안 생성
+                </Button>
               </div>
 
               {selectedContinuationBrief ? (
@@ -264,69 +216,9 @@ export function PostIdeasPanel({
                     <Sparkles className="h-3.5 w-3.5" />
                     이어쓰기 브리프
                   </div>
-                  <p className="text-xs leading-5 text-neutral-slate-600">
+                  <p className="break-keep text-xs leading-6 text-neutral-slate-600">
                     {selectedContinuationBrief}
                   </p>
-                </div>
-              ) : null}
-
-              {assistantMessages.length > 0 || canUseAssistant ? (
-                <div className="mt-4 rounded-xl border border-white/70 bg-white/80 p-3">
-                  <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-neutral-slate-600">
-                    <Bot className="h-3.5 w-3.5" />
-                    블로그 assistant
-                  </div>
-
-                  {assistantMessages.length > 0 ? (
-                    <div className="space-y-2">
-                      {assistantMessages.map((message, index) => (
-                        <div
-                          key={`${message.role}-${index}`}
-                          className={`rounded-xl px-3 py-2 text-sm leading-6 ${
-                            message.role === "assistant"
-                              ? "bg-brand-blue-50 text-neutral-slate-700"
-                              : "bg-neutral-slate-100 text-neutral-slate-700"
-                          }`}
-                        >
-                          {message.content}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm leading-6 text-neutral-slate-500">
-                      assistant를 시작하면 글의 각도, 구조, 포함할 사례를 빠르게 정리할 수 있습니다.
-                    </p>
-                  )}
-
-                  <div className="mt-3 flex flex-col gap-2">
-                    <Textarea
-                      value={assistantInput}
-                      onChange={(event) => setAssistantInput(event.target.value)}
-                      placeholder={
-                        canUseAssistant
-                          ? "예: 이 글의 독자 수준과 섹션 구조를 정리해줘"
-                          : "AI worker가 없으면 assistant 대화는 비활성화됩니다."
-                      }
-                      className="min-h-[96px] bg-white"
-                      disabled={!canUseAssistant || isSendingAssistantMessage}
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAssistantSubmit}
-                      disabled={
-                        !canUseAssistant ||
-                        !assistantInput.trim() ||
-                        isSendingAssistantMessage
-                      }
-                    >
-                      {isSendingAssistantMessage ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="mr-2 h-4 w-4" />
-                      )}
-                      assistant에게 보내기
-                    </Button>
-                  </div>
                 </div>
               ) : null}
             </div>
@@ -341,7 +233,7 @@ export function PostIdeasPanel({
           {isLoading ? (
             <div className="flex items-center justify-center rounded-2xl border border-dashed border-brand-blue-100 p-8 text-sm text-neutral-slate-500">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              글감 후보를 불러오는 중...
+              핵심 주제 후보를 불러오는 중...
             </div>
           ) : error ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
@@ -349,7 +241,7 @@ export function PostIdeasPanel({
             </div>
           ) : remainingIdeas.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-brand-blue-100 p-4 text-sm text-neutral-slate-500">
-              아직 가져온 글감 후보가 없습니다. ChatGPT 대화에서 글감을 가져오면 여기에 표시됩니다.
+              아직 가져온 핵심 주제 후보가 없습니다. ChatGPT 대화에서 핵심 주제를 가져오면 여기에 표시됩니다.
             </div>
           ) : (
             <div className="space-y-3">
@@ -358,16 +250,16 @@ export function PostIdeasPanel({
                   key={idea.id}
                   className="rounded-2xl border border-neutral-slate-200 bg-white p-4"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-semibold leading-6 text-neutral-slate-800">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="break-keep text-sm font-semibold leading-6 text-neutral-slate-800">
                         {idea.title}
                       </h3>
-                      <p className="mt-2 text-sm leading-6 text-neutral-slate-600">
+                      <p className="mt-2 break-keep text-sm leading-6 text-neutral-slate-600">
                         {idea.evidenceSnippet}
                       </p>
                     </div>
-                    <Badge variant="secondary" className="shrink-0">
+                    <Badge variant="secondary" className="shrink-0 self-start">
                       {idea.category}
                     </Badge>
                   </div>
@@ -394,18 +286,18 @@ export function PostIdeasPanel({
                     ) : null}
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
                     <Button
                       type="button"
-                      className="flex-1 bg-brand-blue-600 text-white hover:bg-brand-blue-700"
+                      className="bg-brand-blue-600 text-white hover:bg-brand-blue-700 sm:col-span-2"
                       onClick={() => onSelectIdea(idea)}
                     >
-                      이 글감 사용
+                      이 주제 사용
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      className="flex-1"
+                      className="min-w-0 whitespace-normal"
                       disabled={isDismissingIdeaId === idea.id}
                       onClick={() => onOpenSource(idea.sourceUrl)}
                     >
@@ -415,7 +307,7 @@ export function PostIdeasPanel({
                     <Button
                       type="button"
                       variant="outline"
-                      className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      className="min-w-0 whitespace-normal border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                       disabled={isDismissingIdeaId === idea.id}
                       onClick={() => onDismissIdea?.(idea)}
                     >
