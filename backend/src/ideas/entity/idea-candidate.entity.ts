@@ -13,6 +13,7 @@ import { Post } from '../../posts/entity/post.entity';
 export enum IdeaCandidateStatus {
   OPEN = 'open',
   USED = 'used',
+  DISMISSED = 'dismissed',
 }
 
 @Entity('idea_candidates')

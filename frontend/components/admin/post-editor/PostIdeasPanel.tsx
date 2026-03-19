@@ -18,6 +18,7 @@ import {
   Loader2,
   Send,
   Sparkles,
+  Trash2,
 } from "lucide-react"
 
 interface AssistantChatMessage {
@@ -31,10 +32,14 @@ interface PostIdeasPanelProps {
   assistantMessages: AssistantChatMessage[]
   error?: string | null
   ideas: IdeaCandidate[]
+  isDismissingAllIdeas?: boolean
   isGeneratingDraft?: boolean
+  isDismissingIdeaId?: number | null
   isLoading: boolean
   isSendingAssistantMessage?: boolean
   isStartingAssistant?: boolean
+  onDismissAllIdeas?: () => void
+  onDismissIdea?: (idea: IdeaCandidate) => void
   onCopyContinuationBrief?: () => void
   onGenerateDraft?: () => void
   onOpenSource: (url: string) => void
@@ -68,10 +73,14 @@ export function PostIdeasPanel({
   assistantMessages,
   error,
   ideas,
+  isDismissingAllIdeas = false,
   isGeneratingDraft = false,
+  isDismissingIdeaId = null,
   isLoading,
   isSendingAssistantMessage = false,
   isStartingAssistant = false,
+  onDismissAllIdeas,
+  onDismissIdea,
   onCopyContinuationBrief,
   onGenerateDraft,
   onOpenSource,
@@ -107,10 +116,28 @@ export function PostIdeasPanel({
     <div className="space-y-4">
       <Card className="border-brand-blue-100 shadow-none">
         <CardHeader className="space-y-3 pb-3">
-          <CardTitle className="flex items-center gap-2 text-base text-neutral-slate-800">
-            <Lightbulb className="h-4 w-4 text-brand-blue-600" />
-            최근 글감 후보
-          </CardTitle>
+          <div className="flex items-start justify-between gap-3">
+            <CardTitle className="flex items-center gap-2 text-base text-neutral-slate-800">
+              <Lightbulb className="h-4 w-4 text-brand-blue-600" />
+              최근 글감 후보
+            </CardTitle>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              disabled={ideas.length === 0 || isLoading || isDismissingAllIdeas}
+              onClick={onDismissAllIdeas}
+            >
+              {isDismissingAllIdeas ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              전체 삭제
+            </Button>
+          </div>
 
           {aiStatus ? (
             <div className="space-y-2">
@@ -165,6 +192,21 @@ export function PostIdeasPanel({
               ) : null}
 
               <div className="mt-4 grid gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-red-200 bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
+                  disabled={isDismissingIdeaId === selectedIdea.id}
+                  onClick={() => onDismissIdea?.(selectedIdea)}
+                >
+                  {isDismissingIdeaId === selectedIdea.id ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-2 h-4 w-4" />
+                  )}
+                  글감 삭제
+                </Button>
+
                 <Button
                   type="button"
                   variant="outline"
@@ -364,10 +406,25 @@ export function PostIdeasPanel({
                       type="button"
                       variant="outline"
                       className="flex-1"
+                      disabled={isDismissingIdeaId === idea.id}
                       onClick={() => onOpenSource(idea.sourceUrl)}
                     >
                       <ExternalLink className="mr-2 h-4 w-4" />
                       채팅 열기
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      disabled={isDismissingIdeaId === idea.id}
+                      onClick={() => onDismissIdea?.(idea)}
+                    >
+                      {isDismissingIdeaId === idea.id ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-4 w-4" />
+                      )}
+                      삭제
                     </Button>
                   </div>
                 </div>

@@ -3,6 +3,7 @@ import {
   AiStatusResponse,
   AssistantReply,
   AssistantSession,
+  DismissIdeaCandidatesResponse,
   DraftGenerationResponse,
   IdeaCandidate,
   IdeaCandidateStatus,
@@ -33,6 +34,30 @@ export async function getIdeaCandidates(
   );
 
   return result.data || [];
+}
+
+export async function dismissIdeaCandidate(
+  ideaId: number,
+): Promise<IdeaCandidate> {
+  const result = await apiRequest<{ data: IdeaCandidate }>(
+    `/idea-candidates/${ideaId}`,
+    {
+      method: 'DELETE',
+    },
+  );
+
+  return result.data;
+}
+
+export async function dismissAllIdeaCandidates(): Promise<DismissIdeaCandidatesResponse> {
+  const result = await apiRequest<{ data: DismissIdeaCandidatesResponse }>(
+    '/idea-candidates',
+    {
+      method: 'DELETE',
+    },
+  );
+
+  return result.data;
 }
 
 export async function getAiStatus(): Promise<AiStatusResponse> {

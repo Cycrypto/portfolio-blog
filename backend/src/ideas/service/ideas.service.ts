@@ -108,6 +108,40 @@ export class IdeasService {
     return candidates.map((candidate) => this.toIdeaCandidateResponseDto(candidate));
   }
 
+  async dismissIdeaCandidate(id: number): Promise<IdeaCandidateResponseDto> {
+    const candidate = await this.requireIdeaCandidate(id);
+
+    if (candidate.status === IdeaCandidateStatus.USED) {
+      throw new BadRequestException('이미 게시물에 사용된 글감 후보는 삭제할 수 없습니다.');
+    }
+
+    if (candidate.status === IdeaCandidateStatus.DISMISSED) {
+      return this.toIdeaCandidateResponseDto(candidate);
+    }
+
+    candidate.status = IdeaCandidateStatus.DISMISSED;
+    candidate.usedAt = null;
+    candidate.usedPostId = null;
+
+    const savedCandidate = await this.ideaCandidateRepository.save(candidate);
+    return this.toIdeaCandidateResponseDto(savedCandidate);
+  }
+
+  async dismissAllIdeaCandidates(): Promise<{ dismissedCount: number }> {
+    const result = await this.ideaCandidateRepository.update(
+      { status: IdeaCandidateStatus.OPEN },
+      {
+        status: IdeaCandidateStatus.DISMISSED,
+        usedPostId: null,
+        usedAt: null,
+      },
+    );
+
+    return {
+      dismissedCount: result.affected || 0,
+    };
+  }
+
   async getAiStatus(): Promise<AiStatusResponseDto> {
     const health = await this.workerGatewayService.getHealth();
     const response = new AiStatusResponseDto();

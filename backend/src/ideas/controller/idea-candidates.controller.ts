@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -27,6 +28,7 @@ import { IdeaCandidateResponseDto } from '../dto/response/idea-candidate-respons
 import { AssistantSessionResponseDto } from '../dto/response/assistant-session-response.dto';
 import { GenerateIdeaDraftRequestDto } from '../dto/request/generate-idea-draft-request.dto';
 import { DraftGenerationResponseDto } from '../dto/response/draft-generation-response.dto';
+import { DismissIdeaCandidatesResponseDto } from '../dto/response/dismiss-idea-candidates-response.dto';
 
 @ApiTags('Idea Candidates')
 @Controller()
@@ -58,6 +60,37 @@ export class IdeaCandidatesController {
     @Query('limit') limit: number = 20,
   ): Promise<IdeaCandidateResponseDto[]> {
     return this.ideasService.getIdeaCandidates(status, limit);
+  }
+
+  @Delete('idea-candidates/:id')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtRoleGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: '글감 후보를 목록에서 제거합니다. (Admin Only)' })
+  @ApiParam({ name: 'id', example: 12 })
+  @ApiResponse({
+    status: 200,
+    description: '글감 후보가 dismissed 상태로 변경되었습니다.',
+    type: IdeaCandidateResponseDto,
+  })
+  async dismissIdeaCandidate(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<IdeaCandidateResponseDto> {
+    return this.ideasService.dismissIdeaCandidate(id);
+  }
+
+  @Delete('idea-candidates')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtRoleGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: 'open 상태 글감 후보를 전체 제거합니다. (Admin Only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'open 상태 글감 후보를 dismissed 상태로 변경했습니다.',
+    type: DismissIdeaCandidatesResponseDto,
+  })
+  async dismissAllIdeaCandidates(): Promise<DismissIdeaCandidatesResponseDto> {
+    return this.ideasService.dismissAllIdeaCandidates();
   }
 
   @Post('ideas/:id/session')
