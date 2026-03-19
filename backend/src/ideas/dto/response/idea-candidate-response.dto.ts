@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IdeaGeneratorMode } from '../../entity/idea-import.entity';
 import { IdeaCandidateStatus } from '../../entity/idea-candidate.entity';
+import { IdeaGeneratorMode } from '../../entity/idea-import.enums';
 
 export class IdeaCandidateResponseDto {
   @ApiProperty({ example: 1 })

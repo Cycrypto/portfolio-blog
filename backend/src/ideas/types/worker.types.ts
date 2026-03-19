@@ -1,4 +1,4 @@
-import { IdeaGeneratorMode } from '../entity/idea-import.entity';
+import { IdeaGeneratorMode } from '../entity/idea-import.enums';
 
 export interface IdeaSummaryPackage {
   summaryShort: string;

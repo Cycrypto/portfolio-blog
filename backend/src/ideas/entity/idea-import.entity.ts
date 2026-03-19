@@ -6,15 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { IdeaCandidate } from './idea-candidate.entity';
-
-export enum IdeaSourceType {
-  CHATGPT = 'chatgpt',
-}
-
-export enum IdeaGeneratorMode {
-  FALLBACK = 'fallback',
-  WORKER = 'worker',
-}
+import { IdeaGeneratorMode, IdeaSourceType } from './idea-import.enums';
 
 @Entity('idea_imports')
 export class IdeaImport {
