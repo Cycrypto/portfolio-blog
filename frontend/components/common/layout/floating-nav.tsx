@@ -44,8 +44,8 @@ export function FloatingNav() {
 
   const navItems = [
     { name: "소개", href: "#about" },
-    { name: "프로젝트", href: "#projects" },
     { name: "경험", href: "#experience" },
+    { name: "프로젝트", href: "#projects" },
     { name: "블로그", href: "#blog" },
     { name: "연락", href: "#contact" },
   ]
@@ -105,7 +105,7 @@ export function FloatingNav() {
                     <a
                       href="/api/resume"
                       className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-blue-700 hover:bg-brand-blue-50"
-                      onClick={handleNavClick}
+                      onClick={() => handleNavClick("/api/resume")}
                     >
                       <Download className="h-4 w-4" />
                       이력서

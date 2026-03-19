@@ -57,14 +57,14 @@ function resolveFontPaths(): { serif: string; sans: string } {
     'A Korean serif font is required to generate the resume PDF.',
   );
 
-  const sans = resolveFontPath(
-    [
-      '/System/Library/Fonts/Supplemental/AppleGothic.ttf',
-      '/System/Library/Fonts/AppleSDGothicNeo.ttc',
-      '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',
-    ],
-    'A Korean sans-serif font is required to generate the resume PDF.',
-  );
+  const sansCandidates = [
+    path.join(process.cwd(), 'public', 'fonts', 'AppleGothic.ttf'),
+    path.join(process.cwd(), '..', 'frontend', 'public', 'fonts', 'AppleGothic.ttf'),
+    '/System/Library/Fonts/Supplemental/AppleGothic.ttf',
+    '/System/Library/Fonts/AppleSDGothicNeo.ttc',
+    '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',
+  ];
+  const sans = sansCandidates.find((candidate) => fs.existsSync(candidate)) || serif;
 
   return { serif, sans };
 }

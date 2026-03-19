@@ -427,6 +427,19 @@ export default async function PortfolioPage() {
         </div>
       </section>
 
+      <section id="experience" className="section-spacing">
+        <div className="container">
+          <SectionHeading
+            title="경험"
+            subtitle="어떤 역할을 맡아왔는지"
+          />
+
+          <div className="mt-12">
+            <Timeline initialExperiences={experiences} />
+          </div>
+        </div>
+      </section>
+
       <section id="projects" className="section-spacing">
         <div className="container">
           <SectionHeading
@@ -466,19 +479,6 @@ export default async function PortfolioPage() {
               </Button>
             </GlassmorphicCard>
           )}
-        </div>
-      </section>
-
-      <section id="experience" className="section-spacing">
-        <div className="container">
-          <SectionHeading
-            title="경험"
-            subtitle="어떤 역할을 맡아왔는지"
-          />
-
-          <div className="mt-12">
-            <Timeline initialExperiences={experiences} />
-          </div>
         </div>
       </section>
 
