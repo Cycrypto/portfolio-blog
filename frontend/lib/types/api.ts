@@ -122,7 +122,7 @@ export interface UpdatePostRequest {
   readTime?: number;
 }
 
-export type IdeaCandidateStatus = 'open' | 'used';
+export type IdeaCandidateStatus = 'open' | 'used' | 'dismissed';
 export type IdeaGeneratorMode = 'fallback' | 'worker';
 
 export interface IdeaCandidate {
@@ -159,6 +159,10 @@ export interface ImportChatGptIdeaResponse {
   mode: 'worker' | 'fallback';
   deduped: boolean;
   candidates: IdeaCandidate[];
+}
+
+export interface DismissIdeaCandidatesResponse {
+  dismissedCount: number;
 }
 
 export interface AiStatusResponse {

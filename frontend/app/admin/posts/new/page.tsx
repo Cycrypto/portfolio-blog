@@ -18,6 +18,8 @@ import {
 import { TiptapEditor } from '@/components/editor/TiptapEditor';
 import {
   createPost,
+  dismissAllIdeaCandidates,
+  dismissIdeaCandidate,
   generateIdeaDraft,
   getAiStatus,
   getIdeaCandidates,
@@ -116,6 +118,10 @@ export default function NewPost() {
   const [isSendingAssistantMessage, setIsSendingAssistantMessage] =
     useState(false);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+  const [isDismissingAllIdeas, setIsDismissingAllIdeas] = useState(false);
+  const [isDismissingIdeaId, setIsDismissingIdeaId] = useState<number | null>(
+    null,
+  );
 
   const metrics = useMemo(
     () => calculateEditorMetrics(contentJson),
@@ -211,6 +217,86 @@ export default function NewPost() {
 
     window.open(url, '_blank', 'noopener,noreferrer');
   }, []);
+
+  const handleDismissIdea = useCallback(
+    async (idea: IdeaCandidate) => {
+      const shouldDismiss = window.confirm(
+        `"${idea.title}" 글감을 목록에서 삭제할까요?`,
+      );
+
+      if (!shouldDismiss) {
+        return;
+      }
+
+      try {
+        setIsDismissingIdeaId(idea.id);
+        setActionError(null);
+        await dismissIdeaCandidate(idea.id);
+
+        setIdeaCandidates((currentIdeas) =>
+          currentIdeas.filter((candidate) => candidate.id !== idea.id),
+        );
+
+        if (selectedIdea?.id === idea.id) {
+          setSelectedIdea(null);
+          setAssistantMessages([]);
+          setAssistantSessionId(null);
+        }
+
+        toast({
+          title: '글감 삭제 완료',
+          description: '선택한 글감 후보를 목록에서 제거했습니다.',
+        });
+      } catch (err) {
+        console.error('Error dismissing idea candidate:', err);
+        setActionError(
+          err instanceof Error
+            ? err.message
+            : '글감 후보를 삭제하지 못했습니다.',
+        );
+      } finally {
+        setIsDismissingIdeaId(null);
+      }
+    },
+    [selectedIdea?.id, toast],
+  );
+
+  const handleDismissAllIdeas = useCallback(async () => {
+    if (ideaCandidates.length === 0) {
+      return;
+    }
+
+    const shouldDismiss = window.confirm(
+      '현재 보이는 글감 후보를 모두 삭제할까요?',
+    );
+
+    if (!shouldDismiss) {
+      return;
+    }
+
+    try {
+      setIsDismissingAllIdeas(true);
+      setActionError(null);
+      const result = await dismissAllIdeaCandidates();
+      setIdeaCandidates([]);
+      setSelectedIdea(null);
+      setAssistantMessages([]);
+      setAssistantSessionId(null);
+      toast({
+        title: '전체 삭제 완료',
+        description: `${result.dismissedCount}개의 글감 후보를 목록에서 제거했습니다.`,
+      });
+    } catch (err) {
+      console.error('Error dismissing all idea candidates:', err);
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : '글감 후보를 전체 삭제하지 못했습니다.',
+      );
+    } finally {
+      setIsDismissingAllIdeas(false);
+    }
+  }, [ideaCandidates.length, toast]);
 
   const updateSelectedIdeaContinuationBrief = useCallback(
     (ideaId: number, continuationBrief: string) => {
@@ -768,10 +854,14 @@ export default function NewPost() {
               assistantMessages={assistantMessages}
               error={ideasError}
               ideas={ideaCandidates}
+              isDismissingAllIdeas={isDismissingAllIdeas}
+              isDismissingIdeaId={isDismissingIdeaId}
               isGeneratingDraft={isGeneratingDraft}
               isLoading={isIdeasBusy}
               isSendingAssistantMessage={isSendingAssistantMessage}
               isStartingAssistant={isStartingAssistant}
+              onDismissAllIdeas={handleDismissAllIdeas}
+              onDismissIdea={handleDismissIdea}
               onCopyContinuationBrief={handleCopyContinuationBrief}
               onGenerateDraft={handleGenerateDraft}
               onOpenSource={handleOpenIdeaSource}
@@ -795,10 +885,14 @@ export default function NewPost() {
             assistantMessages={assistantMessages}
             error={ideasError}
             ideas={ideaCandidates}
+            isDismissingAllIdeas={isDismissingAllIdeas}
+            isDismissingIdeaId={isDismissingIdeaId}
             isGeneratingDraft={isGeneratingDraft}
             isLoading={isIdeasBusy}
             isSendingAssistantMessage={isSendingAssistantMessage}
             isStartingAssistant={isStartingAssistant}
+            onDismissAllIdeas={handleDismissAllIdeas}
+            onDismissIdea={handleDismissIdea}
             onCopyContinuationBrief={handleCopyContinuationBrief}
             onGenerateDraft={handleGenerateDraft}
             onOpenSource={handleOpenIdeaSource}
