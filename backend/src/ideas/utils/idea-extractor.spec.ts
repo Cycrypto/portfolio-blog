@@ -38,6 +38,10 @@ describe('idea-extractor', () => {
 
     expect(candidates.length).toBeGreaterThanOrEqual(2);
     expect(candidates[0].title).toContain('NestJS');
+    expect(candidates[0].title).toMatch(/^이 대화는 /);
+    expect(candidates[0].title).not.toContain('실전 체크리스트');
+    expect(candidates[0].title).not.toContain('문제 해결하기');
+    expect(candidates[0].evidenceSnippet).toContain('반복');
     expect(
       candidates.some((candidate) =>
         candidate.tags.some((tag) => ['NestJS', 'Auth', 'TypeORM'].includes(tag)),

@@ -32,21 +32,28 @@ export function buildFallbackSummaryPackage(input: {
     sentences.filter((sentence) => OPEN_QUESTION_PATTERN.test(sentence)).slice(0, 4),
   );
 
-  const keyPoints = uniqueStrings([
-    ...input.candidates.map((candidate) => candidate.title),
-    ...evidenceSnippets,
-  ]).slice(0, 6);
-
-  const summaryShort = trimText(
-    evidenceSnippets[0] || input.candidates[0]?.title || input.sourceTitle,
+  const primaryTheme = trimText(
+    input.candidates[0]?.title ||
+      `이 대화는 ${sanitizeThemeLabel(input.sourceTitle)}를 중심으로 정리하는 흐름이다.`,
     180,
   );
 
+  const keyPoints = uniqueStrings([
+    ...evidenceSnippets,
+    ...input.candidates.map((candidate) => candidate.evidenceSnippet),
+    ...technicalTopics.map((topic) => `${topic} 관련 논점`),
+    ...decisions,
+    ...openQuestions,
+  ]).slice(0, 6);
+
+  const summaryShort = primaryTheme;
+
   const summaryLong = trimText(
     [
-      input.sourceTitle,
+      primaryTheme,
       keyPoints.length > 0 ? `핵심 포인트: ${keyPoints.join(' / ')}` : '',
       technicalTopics.length > 0 ? `기술 주제: ${technicalTopics.join(', ')}` : '',
+      decisions.length > 0 ? `결정: ${decisions.join(' / ')}` : '',
       openQuestions.length > 0 ? `남은 질문: ${openQuestions.join(' / ')}` : '',
     ]
       .filter(Boolean)
@@ -58,7 +65,7 @@ export function buildFallbackSummaryPackage(input: {
     [
       `원본 대화 제목: ${input.sourceTitle}`,
       `원본 링크: ${input.sourceUrl}`,
-      summaryShort ? `짧은 요약: ${summaryShort}` : '',
+      summaryShort ? `대표 주제: ${summaryShort}` : '',
       keyPoints.length > 0 ? `핵심 포인트: ${keyPoints.join(' | ')}` : '',
       technicalTopics.length > 0 ? `기술 주제: ${technicalTopics.join(', ')}` : '',
       openQuestions.length > 0 ? `열린 질문: ${openQuestions.join(' | ')}` : '',
@@ -96,4 +103,14 @@ function trimText(value: string, maxLength: number): string {
   }
 
   return `${value.slice(0, maxLength - 1).trim()}…`;
+}
+
+function sanitizeThemeLabel(value: string): string {
+  return (
+    value
+    .replace(/\s*-\s*ChatGPT\s*$/iu, '')
+    .replace(/^이 대화는\s*/u, '')
+    .replace(/\s+/g, ' ')
+    .trim() || '핵심 주제'
+  );
 }
