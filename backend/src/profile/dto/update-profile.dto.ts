@@ -1,10 +1,20 @@
-import { IsBoolean, IsEmail, IsOptional, IsString, IsArray, ValidateNested, IsNumber } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateIf,
+  ValidateNested,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 class SkillDto {
   @IsString()
   name: string;
 
+  @Type(() => Number)
   @IsNumber()
   level: number;
 }
@@ -23,6 +33,8 @@ export class UpdateProfileDto {
   subtitle?: string;
 
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @ValidateIf((_, value) => value !== '')
   @IsEmail()
   email?: string;
 

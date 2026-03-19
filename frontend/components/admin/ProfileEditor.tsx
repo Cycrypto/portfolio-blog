@@ -106,7 +106,7 @@ export function ProfileEditor() {
     } catch (error) {
       toast({
         title: "저장 실패",
-        description: "프로필 저장 중 오류가 발생했습니다.",
+        description: error instanceof Error ? error.message : "프로필 저장 중 오류가 발생했습니다.",
         variant: "destructive",
       })
     } finally {

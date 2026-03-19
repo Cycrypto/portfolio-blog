@@ -1,4 +1,4 @@
-import { apiRequest } from '../client/base'
+import { ApiError, apiRequest } from '../client/base'
 import { TokenManager } from '../../auth/token-manager'
 import { normalizeUrlFields } from '@/lib/utils/url'
 
@@ -34,6 +34,24 @@ export interface ProfileData {
   showStatus: boolean
 }
 
+const PROFILE_FIELDS = [
+  'name',
+  'title',
+  'subtitle',
+  'email',
+  'location',
+  'status',
+  'statusMessage',
+  'github',
+  'linkedin',
+  'about',
+  'description',
+  'skills',
+  'profileImage',
+  'isAvailable',
+  'showStatus',
+] as const
+
 export const profileService = {
   // 프로필 데이터 가져오기
   async getProfile(): Promise<ProfileData> {
@@ -43,7 +61,7 @@ export const profileService = {
       // => response.data?.data에 실데이터가 있음
       // 호환성을 위해 두 경로 모두 체크
       // @ts-ignore
-      return normalizeProfileLinks((response as any)?.data?.data || (response as any)?.data || response as any)
+      return sanitizeProfileData((response as any)?.data?.data || (response as any)?.data || response as any)
     } catch (error) {
       console.error('Failed to fetch profile:', error)
       throw new Error('프로필 데이터를 가져오는데 실패했습니다.')
@@ -55,13 +73,16 @@ export const profileService = {
     try {
       const response = await apiRequest<{ data: ProfileData }>('/profile', {
         method: 'PUT',
-        body: JSON.stringify(normalizeProfileLinks(data)),
+        body: JSON.stringify(sanitizeProfilePayload(data)),
       })
       // 동일하게 래핑된 구조 처리
       // @ts-ignore
-      return normalizeProfileLinks((response as any)?.data?.data || (response as any)?.data || response as any)
+      return sanitizeProfileData((response as any)?.data?.data || (response as any)?.data || response as any)
     } catch (error) {
       console.error('Failed to update profile:', error)
+      if (error instanceof ApiError) {
+        throw new Error(parseApiErrorMessage(error, '프로필 데이터 업데이트에 실패했습니다.'))
+      }
       throw new Error('프로필 데이터 업데이트에 실패했습니다.')
     }
   },
@@ -93,7 +114,12 @@ export const profileService = {
 
   // 기본 프로필 데이터 (임시)
   getDefaultProfile(): ProfileData {
-    return {
+    return createDefaultProfile()
+  }
+}
+
+function createDefaultProfile(): ProfileData {
+  return {
       name: "박준하",
       title: "백엔드 개발자",
       subtitle: "문제를 구조화하고 안정적인 백엔드 시스템을 설계하는 개발자입니다.",
@@ -122,10 +148,80 @@ export const profileService = {
       profileImage: "",
       isAvailable: true,
       showStatus: true
-    }
   }
 }
 
 function normalizeProfileLinks<T extends Partial<ProfileData>>(profile: T): T {
   return normalizeUrlFields(profile, ['github', 'linkedin'])
+}
+
+function sanitizeProfileData(profile: unknown): ProfileData {
+  const normalized = normalizeProfileLinks(pickProfileFields(profile))
+  const defaults = createDefaultProfile()
+
+  return {
+    ...defaults,
+    ...normalized,
+    skills: Array.isArray(normalized.skills)
+      ? normalized.skills.map((skill) => ({
+          name: typeof skill?.name === 'string' ? skill.name : '',
+          level: typeof skill?.level === 'number' ? skill.level : Number(skill?.level) || 0,
+        }))
+      : defaults.skills,
+    isAvailable:
+      typeof normalized.isAvailable === 'boolean'
+        ? normalized.isAvailable
+        : defaults.isAvailable,
+    showStatus:
+      typeof normalized.showStatus === 'boolean'
+        ? normalized.showStatus
+        : defaults.showStatus,
+  }
+}
+
+function sanitizeProfilePayload(profile: Partial<ProfileData>): Partial<ProfileData> {
+  return normalizeProfileLinks(pickProfileFields(profile))
+}
+
+function pickProfileFields(profile: unknown): Partial<ProfileData> {
+  if (!profile || typeof profile !== 'object') {
+    return {}
+  }
+
+  const source = profile as Record<string, unknown>
+  const picked: Partial<ProfileData> = {}
+
+  for (const field of PROFILE_FIELDS) {
+    if (field in source) {
+      ;(picked as Record<string, unknown>)[field] = source[field]
+    }
+  }
+
+  return picked
+}
+
+function parseApiErrorMessage(error: ApiError, fallback: string): string {
+  if (!error.response) {
+    return fallback
+  }
+
+  try {
+    const parsed =
+      typeof error.response === 'string'
+        ? JSON.parse(error.response)
+        : error.response
+    const message = parsed?.message
+
+    if (Array.isArray(message) && message.length > 0) {
+      return message.join(', ')
+    }
+
+    if (typeof message === 'string' && message.trim()) {
+      return message
+    }
+  } catch {
+    return fallback
+  }
+
+  return fallback
 }
