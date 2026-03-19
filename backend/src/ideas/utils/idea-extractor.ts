@@ -24,6 +24,15 @@ interface TokenStats {
   titleMatched: boolean;
 }
 
+interface PhraseStats {
+  turns: Set<number>;
+  roles: Set<IdeaInputMessage['role']>;
+  relatedTechTokens: Set<string>;
+  problemTurns: Set<number>;
+  solutionTurns: Set<number>;
+  titleMatched: boolean;
+}
+
 interface MessageContext {
   role: IdeaInputMessage['role'];
   order: number;
@@ -207,12 +216,36 @@ export function extractIdeaCandidates(input: {
   const sanitizedTitle = sanitizeSourceTitle(input.sourceTitle);
   const contexts = buildMessageContexts(input.messages);
   const technicalStats = collectTechnicalStats(sanitizedTitle, contexts);
+  const phraseStats = collectPhraseStats(sanitizedTitle, contexts);
   const technicalRanking = [...technicalStats.entries()].sort(
     (left, right) => scoreTokenStats(right[1]) - scoreTokenStats(left[1]),
   );
+  const phraseRanking = [...phraseStats.entries()]
+    .filter(([, stats]) => stats.turns.size >= 2 || stats.titleMatched)
+    .sort((left, right) => scorePhraseStats(right[1]) - scorePhraseStats(left[1]));
 
   const candidates: ExtractedIdeaCandidate[] = [];
   const seenTitles = new Set<string>();
+
+  for (const [phrase, stats] of phraseRanking) {
+    if (candidates.length >= TARGET_CANDIDATES) {
+      break;
+    }
+
+    const phraseCandidate = buildPhraseThemeCandidate({
+      sourceTitle: sanitizedTitle,
+      phrase,
+      stats,
+      contexts,
+    });
+
+    if (!phraseCandidate || seenTitles.has(phraseCandidate.title)) {
+      continue;
+    }
+
+    candidates.push(phraseCandidate);
+    seenTitles.add(phraseCandidate.title);
+  }
 
   for (const [techToken, stats] of technicalRanking) {
     if (candidates.length >= TARGET_CANDIDATES) {
@@ -242,6 +275,7 @@ export function extractIdeaCandidates(input: {
     const genericCandidate = buildGenericThemeCandidate({
       sourceTitle: sanitizedTitle,
       contexts,
+      phraseRanking,
       technicalRanking,
     });
 
@@ -337,6 +371,46 @@ function collectTechnicalStats(
   return stats;
 }
 
+function collectPhraseStats(
+  sourceTitle: string,
+  contexts: MessageContext[],
+): Map<string, PhraseStats> {
+  const titleLower = sourceTitle.toLowerCase();
+  const stats = new Map<string, PhraseStats>();
+
+  for (const context of contexts) {
+    for (const phrase of context.phrases) {
+      const existing = stats.get(phrase) || {
+        turns: new Set<number>(),
+        roles: new Set<IdeaInputMessage['role']>(),
+        relatedTechTokens: new Set<string>(),
+        problemTurns: new Set<number>(),
+        solutionTurns: new Set<number>(),
+        titleMatched: false,
+      };
+
+      existing.turns.add(context.order);
+      existing.roles.add(context.role);
+      for (const token of context.techTokens) {
+        existing.relatedTechTokens.add(token);
+      }
+      if (context.hasProblem) {
+        existing.problemTurns.add(context.order);
+      }
+      if (context.hasSolution) {
+        existing.solutionTurns.add(context.order);
+      }
+      if (titleLower.includes(phrase.toLowerCase())) {
+        existing.titleMatched = true;
+      }
+
+      stats.set(phrase, existing);
+    }
+  }
+
+  return stats;
+}
+
 function scoreTokenStats(stats: TokenStats): number {
   return (
     stats.turns.size * 3 +
@@ -346,6 +420,91 @@ function scoreTokenStats(stats: TokenStats): number {
     (stats.solutionTurns.size > 0 ? 1 : 0) +
     (stats.titleMatched ? 2 : 0)
   );
+}
+
+function scorePhraseStats(stats: PhraseStats): number {
+  return (
+    stats.turns.size * 4 +
+    (stats.roles.has('user') && stats.roles.has('assistant') ? 2 : 0) +
+    (stats.problemTurns.size > 0 ? 2 : 0) +
+    (stats.solutionTurns.size > 0 ? 1 : 0) +
+    (stats.titleMatched ? 3 : 0) +
+    Math.min(stats.relatedTechTokens.size, 2)
+  );
+}
+
+function buildPhraseThemeCandidate(input: {
+  sourceTitle: string;
+  phrase: string;
+  stats: PhraseStats;
+  contexts: MessageContext[];
+}): ExtractedIdeaCandidate | null {
+  const relevantContexts = input.contexts.filter(
+    (context) =>
+      context.phrases.includes(input.phrase) ||
+      context.sentences.some((sentence) =>
+        sentence.toLowerCase().includes(input.phrase.toLowerCase()),
+      ),
+  );
+
+  if (relevantContexts.length === 0) {
+    return null;
+  }
+
+  const actionCounts = new Map<string, number>();
+  const relatedTechCounts = new Map<string, number>();
+
+  for (const context of relevantContexts) {
+    const actionTokens =
+      context.actionTokens.length > 0
+        ? context.actionTokens
+        : context.hasProblem
+          ? ['에러']
+          : context.hasSolution
+            ? ['해결']
+            : ['정리'];
+
+    for (const actionToken of actionTokens) {
+      actionCounts.set(actionToken, (actionCounts.get(actionToken) || 0) + 1);
+    }
+
+    for (const relatedToken of context.techTokens) {
+      relatedTechCounts.set(
+        relatedToken,
+        (relatedTechCounts.get(relatedToken) || 0) + 1,
+      );
+    }
+  }
+
+  const dominantAction = pickDominantAction(actionCounts);
+  const relatedTechTokens = [...relatedTechCounts.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .map(([token]) => token)
+    .slice(0, 2);
+  const title = buildThemeSentenceFromScope(
+    buildPhraseScope(input.phrase, relatedTechTokens),
+    dominantAction,
+  );
+  const keywords = uniqueStrings(
+    [input.phrase, dominantAction, ...relatedTechTokens].filter(Boolean) as string[],
+  ).slice(0, 6);
+  const tags = relatedTechTokens.filter((keyword) => isTechnicalKeyword(keyword)).slice(0, 3);
+  const evidenceSnippet = buildThemeReasonSentenceFromSignals({
+    subjectTokens: [input.phrase, ...relatedTechTokens],
+    dominantAction,
+    roles: input.stats.roles,
+    hasProblem: input.stats.problemTurns.size > 0,
+    hasSolution: input.stats.solutionTurns.size > 0,
+  });
+
+  return {
+    title,
+    category: inferCategory([input.phrase, ...relatedTechTokens], title),
+    tags,
+    keywords,
+    evidenceSnippet,
+    score: scorePhraseStats(input.stats) + relatedTechTokens.length,
+  };
 }
 
 function buildThemeCandidate(input: {
@@ -449,13 +608,17 @@ function buildThemeCandidate(input: {
 function buildGenericThemeCandidate(input: {
   sourceTitle: string;
   contexts: MessageContext[];
+  phraseRanking: Array<[string, PhraseStats]>;
   technicalRanking: Array<[string, TokenStats]>;
 }): ExtractedIdeaCandidate | null {
   const topSentence =
     input.contexts.flatMap((context) => context.sentences).find(Boolean) ||
     input.sourceTitle;
+  const topPhrase = input.phraseRanking[0]?.[0] || '';
   const topTechToken = input.technicalRanking[0]?.[0] || '';
-  const focusLabel = sanitizeGenericLabel(topTechToken || topSentence || '대화');
+  const focusLabel = sanitizeGenericLabel(
+    input.sourceTitle || topPhrase || topSentence || topTechToken || '대화',
+  );
   const title = trimThemeSentence(
     `이 대화는 ${focusLabel}를 중심으로 정리하는 흐름이다.`,
   );
@@ -466,9 +629,9 @@ function buildGenericThemeCandidate(input: {
 
   return {
     title,
-    category: inferCategory([topTechToken], title),
+    category: inferCategory([topPhrase, topTechToken], title),
     tags: topTechToken ? [topTechToken] : [],
-    keywords: uniqueStrings([topTechToken, focusLabel]).slice(0, 4),
+    keywords: uniqueStrings([topPhrase, topTechToken, focusLabel]).slice(0, 4),
     evidenceSnippet: trimSnippet(
       topSentence
         ? `${sanitizeGenericLabel(topSentence)}가 대화 전반의 핵심 흐름으로 이어졌다.`
@@ -510,8 +673,16 @@ function buildThemeSentence(
   focusPhrase: string,
   relatedTechTokens: string[],
 ): string {
-  const scope = buildThemeScope(techToken, focusPhrase, relatedTechTokens);
+  return buildThemeSentenceFromScope(
+    buildThemeScope(techToken, focusPhrase, relatedTechTokens),
+    dominantAction,
+  );
+}
 
+function buildThemeSentenceFromScope(
+  scope: string,
+  dominantAction: string,
+): string {
   if (dominantAction === '에러' || dominantAction === '해결') {
     return trimThemeSentence(
       `이 대화는 ${scope} 문제를 분석하고 해결 방향을 정리하는 흐름이다.`,
@@ -561,6 +732,27 @@ function buildThemeScope(
   return techToken;
 }
 
+function buildPhraseScope(
+  phrase: string,
+  relatedTechTokens: string[],
+): string {
+  const trimmedPhrase = sanitizeGenericLabel(phrase);
+
+  if (trimmedPhrase) {
+    if (
+      relatedTechTokens.length > 0 &&
+      !/[A-Za-z]/.test(trimmedPhrase) &&
+      !trimmedPhrase.toLowerCase().includes(relatedTechTokens[0].toLowerCase())
+    ) {
+      return `${relatedTechTokens[0]} ${trimmedPhrase}`;
+    }
+
+    return trimmedPhrase;
+  }
+
+  return relatedTechTokens[0] || '핵심 주제';
+}
+
 function buildThemeReasonSentence(input: {
   techToken: string;
   dominantAction: string;
@@ -583,6 +775,39 @@ function buildThemeReasonSentence(input: {
       : '대화 전반에서';
 
   if (input.stats.problemTurns.size > 0 && input.stats.solutionTurns.size > 0) {
+    return trimSnippet(
+      `${reasonSubject}가 ${roleHint} 반복되고 문제와 해결 흐름이 함께 이어졌다.`,
+    );
+  }
+
+  if (input.dominantAction === '구현' || input.dominantAction === '연동') {
+    return trimSnippet(
+      `${reasonSubject}가 ${roleHint} 반복되며 구현 논점이 구체화됐다.`,
+    );
+  }
+
+  return trimSnippet(
+    `${reasonSubject}가 ${roleHint} 반복적으로 등장했다.`,
+  );
+}
+
+function buildThemeReasonSentenceFromSignals(input: {
+  subjectTokens: string[];
+  dominantAction: string;
+  roles: Set<IdeaInputMessage['role']>;
+  hasProblem: boolean;
+  hasSolution: boolean;
+}): string {
+  const reasonSubject =
+    uniqueStrings(input.subjectTokens)
+      .slice(0, 3)
+      .join(', ') || '핵심 주제';
+  const roleHint =
+    input.roles.has('user') && input.roles.has('assistant')
+      ? 'user와 assistant 양쪽에서'
+      : '대화 전반에서';
+
+  if (input.hasProblem && input.hasSolution) {
     return trimSnippet(
       `${reasonSubject}가 ${roleHint} 반복되고 문제와 해결 흐름이 함께 이어졌다.`,
     );
