@@ -19,6 +19,7 @@ function createStore(config) {
         messages: input.messages,
         summary: input.summary,
         candidates: input.candidates,
+        memory: input.memory || null,
         createdAt: now,
         updatedAt: now,
         expiresAt,
