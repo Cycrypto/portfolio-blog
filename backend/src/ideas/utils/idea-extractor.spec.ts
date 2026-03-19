@@ -49,6 +49,36 @@ describe('idea-extractor', () => {
     ).toBe(true);
   });
 
+  it('prefers repeated conversation themes over forced technical framing', () => {
+    const messages: IdeaInputMessage[] = [
+      {
+        order: 0,
+        role: 'user',
+        text: '일정 검증 기준을 먼저 정하고, 과부하나 충돌이 있으면 재계획 추천까지 이어지는 흐름으로 정리하고 싶어요.',
+      },
+      {
+        order: 1,
+        role: 'assistant',
+        text: '좋습니다. 일정 충돌 검증 규칙, 재계획 추천 기준, 변경 사유 기록을 나눠서 생각해보면 됩니다.',
+      },
+      {
+        order: 2,
+        role: 'user',
+        text: '네, 일정 충돌과 재계획 추천 로직을 한 문맥으로 묶고 싶어요.',
+      },
+    ];
+
+    const candidates = extractIdeaCandidates({
+      sourceTitle: '일정 검증과 재계획 추천 대화 - ChatGPT',
+      messages,
+    });
+
+    expect(candidates.length).toBeGreaterThan(0);
+    expect(candidates[0].title).toMatch(/^이 대화는 /);
+    expect(candidates[0].title).toContain('일정');
+    expect(candidates[0].category).toBe('tutorial');
+  });
+
   it('creates a stable fingerprint from normalized text and url', () => {
     const url = 'https://chatgpt.com/c/abc';
     const messages: IdeaInputMessage[] = [

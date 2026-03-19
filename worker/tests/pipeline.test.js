@@ -175,6 +175,74 @@ test('createImportAnalysis retries with smaller chunks after a chunk summary fai
   assert.ok(chunkAttempt >= 2);
 });
 
+test('createImportAnalysis keeps non-technical themes non-technical when the memory says so', async () => {
+  const oauthClient = {
+    completeJson: async ({ systemPrompt, userPrompt }) => {
+      if (systemPrompt.includes('summarizing one chunk of a longer ChatGPT conversation')) {
+        return {
+          summaryShort: '일정 충돌과 재계획 추천 흐름',
+          keyPoints: ['일정 충돌 검증', '재계획 추천 기준'],
+          technicalTopics: [],
+          decisions: ['변경 사유를 함께 기록하기'],
+          openQuestions: ['어떤 우선순위 기준을 먼저 둘지'],
+          evidenceSnippets: ['일정 충돌과 재계획 추천이 반복적으로 언급됐다'],
+          candidateTurnOrders: [0, 1],
+        };
+      }
+
+      const payload = JSON.parse(userPrompt);
+      return {
+        summaryShort: '일정 충돌과 재계획 추천 기준 정리',
+        summaryLong: 'final long summary',
+        keyPoints: payload.conversationMemory.keyPoints,
+        technicalTopics: [],
+        decisions: payload.conversationMemory.decisions,
+        openQuestions: payload.conversationMemory.openQuestions,
+        evidenceSnippets: payload.conversationMemory.evidenceSnippets,
+        continuationBrief: '학생 일정표 예시로 흐름을 다시 설명한다.',
+        candidates: [
+          {
+            title: '일정 충돌과 재계획 추천 기준 정리',
+            category: 'tutorial',
+            tags: [],
+            keywords: ['일정 충돌', '재계획 추천'],
+            evidenceSnippet: '일정 충돌과 재계획 추천이 대화 전반에 반복됐다',
+            score: 8,
+            continuationBrief: '학생 일정표 예시로 흐름을 다시 설명한다.',
+            sourceMessageRefs: [0, 1],
+          },
+        ],
+      };
+    },
+  };
+
+  const result = await createImportAnalysis({
+    body: {
+      sourceTitle: '일정 검증과 재계획 추천',
+      sourceUrl: 'https://chatgpt.com/c/non-technical',
+      extractedAt: new Date().toISOString(),
+      messages: [
+        {
+          order: 0,
+          role: 'user',
+          text: '일정 충돌을 어떻게 검증하고 재계획 추천까지 이어질지 구조를 잡고 싶어요.',
+        },
+        {
+          order: 1,
+          role: 'assistant',
+          text: '좋아요. 일정 충돌 검증, 변경 사유 기록, 재계획 추천 기준을 한 흐름으로 보면 됩니다.',
+        },
+      ],
+    },
+    oauthClient,
+    config: createConfig(),
+  });
+
+  assert.match(result.summary.summaryShort, /^이 대화는 일정/);
+  assert.equal(result.candidates[0].category, 'tutorial');
+  assert.equal(result.candidates[0].tags.length, 0);
+});
+
 test('draft context prefers salient memory over the full raw transcript excerpt', async () => {
   let capturedContext = null;
   const oauthClient = {

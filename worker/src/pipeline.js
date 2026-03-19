@@ -138,16 +138,17 @@ async function createImportAnalysis({ body, oauthClient, config }) {
 
 function createStarterMessage(context) {
   const focus = context.summaryShort || context.evidenceSnippet || context.title;
-  return `${context.title} 글감을 기준으로 글을 확장해봅시다. 우선 ${focus} 중에서 어떤 독자와 문제 상황을 가장 강조하고 싶은지 정해볼까요?`;
+  return `${context.title} 주제를 기준으로 글을 확장해봅시다. 우선 ${focus} 중에서 어떤 맥락과 독자 포인트를 가장 강조하고 싶은지 정해볼까요?`;
 }
 
 async function createSessionReply({ message, oauthClient, session, rawConversation }) {
   const response = await oauthClient.completeJson({
     systemPrompt: [
-      'You are a Korean writing assistant for a personal engineering blog.',
+      'You are a Korean writing assistant for a personal blog.',
       'Return strict JSON only with reply, suggestions, continuationBrief, sessionSummary.',
       'Keep the tone practical and concise.',
       'Help the author refine angle, structure, examples, and what to omit.',
+      'Do not force a technical framing when the conversation is not technical.',
     ].join(' '),
     userPrompt: JSON.stringify(
       {
@@ -179,10 +180,11 @@ async function createSessionReply({ message, oauthClient, session, rawConversati
 async function createDraftFromContext({ context, oauthClient, rawConversation, session }) {
   const response = await oauthClient.completeJson({
     systemPrompt: [
-      'You are a Korean engineering blog ghostwriter.',
+      'You are a Korean blog ghostwriter.',
       'Return strict JSON only with title, category, tags, markdown.',
       'Write a complete Markdown draft with clear headings, practical details, and a concise conclusion.',
       'Category must be one of frontend, backend, devops, cloud, database, tutorial.',
+      'If the topic is not clearly technical, treat it as a tutorial or general practical post.',
       'Do not fabricate details beyond the provided context.',
     ].join(' '),
     userPrompt: JSON.stringify(
@@ -264,9 +266,10 @@ async function summarizeConversationChunks({
     const chunk = chunks[index];
     const response = await oauthClient.completeJson({
       systemPrompt: [
-        'You are summarizing one chunk of a longer ChatGPT conversation for a personal engineering blog.',
+        'You are summarizing one chunk of a longer ChatGPT conversation for a personal blog.',
         'Return strict JSON only.',
-        'Focus on technical topics, decisions, open questions, evidence snippets, and which turn orders matter most.',
+        'Focus on recurring themes, goals, decisions, open questions, evidence snippets, and which turn orders matter most.',
+        'technicalTopics should only contain concrete technologies when they are actually central.',
       ].join(' '),
       userPrompt: JSON.stringify(
         {
@@ -356,7 +359,7 @@ async function createFinalIdeaAnalysis({
 
   return oauthClient.completeJson({
     systemPrompt: [
-      'You are a conversation theme extraction agent for a personal engineering blog.',
+      'You are a conversation theme extraction agent for a personal blog.',
       'You are given reduced conversation memory, not a full transcript.',
       'Return strict JSON only.',
       'Summarize the conversation with one conversation-wide theme sentence.',
@@ -364,6 +367,9 @@ async function createFinalIdeaAnalysis({
       'Each candidate title must be one Korean sentence that starts with "이 대화는".',
       'Each candidate title must describe the overall conversation theme, not a post headline.',
       'Avoid title-like phrasing such as 체크리스트, 해결하기, 가이드, 방법, 포인트, 법.',
+      'Do not force a technical framing when the conversation is about planning, communication, writing, learning, or general workflow.',
+      'Use concrete technologies in title, tags, and keywords only when they are truly central to the whole conversation.',
+      'If the conversation is not clearly technical, prefer category tutorial and keep tags generic or empty.',
       'Category must be one of frontend, backend, devops, cloud, database, tutorial.',
       'Each candidate must include title, category, tags, keywords, evidenceSnippet, score, continuationBrief, sourceMessageRefs.',
       'evidenceSnippet must be one short sentence explaining why this theme fits the whole conversation.',
@@ -672,7 +678,7 @@ function aggregateChunkSummaries(chunkSummaries, sourceTitle) {
         summaryShort,
         keyPoints.length > 0 ? `핵심 포인트: ${keyPoints.join(' / ')}` : '',
         technicalTopics.length > 0
-          ? `기술 주제: ${technicalTopics.join(', ')}`
+          ? `관련 기술: ${technicalTopics.join(', ')}`
           : '',
         decisions.length > 0 ? `결정: ${decisions.join(' / ')}` : '',
         openQuestions.length > 0
@@ -729,7 +735,7 @@ function calculateTurnScore(message, repeatedTerms, sourceTitle, candidateTurnOr
   }
 
   if (TECHNICAL_PATTERN.test(text)) {
-    score += 3;
+    score += 1;
     reasons.push('technical');
   }
 
@@ -955,7 +961,10 @@ function normalizeSummary(response, memory) {
   const rollingSummary = memory?.rollingSummary || {};
   const fallbackThemeSentence = buildThemeSentenceFromParts({
     raw: rollingSummary.summaryShort || '',
-    keywords: rollingSummary.technicalTopics || [],
+    keywords: [
+      ...(rollingSummary.keyPoints || []),
+      ...(rollingSummary.technicalTopics || []),
+    ],
     fallbackReason: rollingSummary.evidenceSnippets?.[0] || '',
     maxLength: 180,
   });
@@ -963,7 +972,10 @@ function normalizeSummary(response, memory) {
   return {
     summaryShort: buildThemeSentenceFromParts({
       raw: String(response.summaryShort || rollingSummary.summaryShort || ''),
-      keywords: rollingSummary.technicalTopics || [],
+      keywords: [
+        ...(rollingSummary.keyPoints || []),
+        ...(rollingSummary.technicalTopics || []),
+      ],
       fallbackReason: rollingSummary.evidenceSnippets?.[0] || '',
       maxLength: 180,
     }),
@@ -1006,7 +1018,10 @@ function normalizeSummary(response, memory) {
 function normalizeCandidates(candidates, response, memory) {
   const fallbackSummary =
     response.summaryShort || memory?.rollingSummary?.summaryShort || '';
-  const fallbackKeywords = memory?.rollingSummary?.technicalTopics || [];
+  const fallbackKeywords = [
+    ...(memory?.rollingSummary?.keyPoints || []),
+    ...(memory?.rollingSummary?.technicalTopics || []),
+  ];
   const normalizedCandidates = candidates
     .map((candidate) => {
       const keywords = sanitizeList(candidate.keywords, 8);
@@ -1062,12 +1077,16 @@ function normalizeCandidates(candidates, response, memory) {
   return [
     {
       title: synthesizedTitle,
-      category: normalizeCategory(memory?.rollingSummary?.technicalTopics?.[0] || 'tutorial'),
+      category: normalizeCategory(
+        memory?.rollingSummary?.technicalTopics?.[0] ||
+          memory?.rollingSummary?.keyPoints?.[0] ||
+          'tutorial',
+      ),
       tags: sanitizeList(memory?.rollingSummary?.technicalTopics || [], 3),
       keywords: sanitizeList(
         [
-          ...(memory?.rollingSummary?.technicalTopics || []),
           ...(memory?.rollingSummary?.keyPoints || []),
+          ...(memory?.rollingSummary?.technicalTopics || []),
         ],
         6,
       ),
