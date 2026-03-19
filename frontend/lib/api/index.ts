@@ -11,6 +11,7 @@ export * from './services/stats';
 export * from './services/experiences';
 export * from './services/contact';
 export * from './services/resume-settings';
+export * from './services/ideas';
 
 // 타입
 export * from '../types/api';

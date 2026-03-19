@@ -101,6 +101,7 @@ export interface CreatePostRequest {
   category: string;
   publishDate: string;
   readTime?: number;
+  ideaCandidateId?: number;
 }
 
 export interface UpdatePostRequest {
@@ -119,6 +120,40 @@ export interface UpdatePostRequest {
   category?: string;
   publishDate?: string;
   readTime?: number;
+}
+
+export type IdeaCandidateStatus = 'open' | 'used';
+
+export interface IdeaCandidate {
+  id: number;
+  title: string;
+  category: string;
+  tags: string[];
+  keywords: string[];
+  evidenceSnippet: string;
+  score: number;
+  status: IdeaCandidateStatus;
+  sourceUrl: string;
+  createdAt: string;
+}
+
+export interface ImportIdeaMessage {
+  order: number;
+  role: 'user' | 'assistant' | 'unknown';
+  text: string;
+}
+
+export interface ImportChatGptIdeaRequest {
+  sourceTitle: string;
+  sourceUrl: string;
+  extractedAt: string;
+  messages: ImportIdeaMessage[];
+}
+
+export interface ImportChatGptIdeaResponse {
+  importId: number;
+  deduped: boolean;
+  candidates: IdeaCandidate[];
 }
 
 export interface Comment {

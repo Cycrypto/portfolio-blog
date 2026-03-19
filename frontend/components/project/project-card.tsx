@@ -30,7 +30,6 @@ export function ProjectCard({
   description = "",
   tags = [],
   image,
-  demoUrl = "",
   repoUrl = "",
   trackingLocation = "project_list_card",
 }: ProjectCardProps) {
@@ -123,19 +122,8 @@ export function ProjectCard({
                 asChild
               >
                 <Link
-                  href={demoUrl || projectPath}
-                  target={demoUrl ? "_blank" : undefined}
-                  rel={demoUrl ? "noopener noreferrer" : undefined}
+                  href={projectPath}
                   onClick={() => {
-                    if (demoUrl) {
-                      trackEvent("project_outbound_click", {
-                        project_id: contentId,
-                        target: "demo",
-                        location: trackingLocation,
-                      })
-                      return
-                    }
-
                     trackEvent("cta_click", {
                       location: trackingLocation,
                       target: "project",
@@ -143,7 +131,7 @@ export function ProjectCard({
                     })
                   }}
                 >
-                  {demoUrl ? "서비스 보기" : "자세히 보기"}
+                  자세히 보기
                   <ArrowUpRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

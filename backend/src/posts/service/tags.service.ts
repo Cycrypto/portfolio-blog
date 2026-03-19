@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { Tag } from '../entity/tag.entity';
 
 @Injectable()
@@ -19,7 +19,8 @@ export class TagsService {
             .getMany();
     }
 
-    async findOrCreateTags(tagNames: string[]): Promise<Tag[]> {
+    async findOrCreateTags(tagNames: string[], manager?: EntityManager): Promise<Tag[]> {
+        const repository = manager ? manager.getRepository(Tag) : this.tagRepository;
         const normalizedTagNames = Array.from(
             new Set(tagNames.map((tagName) => tagName.trim()).filter((tagName) => tagName.length > 0)),
         );
@@ -28,7 +29,7 @@ export class TagsService {
             return [];
         }
 
-        const existingTags = await this.tagRepository.find({
+        const existingTags = await repository.find({
             where: { name: In(normalizedTagNames) }
         });
         const existingTagMap = new Map(existingTags.map((tag) => [tag.name, tag]));
@@ -40,10 +41,10 @@ export class TagsService {
                 return existingTag;
             }
 
-            return this.tagRepository.create({ name: tagName, usageCount: 1 });
+            return repository.create({ name: tagName, usageCount: 1 });
         });
 
-        return this.tagRepository.save(tagsToSave);
+        return repository.save(tagsToSave);
     }
 
     async updateTagUsage(tagNames: string[]): Promise<void> {

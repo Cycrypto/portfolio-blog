@@ -91,4 +91,10 @@ export class CreatePostRequestDTO {
     @IsNumber()
     @IsOptional()
     readTime?: number;
+
+    @ApiProperty({ description: '연결할 글감 후보 ID', required: false, example: 12 })
+    @IsInt()
+    @Min(1)
+    @IsOptional()
+    ideaCandidateId?: number;
 }

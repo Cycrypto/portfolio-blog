@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "junha.space 글감 수집기",
+  "version": "1.0.0",
+  "description": "현재 ChatGPT 대화에서 블로그 글감 후보를 가져와 junha.space 글쓰기 화면으로 넘깁니다.",
+  "permissions": ["activeTab", "storage", "tabs"],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://junha.space/*",
+    "https://www.junha.space/*",
+    "http://localhost:3000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "junha.space 글감 수집기"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+      "js": ["content/chatgpt.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://junha.space/admin/*",
+        "https://www.junha.space/admin/*",
+        "http://localhost:3000/admin/*"
+      ],
+      "js": ["content/junha.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
