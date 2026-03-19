@@ -1,0 +1,276 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const {
+  createDraftFromContext,
+  createImportAnalysis,
+  fitFinalPromptPayload,
+} = require('../src/pipeline');
+
+function createConfig(overrides = {}) {
+  return {
+    importMaxChars: 9000,
+    importChunkChars: 280,
+    importMaxSalientTurns: 4,
+    importMaxFinalPromptChars: 1400,
+    ...overrides,
+  };
+}
+
+test('createImportAnalysis chunks long transcripts and reduces final prompt size', async () => {
+  const calls = [];
+  const oauthClient = {
+    completeJson: async ({ systemPrompt, userPrompt }) => {
+      calls.push({ systemPrompt, userPrompt });
+
+      if (systemPrompt.includes('summarizing one chunk of a longer ChatGPT conversation')) {
+        const payload = JSON.parse(userPrompt);
+        const turnOrders = Array.from(
+          payload.transcript.matchAll(/#(\d+)/g),
+          (match) => Number(match[1]),
+        );
+        return {
+          summaryShort: `chunk ${payload.chunkIndex}`,
+          keyPoints: [`point ${payload.chunkIndex}`],
+          technicalTopics: [`topic ${payload.chunkIndex}`],
+          decisions: payload.chunkIndex === 1 ? ['changed cache strategy'] : [],
+          openQuestions: payload.chunkIndex === payload.totalChunks ? ['what to monitor next'] : [],
+          evidenceSnippets: [`snippet ${payload.chunkIndex}`],
+          candidateTurnOrders: turnOrders.slice(0, 2),
+        };
+      }
+
+      const payload = JSON.parse(userPrompt);
+      return {
+        summaryShort: 'final short summary',
+        summaryLong: 'final long summary',
+        keyPoints: payload.conversationMemory.keyPoints,
+        technicalTopics: payload.conversationMemory.technicalTopics,
+        decisions: payload.conversationMemory.decisions,
+        openQuestions: payload.conversationMemory.openQuestions,
+        evidenceSnippets: payload.conversationMemory.evidenceSnippets,
+        continuationBrief: 'Continue with the production debugging timeline.',
+        candidates: [
+          {
+            title: 'Next.js cache invalidation in production',
+            category: 'frontend',
+            tags: ['Next.js', 'Caching'],
+            keywords: ['revalidate', 'stale data'],
+            evidenceSnippet: payload.conversationMemory.evidenceSnippets[0],
+            score: 9,
+            continuationBrief: 'Expand on the stale data investigation.',
+            sourceMessageRefs: payload.conversationMemory.salientTurns.map((turn) => turn.order),
+          },
+        ],
+      };
+    },
+  };
+
+  const messages = Array.from({ length: 12 }, (_, index) => ({
+    order: index,
+    role: index % 2 === 0 ? 'user' : 'assistant',
+    text: [
+      `Turn ${index} about fixing a Next.js stale cache bug in production.`,
+      'We changed the revalidate strategy, added stale data handling,',
+      'and compared the new behavior against the previous fetch caching setup.',
+      'This includes concrete debugging notes, deployment checks, and follow-up questions.',
+    ].join(' '),
+  }));
+
+  const result = await createImportAnalysis({
+    body: {
+      sourceTitle: 'Next.js cache issue',
+      sourceUrl: 'https://chatgpt.com/c/test-long',
+      extractedAt: new Date().toISOString(),
+      messages,
+    },
+    oauthClient,
+    config: createConfig(),
+  });
+
+  assert.equal(result.candidates.length, 1);
+  assert.ok(result.memory.chunkSummaries.length >= 2);
+  assert.ok(result.memory.salientTurns.length <= 4);
+
+  const finalCall = calls[calls.length - 1];
+  const finalPayload = JSON.parse(finalCall.userPrompt);
+
+  assert.ok(finalCall.userPrompt.length <= 1400);
+  assert.ok(!('transcript' in finalPayload));
+  assert.ok(Array.isArray(finalPayload.conversationMemory.salientTurns));
+  assert.ok(finalPayload.conversationMemory.salientTurns.length <= 4);
+});
+
+test('createImportAnalysis retries with smaller chunks after a chunk summary failure', async () => {
+  let chunkAttempt = 0;
+  const oauthClient = {
+    completeJson: async ({ systemPrompt, userPrompt }) => {
+      if (systemPrompt.includes('summarizing one chunk of a longer ChatGPT conversation')) {
+        chunkAttempt += 1;
+        if (chunkAttempt === 1) {
+          throw new Error('stream failed');
+        }
+
+        const payload = JSON.parse(userPrompt);
+        const turnOrders = Array.from(
+          payload.transcript.matchAll(/#(\d+)/g),
+          (match) => Number(match[1]),
+        );
+
+        return {
+          summaryShort: `chunk ${payload.chunkIndex}`,
+          keyPoints: [`point ${payload.chunkIndex}`],
+          technicalTopics: ['next.js'],
+          decisions: [],
+          openQuestions: [],
+          evidenceSnippets: ['snippet'],
+          candidateTurnOrders: turnOrders.slice(0, 1),
+        };
+      }
+
+      return {
+        summaryShort: 'done',
+        summaryLong: 'done long',
+        keyPoints: ['point'],
+        technicalTopics: ['next.js'],
+        decisions: [],
+        openQuestions: [],
+        evidenceSnippets: ['snippet'],
+        continuationBrief: 'continue',
+        candidates: [
+          {
+            title: 'Recovered after retry',
+            category: 'frontend',
+            tags: ['Next.js'],
+            keywords: ['retry'],
+            evidenceSnippet: 'snippet',
+            score: 7,
+            continuationBrief: 'continue',
+            sourceMessageRefs: [0],
+          },
+        ],
+      };
+    },
+  };
+
+  const result = await createImportAnalysis({
+    body: {
+      sourceTitle: 'Retry flow',
+      sourceUrl: 'https://chatgpt.com/c/retry',
+      extractedAt: new Date().toISOString(),
+      messages: Array.from({ length: 8 }, (_, index) => ({
+        order: index,
+        role: index % 2 === 0 ? 'user' : 'assistant',
+        text: `Turn ${index} discusses a cache bug, a fix, and production debugging details.`,
+      })),
+    },
+    oauthClient,
+    config: createConfig({ importChunkChars: 220 }),
+  });
+
+  assert.equal(result.candidates[0].title, 'Recovered after retry');
+  assert.equal(result.memory.reducedTranscriptStats.retriedWithSmallerChunks, true);
+  assert.ok(chunkAttempt >= 2);
+});
+
+test('draft context prefers salient memory over the full raw transcript excerpt', async () => {
+  let capturedContext = null;
+  const oauthClient = {
+    completeJson: async ({ userPrompt }) => {
+      capturedContext = JSON.parse(userPrompt).context;
+      return {
+        title: 'Memory backed draft',
+        category: 'frontend',
+        tags: ['Next.js'],
+        markdown: '# Draft',
+      };
+    },
+  };
+
+  await createDraftFromContext({
+    context: {
+      title: 'Draft idea',
+      category: 'frontend',
+      tags: ['Next.js'],
+      keywords: ['cache'],
+      summaryShort: 'A short summary',
+      summaryLong: 'A longer summary',
+      keyPoints: ['Point A'],
+      technicalTopics: ['Next.js caching'],
+      decisions: ['Changed revalidate'],
+      openQuestions: ['How to monitor stale data?'],
+      evidenceSnippets: ['Important snippet'],
+      continuationBrief: 'Continue',
+      sourceTitle: 'Source',
+      sourceUrl: 'https://chatgpt.com/c/source',
+    },
+    oauthClient,
+    session: null,
+    rawConversation: {
+      messages: [
+        { order: 0, role: 'user', text: 'This is a long filler message that should not appear.' },
+        { order: 1, role: 'assistant', text: 'Another filler message that should be ignored.' },
+      ],
+      memory: {
+        salientTurns: [
+          { order: 10, role: 'user', text: 'Important stale cache symptom', reasons: ['problem'] },
+          { order: 11, role: 'assistant', text: 'Changed revalidate strategy to fix it', reasons: ['solution'] },
+        ],
+        chunkSummaries: [
+          {
+            chunkIndex: 1,
+            summaryShort: 'chunk summary',
+            keyPoints: ['Point A'],
+            technicalTopics: ['Next.js caching'],
+          },
+        ],
+        rollingSummary: {
+          summaryShort: 'memory short',
+          summaryLong: 'memory long',
+          keyPoints: ['Point A'],
+          technicalTopics: ['Next.js caching'],
+          decisions: ['Changed revalidate'],
+          openQuestions: ['How to monitor stale data?'],
+          evidenceSnippets: ['Important snippet'],
+        },
+      },
+    },
+  });
+
+  assert.equal(capturedContext.salientTurns.length, 2);
+  assert.match(capturedContext.rawTranscriptExcerpt, /#10 \[user\] Important stale cache symptom/);
+  assert.doesNotMatch(
+    capturedContext.rawTranscriptExcerpt,
+    /should not appear|should be ignored/,
+  );
+});
+
+test('fitFinalPromptPayload trims oversized memory payloads', () => {
+  const payload = {
+    conversationMemory: {
+      summaryShort: 'short',
+      summaryLong: 'x'.repeat(4000),
+      keyPoints: Array.from({ length: 10 }, (_, index) => `key ${index}`),
+      technicalTopics: Array.from({ length: 10 }, (_, index) => `topic ${index}`),
+      decisions: Array.from({ length: 6 }, (_, index) => `decision ${index}`),
+      openQuestions: Array.from({ length: 6 }, (_, index) => `question ${index}`),
+      evidenceSnippets: Array.from({ length: 6 }, (_, index) => `snippet ${index}`),
+      salientTurns: Array.from({ length: 8 }, (_, index) => ({
+        order: index,
+        role: 'user',
+        text: 'y'.repeat(500),
+        reasons: ['technical', 'problem', 'solution'],
+      })),
+      reducedTranscriptStats: {
+        originalTurns: 50,
+        originalChars: 100000,
+        selectedTurns: 12,
+        selectedChars: 10000,
+      },
+    },
+  };
+
+  const result = fitFinalPromptPayload(payload, 1400);
+
+  assert.ok(JSON.stringify(result).length <= 1400);
+  assert.ok(result.conversationMemory.salientTurns.length <= 6);
+});

@@ -15,13 +15,21 @@ function createConfig() {
     upstreamBaseUrl:
       process.env.OPENAI_OAUTH_BASE_URL || 'http://127.0.0.1:10531/v1',
     preferredModels: (
-      process.env.AI_WORKER_MODELS || 'gpt-5.4,gpt-5.3-codex'
+      process.env.AI_WORKER_MODELS || 'gpt-5.3-codex,gpt-5.4-mini,gpt-5.4'
     )
       .split(',')
       .map((value) => value.trim())
       .filter(Boolean),
     modelOverride: process.env.AI_WORKER_MODEL || null,
     requestTimeoutMs: Number(process.env.AI_WORKER_REQUEST_TIMEOUT_MS || 30000),
+    importMaxChars: Number(process.env.AI_WORKER_IMPORT_MAX_CHARS || 24000),
+    importChunkChars: Number(process.env.AI_WORKER_IMPORT_CHUNK_CHARS || 4500),
+    importMaxSalientTurns: Number(
+      process.env.AI_WORKER_IMPORT_MAX_SALIENT_TURNS || 10,
+    ),
+    importMaxFinalPromptChars: Number(
+      process.env.AI_WORKER_IMPORT_MAX_FINAL_PROMPT_CHARS || 12000,
+    ),
     internalToken,
     rawTtlMs: Number(process.env.AI_WORKER_RAW_TTL_HOURS || 168) * 60 * 60 * 1000,
   };

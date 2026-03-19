@@ -37,6 +37,7 @@ const server = http.createServer(async (req, res) => {
       const analysis = await createImportAnalysis({
         body,
         oauthClient,
+        config,
       });
 
       const record = store.saveRawConversation({
@@ -46,6 +47,7 @@ const server = http.createServer(async (req, res) => {
         messages: body.messages,
         summary: analysis.summary,
         candidates: analysis.candidates,
+        memory: analysis.memory,
       });
 
       return writeJson(res, 200, {
