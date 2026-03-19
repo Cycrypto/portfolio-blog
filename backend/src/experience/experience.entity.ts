@@ -25,6 +25,15 @@ export class Experience {
   @Column({ type: 'text', nullable: true })
   description?: string | null;
 
+  @Column({ default: true })
+  resumeVisible: boolean;
+
+  @Column({ type: 'integer', default: 0 })
+  resumeOrder: number;
+
+  @Column('text', { array: true, default: '{}' })
+  resumeHighlights: string[];
+
   @OneToMany(() => Project, (project) => project.experience)
   projects?: Project[];
 }

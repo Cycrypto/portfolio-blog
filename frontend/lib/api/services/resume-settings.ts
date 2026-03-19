@@ -4,6 +4,12 @@ import type {
   UpdateResumeSettingsRequest,
 } from '../../types/api';
 import { normalizeUrlFields } from '@/lib/utils/url';
+import {
+  RESUME_MAX_FEATURED_SKILLS,
+  RESUME_MAX_SELECTED_PROJECTS,
+  RESUME_MAX_SUMMARY_BULLETS,
+} from '@/lib/resume/constants';
+import { normalizeResumeStringArray } from '@/lib/portfolio/resume-content';
 
 export async function getResumeSettings(): Promise<ResumeSettings> {
   const result = await apiRequest<{ data: ResumeSettings }>('/resume-settings', {
@@ -24,5 +30,27 @@ export async function updateResumeSettings(
 }
 
 function normalizeResumeSettings<T extends Partial<ResumeSettings>>(settings: T): T {
-  return normalizeUrlFields(settings, ['github', 'linkedin', 'photoUrl']);
+  const normalized = normalizeUrlFields(settings, ['github', 'linkedin', 'photoUrl']);
+
+  if ('summaryBullets' in normalized) {
+    (normalized as ResumeSettings).summaryBullets = normalizeResumeStringArray(
+      (normalized as ResumeSettings).summaryBullets || [],
+      RESUME_MAX_SUMMARY_BULLETS,
+    );
+  }
+
+  if ('featuredSkillNames' in normalized) {
+    (normalized as ResumeSettings).featuredSkillNames = normalizeResumeStringArray(
+      (normalized as ResumeSettings).featuredSkillNames || [],
+      RESUME_MAX_FEATURED_SKILLS,
+    );
+  }
+
+  if ('selectedProjectIds' in normalized) {
+    (normalized as ResumeSettings).selectedProjectIds = Array.from(
+      new Set(((normalized as ResumeSettings).selectedProjectIds || []).filter((id) => id > 0)),
+    ).slice(0, RESUME_MAX_SELECTED_PROJECTS);
+  }
+
+  return normalized;
 }

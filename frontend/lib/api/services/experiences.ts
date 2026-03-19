@@ -5,6 +5,8 @@ import {
   CreateExperienceRequest,
   UpdateExperienceRequest,
 } from '../../types/api'
+import { RESUME_MAX_EXPERIENCE_HIGHLIGHTS } from '@/lib/resume/constants'
+import { normalizeResumeStringArray } from '@/lib/portfolio/resume-content'
 
 function normalizeLinkedProject(raw: any) {
   return {
@@ -32,6 +34,12 @@ function normalizeExperience(raw: any): Experience {
     startDate: raw?.startDate || '',
     endDate: raw?.endDate || undefined,
     description: raw?.description || undefined,
+    resumeVisible: raw?.resumeVisible !== false,
+    resumeOrder: Number(raw?.resumeOrder || 0),
+    resumeHighlights: normalizeResumeStringArray(
+      raw?.resumeHighlights || [],
+      RESUME_MAX_EXPERIENCE_HIGHLIGHTS,
+    ),
     linkedProjects,
   }
 }

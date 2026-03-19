@@ -123,6 +123,7 @@ export interface UpdatePostRequest {
 }
 
 export type IdeaCandidateStatus = 'open' | 'used';
+export type IdeaGeneratorMode = 'fallback' | 'worker';
 
 export interface IdeaCandidate {
   id: number;
@@ -135,6 +136,9 @@ export interface IdeaCandidate {
   status: IdeaCandidateStatus;
   sourceUrl: string;
   createdAt: string;
+  generator: IdeaGeneratorMode;
+  continuationBrief?: string | null;
+  sourceMessageRefs: number[];
 }
 
 export interface ImportIdeaMessage {
@@ -152,8 +156,38 @@ export interface ImportChatGptIdeaRequest {
 
 export interface ImportChatGptIdeaResponse {
   importId: number;
+  mode: 'worker' | 'fallback';
   deduped: boolean;
   candidates: IdeaCandidate[];
+}
+
+export interface AiStatusResponse {
+  mode: 'worker' | 'fallback' | 'unavailable';
+  assistantAvailable: boolean;
+  draftAvailable: boolean;
+  workerAvailable: boolean;
+  model?: string | null;
+  reason?: string | null;
+}
+
+export interface AssistantSession {
+  sessionId: number;
+  starterMessage: string;
+}
+
+export interface AssistantReply {
+  reply: string;
+  suggestions: string[];
+  continuationBrief: string;
+}
+
+export interface DraftGenerationResponse {
+  generationId: number;
+  title: string;
+  category: string;
+  tags: string[];
+  markdown: string;
+  contentJson: Record<string, unknown>;
 }
 
 export interface Comment {
@@ -261,6 +295,9 @@ export interface Experience {
   startDate: string;
   endDate?: string;
   description?: string;
+  resumeVisible: boolean;
+  resumeOrder: number;
+  resumeHighlights: string[];
   linkedProjects?: LinkedProjectSummary[];
 }
 
@@ -271,6 +308,9 @@ export interface CreateExperienceRequest {
   startDate: string;
   endDate?: string;
   description?: string;
+  resumeVisible?: boolean;
+  resumeOrder?: number;
+  resumeHighlights?: string[];
   linkedProjectIds?: number[];
 }
 
@@ -304,6 +344,8 @@ export interface ResumeSettings {
   linkedin: string;
   photoUrl: string;
   showPhoto: boolean;
+  summaryBullets: string[];
+  featuredSkillNames: string[];
   selectedProjectIds: number[];
 }
 
@@ -317,5 +359,7 @@ export interface UpdateResumeSettingsRequest {
   linkedin?: string;
   photoUrl?: string;
   showPhoto?: boolean;
+  summaryBullets?: string[];
+  featuredSkillNames?: string[];
   selectedProjectIds?: number[];
 }

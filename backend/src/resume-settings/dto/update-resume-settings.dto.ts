@@ -1,4 +1,13 @@
-import { ArrayUnique, IsArray, IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayUnique,
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class UpdateResumeSettingsDto {
   @IsOptional()
@@ -39,6 +48,19 @@ export class UpdateResumeSettingsDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(3)
+  @IsString({ each: true })
+  summaryBullets?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8)
+  @IsString({ each: true })
+  featuredSkillNames?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(3)
   @ArrayUnique()
   @IsInt({ each: true })
   @Min(1, { each: true })

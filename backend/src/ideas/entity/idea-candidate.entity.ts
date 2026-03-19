@@ -6,7 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { IdeaImport } from './idea-import.entity';
+import { IdeaGeneratorMode, IdeaImport } from './idea-import.entity';
 import { Post } from '../../posts/entity/post.entity';
 
 export enum IdeaCandidateStatus {
@@ -45,6 +45,15 @@ export class IdeaCandidate {
 
   @Column({ type: 'int' })
   score: number;
+
+  @Column({ default: IdeaGeneratorMode.FALLBACK })
+  generator: IdeaGeneratorMode;
+
+  @Column({ type: 'text', nullable: true })
+  continuationBrief: string | null;
+
+  @Column('int', { array: true, default: '{}' })
+  sourceMessageRefs: number[];
 
   @Column({ default: IdeaCandidateStatus.OPEN })
   status: IdeaCandidateStatus;

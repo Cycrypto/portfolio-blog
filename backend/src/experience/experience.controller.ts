@@ -78,6 +78,9 @@ export class ExperienceController {
       startDate: experience.startDate,
       endDate: experience.endDate,
       description: experience.description,
+      resumeVisible: experience.resumeVisible,
+      resumeOrder: experience.resumeOrder,
+      resumeHighlights: experience.resumeHighlights || [],
       linkedProjects: (experience.projects || []).map((project) => ({
         id: project.id,
         title: project.title,

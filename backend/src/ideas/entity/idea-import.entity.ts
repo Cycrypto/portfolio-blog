@@ -11,6 +11,11 @@ export enum IdeaSourceType {
   CHATGPT = 'chatgpt',
 }
 
+export enum IdeaGeneratorMode {
+  FALLBACK = 'fallback',
+  WORKER = 'worker',
+}
+
 @Entity('idea_imports')
 export class IdeaImport {
   @PrimaryGeneratedColumn()
@@ -36,6 +41,36 @@ export class IdeaImport {
 
   @Column({ type: 'int' })
   createdByUserId: number;
+
+  @Column({ type: 'text', default: '' })
+  summaryShort: string;
+
+  @Column({ type: 'text', default: '' })
+  summaryLong: string;
+
+  @Column('text', { array: true, default: '{}' })
+  keyPoints: string[];
+
+  @Column('text', { array: true, default: '{}' })
+  technicalTopics: string[];
+
+  @Column('text', { array: true, default: '{}' })
+  decisions: string[];
+
+  @Column('text', { array: true, default: '{}' })
+  openQuestions: string[];
+
+  @Column('text', { array: true, default: '{}' })
+  evidenceSnippets: string[];
+
+  @Column({ type: 'text', nullable: true })
+  continuationBrief: string | null;
+
+  @Column({ default: IdeaGeneratorMode.FALLBACK })
+  generator: IdeaGeneratorMode;
+
+  @Column({ type: 'text', nullable: true })
+  workerImportId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

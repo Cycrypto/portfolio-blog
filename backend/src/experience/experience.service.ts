@@ -5,6 +5,10 @@ import { Experience } from './experience.entity';
 import { CreateExperienceDto } from './dto/create-experience.dto';
 import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { Project } from '../projects/project.entity';
+import {
+  extractExperienceHighlights,
+  normalizeResumeStringArray,
+} from '../common/utils/resume-content.util';
 
 @Injectable()
 export class ExperienceService {
@@ -16,7 +20,15 @@ export class ExperienceService {
   async create(dto: CreateExperienceDto): Promise<Experience> {
     return this.experienceRepository.manager.transaction(async (manager) => {
       const experienceRepository = manager.getRepository(Experience);
-      const exp = experienceRepository.create(this.normalizePayload(dto));
+      const payload = this.normalizePayload(dto);
+      if (!payload.resumeHighlights?.length && payload.description) {
+        payload.resumeHighlights = extractExperienceHighlights(
+          [payload.description],
+          2,
+        );
+      }
+
+      const exp = experienceRepository.create(payload);
       const saved = await experienceRepository.save(exp);
 
       if (dto.linkedProjectIds !== undefined) {
@@ -63,7 +75,20 @@ export class ExperienceService {
       const exp = await experienceRepository.findOne({ where: { id } });
       if (!exp) throw new NotFoundException('경험을 찾을 수 없습니다.');
 
-      const merged = experienceRepository.merge(exp, this.normalizePayload(dto));
+      const payload = this.normalizePayload(dto);
+      if (
+        'description' in dto &&
+        !payload.resumeHighlights?.length &&
+        !('resumeHighlights' in dto) &&
+        payload.description
+      ) {
+        payload.resumeHighlights = extractExperienceHighlights(
+          [payload.description],
+          2,
+        );
+      }
+
+      const merged = experienceRepository.merge(exp, payload);
       const saved = await experienceRepository.save(merged);
 
       if (dto.linkedProjectIds !== undefined) {
@@ -108,6 +133,20 @@ export class ExperienceService {
 
     if ('description' in dto) {
       payload.description = dto.description?.trim() || null;
+    }
+
+    if ('resumeVisible' in dto && dto.resumeVisible !== undefined) {
+      payload.resumeVisible = Boolean(dto.resumeVisible);
+    }
+
+    if ('resumeOrder' in dto && dto.resumeOrder !== undefined) {
+      payload.resumeOrder = Math.max(0, dto.resumeOrder);
+    }
+
+    if ('resumeHighlights' in dto) {
+      payload.resumeHighlights = dto.resumeHighlights
+        ? normalizeResumeStringArray(dto.resumeHighlights, 2)
+        : [];
     }
 
     return payload;
