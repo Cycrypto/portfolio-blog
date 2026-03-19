@@ -25,10 +25,9 @@ import {
   IdeaCandidateStatus,
 } from '../entity/idea-candidate.entity';
 import {
-  IdeaGeneratorMode,
   IdeaImport,
-  IdeaSourceType,
 } from '../entity/idea-import.entity';
+import { IdeaGeneratorMode, IdeaSourceType } from '../entity/idea-import.enums';
 import { WorkerGatewayService } from './worker-gateway.service';
 import {
   createSourceFingerprint,

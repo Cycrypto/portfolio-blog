@@ -6,7 +6,8 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { IdeaGeneratorMode, IdeaImport } from './idea-import.entity';
+import { IdeaImport } from './idea-import.entity';
+import { IdeaGeneratorMode } from './idea-import.enums';
 import { Post } from '../../posts/entity/post.entity';
 
 export enum IdeaCandidateStatus {
