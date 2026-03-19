@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
+import {
+  extractSummaryBullets,
+  normalizeResumeStringArray,
+} from '../common/utils/resume-content.util';
 import { normalizeUrlFieldsInPlace } from '../common/utils/url.util';
 import { Profile } from '../profile/profile.entity';
 import { Project } from '../projects/project.entity';
@@ -40,9 +44,23 @@ export class ResumeSettingsService {
 
     normalizeUrlFieldsInPlace(normalizedUpdate, ['github', 'linkedin', 'photoUrl']);
 
-    if (normalizedUpdate.selectedProjectIds) {
+    if (normalizedUpdate.summaryBullets !== undefined) {
+      normalizedUpdate.summaryBullets = normalizeResumeStringArray(
+        normalizedUpdate.summaryBullets,
+        3,
+      );
+    }
+
+    if (normalizedUpdate.featuredSkillNames !== undefined) {
+      normalizedUpdate.featuredSkillNames = normalizeResumeStringArray(
+        normalizedUpdate.featuredSkillNames,
+        8,
+      );
+    }
+
+    if ('selectedProjectIds' in normalizedUpdate) {
       normalizedUpdate.selectedProjectIds = await this.filterExistingProjectIds(
-        normalizedUpdate.selectedProjectIds,
+        (normalizedUpdate.selectedProjectIds || []).slice(0, 3),
       );
     }
 
@@ -74,7 +92,17 @@ export class ResumeSettingsService {
       linkedin: profile?.linkedin ?? '',
       photoUrl: profile?.profileImage ?? '',
       showPhoto: true,
-      selectedProjectIds: projects.map((project) => project.id),
+      summaryBullets: extractSummaryBullets(
+        [profile?.subtitle ?? '', profile?.about ?? '', profile?.description ?? ''],
+        3,
+      ),
+      featuredSkillNames: normalizeResumeStringArray(
+        [...(profile?.skills || [])]
+          .sort((left, right) => (right?.level || 0) - (left?.level || 0))
+          .map((skill) => skill?.name ?? ''),
+        8,
+      ),
+      selectedProjectIds: projects.map((project) => project.id).slice(0, 3),
     });
 
     normalizeUrlFieldsInPlace(settings, ['github', 'linkedin', 'photoUrl']);

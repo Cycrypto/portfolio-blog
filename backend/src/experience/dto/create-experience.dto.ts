@@ -1,6 +1,8 @@
 import {
+  ArrayMaxSize,
   ArrayUnique,
   IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -34,6 +36,21 @@ export class CreateExperienceDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  resumeVisible?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  resumeOrder?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(2)
+  @IsString({ each: true })
+  resumeHighlights?: string[];
 
   @IsOptional()
   @IsArray()

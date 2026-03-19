@@ -38,6 +38,12 @@ export class ResumeSettings {
   @Column({ default: true })
   showPhoto: boolean;
 
+  @Column('text', { array: true, default: '{}' })
+  summaryBullets: string[];
+
+  @Column('text', { array: true, default: '{}' })
+  featuredSkillNames: string[];
+
   @Column('int', { array: true, default: '{}' })
   selectedProjectIds: number[];
 

@@ -1,4 +1,9 @@
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === 'chatgpt-content-ready') {
+    sendResponse({ ok: true });
+    return true;
+  }
+
   if (message?.type !== 'extract-chatgpt-conversation') {
     return undefined;
   }

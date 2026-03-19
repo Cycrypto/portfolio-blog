@@ -17,6 +17,8 @@ extractButton.addEventListener('click', async () => {
       throw new Error('현재 ChatGPT 대화 탭에서만 사용할 수 있습니다.');
     }
 
+    await ensureChatGptContentScript(activeTab.id);
+
     const extractionResult = await sendMessageToTab(activeTab.id, {
       type: 'extract-chatgpt-conversation',
     });
@@ -87,6 +89,38 @@ function sendMessageToTab(tabId, message) {
       resolve(response);
     });
   });
+}
+
+async function ensureChatGptContentScript(tabId) {
+  try {
+    const pingResponse = await sendMessageToTab(tabId, {
+      type: 'chatgpt-content-ready',
+    });
+
+    if (pingResponse?.ok) {
+      return;
+    }
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'content script 연결 실패';
+
+    if (!errorMessage.includes('Receiving end does not exist')) {
+      throw error;
+    }
+  }
+
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ['content/chatgpt.js'],
+  });
+
+  const readyResponse = await sendMessageToTab(tabId, {
+    type: 'chatgpt-content-ready',
+  });
+
+  if (!readyResponse?.ok) {
+    throw new Error('ChatGPT 대화 추출 스크립트를 준비하지 못했습니다.');
+  }
 }
 
 function sendRuntimeMessage(message) {

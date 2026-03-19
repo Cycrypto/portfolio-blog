@@ -18,6 +18,8 @@ import Link from "next/link"
 import { getAllAdminPosts, getExperiences, getProject, updateProject, uploadMedia } from "@/lib/api"
 import { Experience, Post, Project } from "@/lib/types/api"
 import { AdminShell } from "@/components/admin/AdminShell"
+import { CharacterCount } from "@/components/admin/CharacterCount"
+import { ResumePreviewButton } from "@/components/admin/ResumePreviewButton"
 import { normalizeImageUrl } from "@/lib/utils/image"
 import { generateSlug } from "@/lib/utils/slug"
 import { formatExperiencePeriod } from "@/lib/experience/utils"
@@ -266,12 +268,15 @@ export default function EditProject() {
       title="프로젝트 수정"
       description="프로젝트 정보를 수정하세요"
       actions={
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/admin/projects">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            프로젝트 목록으로
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <ResumePreviewButton />
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/projects">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              프로젝트 목록으로
+            </Link>
+          </Button>
+        </div>
       }
     >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -413,6 +418,7 @@ export default function EditProject() {
                       value={resumeTitle}
                       onChange={(e) => setResumeTitle(e.target.value)}
                     />
+                    <CharacterCount value={resumeTitle} />
                   </div>
                   <div>
                     <Label htmlFor="resume-summary">이력서용 요약</Label>
@@ -423,9 +429,13 @@ export default function EditProject() {
                       value={resumeSummary}
                       onChange={(e) => setResumeSummary(e.target.value)}
                     />
+                    <CharacterCount value={resumeSummary} />
                   </div>
                   <div className="space-y-2">
-                    <Label>이력서 하이라이트</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>이력서 하이라이트</Label>
+                      <ResumePreviewButton className="h-8" />
+                    </div>
                     <div className="flex gap-2">
                       <Input
                         placeholder="예: 결제 실패율 22% 감소"
@@ -442,6 +452,7 @@ export default function EditProject() {
                         <Plus className="w-4 h-4" />
                       </Button>
                     </div>
+                    <CharacterCount value={newResumeHighlight} helper="입력 중 bullet" />
                     <div className="flex flex-wrap gap-2">
                       {resumeHighlights.map((highlight) => (
                         <Badge key={highlight} variant="secondary" className="flex items-center gap-1">

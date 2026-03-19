@@ -1,11 +1,20 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ArrowDown, ArrowUp, Check, Save, Search, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowUp, Check, Plus, Save, Search, Trash2 } from "lucide-react"
 
-import { getProjects, getResumeSettings, updateResumeSettings } from "@/lib/api"
+import { getProjects, getResumeSettings, profileService, updateResumeSettings } from "@/lib/api"
+import type { ProfileData } from "@/lib/api/services/profile"
+import {
+  RESUME_MAX_FEATURED_SKILLS,
+  RESUME_MAX_SELECTED_PROJECTS,
+  RESUME_MAX_SUMMARY_BULLETS,
+} from "@/lib/resume/constants"
+import { normalizeResumeStringArray } from "@/lib/portfolio/resume-content"
 import type { Project, ResumeSettings } from "@/lib/types/api"
 import { useToast } from "@/hooks/use-toast"
+import { CharacterCount } from "@/components/admin/CharacterCount"
+import { ResumePreviewButton } from "@/components/admin/ResumePreviewButton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,13 +25,13 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 
-const MAX_SELECTED_PROJECTS = 3
-
 function normalizeSettings(settings: ResumeSettings): ResumeSettings {
   return {
     ...settings,
+    summaryBullets: normalizeResumeStringArray(settings.summaryBullets || [], RESUME_MAX_SUMMARY_BULLETS),
+    featuredSkillNames: normalizeResumeStringArray(settings.featuredSkillNames || [], RESUME_MAX_FEATURED_SKILLS),
     selectedProjectIds: Array.isArray(settings.selectedProjectIds)
-      ? settings.selectedProjectIds
+      ? settings.selectedProjectIds.slice(0, RESUME_MAX_SELECTED_PROJECTS)
       : [],
   }
 }
@@ -34,7 +43,11 @@ export function ResumeSettingsEditor() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState("")
+  const [skillQuery, setSkillQuery] = useState("")
+  const [newSummaryBullet, setNewSummaryBullet] = useState("")
+  const [newFeaturedSkill, setNewFeaturedSkill] = useState("")
   const [allProjects, setAllProjects] = useState<Project[]>([])
+  const [profile, setProfile] = useState<ProfileData | null>(null)
   const [settings, setSettings] = useState<ResumeSettings | null>(null)
 
   useEffect(() => {
@@ -42,12 +55,18 @@ export function ResumeSettingsEditor() {
       try {
         setLoading(true)
         setError(null)
-        const [resumeSettings, projects] = await Promise.all([
+        const [resumeSettingsResult, projectsResult, profileResult] = await Promise.allSettled([
           getResumeSettings(),
           getProjects(),
+          profileService.getProfile(),
         ])
-        setSettings(normalizeSettings(resumeSettings))
-        setAllProjects(projects)
+        if (resumeSettingsResult.status !== "fulfilled" || projectsResult.status !== "fulfilled") {
+          throw new Error("required resume data missing")
+        }
+
+        setSettings(normalizeSettings(resumeSettingsResult.value))
+        setAllProjects(projectsResult.value)
+        setProfile(profileResult.status === "fulfilled" ? profileResult.value : null)
       } catch (loadError) {
         console.error(loadError)
         setError("이력서 설정을 불러오지 못했습니다.")
@@ -56,7 +75,7 @@ export function ResumeSettingsEditor() {
       }
     }
 
-    load()
+    void load()
   }, [])
 
   const projectById = useMemo(() => {
@@ -82,11 +101,7 @@ export function ResumeSettingsEditor() {
         if (!keyword) {
           return true
         }
-        const haystack = [
-          project.title,
-          project.category,
-          ...(project.techStack || []),
-        ]
+        const haystack = [project.title, project.category, ...(project.techStack || [])]
           .filter(Boolean)
           .join(" ")
           .toLowerCase()
@@ -96,13 +111,24 @@ export function ResumeSettingsEditor() {
       .sort((a, b) => b.id - a.id)
   }, [allProjects, query, settings?.selectedProjectIds])
 
-  const selectedCount = settings?.selectedProjectIds.length ?? 0
-  const canSelectMore = selectedCount < MAX_SELECTED_PROJECTS
+  const suggestedSkills = useMemo(() => {
+    const selectedSet = new Set(settings?.featuredSkillNames ?? [])
+    const keyword = skillQuery.trim().toLowerCase()
+    return [...(profile?.skills || [])]
+      .sort((a, b) => (b.level || 0) - (a.level || 0))
+      .map((skill) => skill.name.trim())
+      .filter(Boolean)
+      .filter((skill) => !selectedSet.has(skill))
+      .filter((skill) => (keyword ? skill.toLowerCase().includes(keyword) : true))
+      .slice(0, 20)
+  }, [profile?.skills, settings?.featuredSkillNames, skillQuery])
 
-  const updateField = <K extends keyof ResumeSettings>(
-    field: K,
-    value: ResumeSettings[K],
-  ) => {
+  const selectedCount = settings?.selectedProjectIds.length ?? 0
+  const canSelectMore = selectedCount < RESUME_MAX_SELECTED_PROJECTS
+  const canAddSummaryBullet = (settings?.summaryBullets.length ?? 0) < RESUME_MAX_SUMMARY_BULLETS
+  const canAddFeaturedSkill = (settings?.featuredSkillNames.length ?? 0) < RESUME_MAX_FEATURED_SKILLS
+
+  const updateField = <K extends keyof ResumeSettings>(field: K, value: ResumeSettings[K]) => {
     setSettings((current) => {
       if (!current) {
         return current
@@ -111,11 +137,80 @@ export function ResumeSettingsEditor() {
     })
   }
 
+  const addSummaryBullet = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed || !canAddSummaryBullet) {
+      return
+    }
+
+    setSettings((current) => {
+      if (!current) {
+        return current
+      }
+
+      const nextBullets = normalizeResumeStringArray(
+        [...current.summaryBullets, trimmed],
+        RESUME_MAX_SUMMARY_BULLETS,
+      )
+
+      return { ...current, summaryBullets: nextBullets }
+    })
+    setNewSummaryBullet("")
+  }
+
+  const removeSummaryBullet = (indexToRemove: number) => {
+    setSettings((current) => {
+      if (!current) {
+        return current
+      }
+
+      return {
+        ...current,
+        summaryBullets: current.summaryBullets.filter((_, index) => index !== indexToRemove),
+      }
+    })
+  }
+
+  const addFeaturedSkill = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed || !canAddFeaturedSkill) {
+      return
+    }
+
+    setSettings((current) => {
+      if (!current) {
+        return current
+      }
+
+      const nextSkills = normalizeResumeStringArray(
+        [...current.featuredSkillNames, trimmed],
+        RESUME_MAX_FEATURED_SKILLS,
+      )
+
+      return { ...current, featuredSkillNames: nextSkills }
+    })
+    setNewFeaturedSkill("")
+    setSkillQuery("")
+  }
+
+  const removeFeaturedSkill = (skillToRemove: string) => {
+    setSettings((current) => {
+      if (!current) {
+        return current
+      }
+
+      return {
+        ...current,
+        featuredSkillNames: current.featuredSkillNames.filter((skill) => skill !== skillToRemove),
+      }
+    })
+  }
+
   const addProject = (projectId: number) => {
     if (!canSelectMore) {
       toast({
         title: "최대 선택 수 초과",
-        description: `프로젝트는 최대 ${MAX_SELECTED_PROJECTS}개까지 선택할 수 있습니다.`,
+        description: `프로젝트는 최대 ${RESUME_MAX_SELECTED_PROJECTS}개까지 선택할 수 있습니다.`,
         variant: "destructive",
       })
       return
@@ -190,6 +285,8 @@ export function ResumeSettingsEditor() {
         linkedin: settings.linkedin,
         photoUrl: settings.photoUrl,
         showPhoto: settings.showPhoto,
+        summaryBullets: settings.summaryBullets,
+        featuredSkillNames: settings.featuredSkillNames,
         selectedProjectIds: settings.selectedProjectIds,
       })
 
@@ -233,11 +330,14 @@ export function ResumeSettingsEditor() {
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      <div className="xl:col-span-2 space-y-6">
+      <div className="space-y-6 xl:col-span-2">
         <Card className="surface-default shadow-none">
-          <CardHeader>
-            <CardTitle>PDF 헤더 정보</CardTitle>
-            <CardDescription>이력서 상단에 표시되는 텍스트를 관리합니다.</CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between gap-3">
+            <div>
+              <CardTitle>PDF 헤더 정보</CardTitle>
+              <CardDescription>이력서 상단에 표시되는 텍스트와 연락처를 관리합니다.</CardDescription>
+            </div>
+            <ResumePreviewButton />
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -270,6 +370,7 @@ export function ResumeSettingsEditor() {
                 rows={4}
                 placeholder="짧은 소개 문구를 입력하세요"
               />
+              <CharacterCount value={settings.headline} helper="헤더 본문" />
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -315,8 +416,167 @@ export function ResumeSettingsEditor() {
 
         <Card className="surface-default shadow-none">
           <CardHeader>
+            <CardTitle>핵심 요약</CardTitle>
+            <CardDescription>1페이지 상단에 노출할 요약 bullet을 최대 3개까지 고정합니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border border-brand-blue-100 bg-brand-blue-50/40 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-slate-800">요약 bullet</p>
+                <p className="text-xs text-neutral-slate-500">짧고 의미가 겹치지 않는 문장 위주로 정리하세요.</p>
+              </div>
+              <Badge variant={canAddSummaryBullet ? "outline" : "destructive"}>
+                {settings.summaryBullets.length}/{RESUME_MAX_SUMMARY_BULLETS}
+              </Badge>
+            </div>
+
+            <div className="space-y-3">
+              {settings.summaryBullets.length === 0 ? (
+                <div className="rounded-md border border-dashed border-neutral-slate-300 px-3 py-6 text-center text-sm text-neutral-slate-500">
+                  등록된 요약 bullet이 없습니다.
+                </div>
+              ) : (
+                settings.summaryBullets.map((bullet, index) => (
+                  <div
+                    key={`${bullet}-${index}`}
+                    className="rounded-lg border border-brand-blue-100 bg-white px-4 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-neutral-slate-800">{bullet}</p>
+                        <CharacterCount value={bullet} />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => removeSummaryBullet(index)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-summary-bullet">새 요약 bullet</Label>
+              <Textarea
+                id="new-summary-bullet"
+                rows={3}
+                value={newSummaryBullet}
+                onChange={(event) => setNewSummaryBullet(event.target.value)}
+                placeholder="예: 복잡한 요구사항을 구조화해 제품 설계와 구현으로 연결합니다."
+              />
+              <div className="flex items-center justify-between gap-3">
+                <CharacterCount value={newSummaryBullet} helper="입력 중" />
+                <Button
+                  onClick={() => addSummaryBullet(newSummaryBullet)}
+                  disabled={!canAddSummaryBullet || !newSummaryBullet.trim()}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  추가
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="surface-default shadow-none">
+          <CardHeader>
+            <CardTitle>핵심 기술</CardTitle>
+            <CardDescription>1페이지에 노출할 기술명을 최대 8개까지 직접 고정합니다.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border border-brand-blue-100 bg-brand-blue-50/40 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-slate-800">노출 기술</p>
+                <p className="text-xs text-neutral-slate-500">프로필 기술 스택에서 추천값을 고르거나 직접 추가할 수 있습니다.</p>
+              </div>
+              <Badge variant={canAddFeaturedSkill ? "outline" : "destructive"}>
+                {settings.featuredSkillNames.length}/{RESUME_MAX_FEATURED_SKILLS}
+              </Badge>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="new-featured-skill">기술 직접 추가</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="new-featured-skill"
+                  value={newFeaturedSkill}
+                  onChange={(event) => setNewFeaturedSkill(event.target.value)}
+                  placeholder="예: PostgreSQL"
+                />
+                <Button
+                  onClick={() => addFeaturedSkill(newFeaturedSkill)}
+                  disabled={!canAddFeaturedSkill || !newFeaturedSkill.trim()}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  추가
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {settings.featuredSkillNames.map((skill) => (
+                <Badge key={skill} variant="secondary" className="flex items-center gap-1 px-3 py-1.5">
+                  {skill}
+                  <button
+                    type="button"
+                    onClick={() => removeFeaturedSkill(skill)}
+                    className="text-neutral-slate-500 transition hover:text-red-600"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </Badge>
+              ))}
+              {settings.featuredSkillNames.length === 0 ? (
+                <p className="text-sm text-neutral-slate-500">선택된 기술이 없습니다.</p>
+              ) : null}
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <Label htmlFor="skill-search">프로필 기술에서 추가</Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-slate-400" />
+                <Input
+                  id="skill-search"
+                  value={skillQuery}
+                  onChange={(event) => setSkillQuery(event.target.value)}
+                  placeholder="기술명 검색"
+                  className="pl-9"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {suggestedSkills.length === 0 ? (
+                  <p className="text-sm text-neutral-slate-500">추가 가능한 추천 기술이 없습니다.</p>
+                ) : (
+                  suggestedSkills.map((skill) => (
+                    <Button
+                      key={skill}
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => addFeaturedSkill(skill)}
+                      disabled={!canAddFeaturedSkill}
+                    >
+                      <Check className="mr-2 h-3.5 w-3.5" />
+                      {skill}
+                    </Button>
+                  ))
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="surface-default shadow-none">
+          <CardHeader>
             <CardTitle>사진 블록</CardTitle>
-            <CardDescription>헤더 텍스트와 분리된 사진 영역 표시 여부를 설정합니다.</CardDescription>
+            <CardDescription>헤더 우측 사진 영역 표시 여부를 설정합니다.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border border-brand-blue-100 bg-brand-blue-50/40 px-4 py-3">
@@ -349,10 +609,10 @@ export function ResumeSettingsEditor() {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <CardTitle>선택 프로젝트</CardTitle>
-                <CardDescription>PDF에 넣을 프로젝트를 선택하고 순서를 조정하세요.</CardDescription>
+                <CardDescription>2페이지에 넣을 프로젝트를 선택하고 순서를 조정하세요.</CardDescription>
               </div>
               <Badge variant={canSelectMore ? "outline" : "destructive"}>
-                {selectedCount}/{MAX_SELECTED_PROJECTS}
+                {selectedCount}/{RESUME_MAX_SELECTED_PROJECTS}
               </Badge>
             </div>
           </CardHeader>
@@ -463,12 +723,13 @@ export function ResumeSettingsEditor() {
         </Card>
 
         <Card className="surface-default shadow-none">
-          <CardContent className="pt-6">
+          <CardContent className="space-y-4 pt-6">
             {error ? (
-              <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
                 {error}
               </p>
             ) : null}
+            <ResumePreviewButton className="w-full" />
             <Button
               className="w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700"
               onClick={handleSave}
