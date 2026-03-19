@@ -48,7 +48,8 @@ export default function AdminLogin() {
       }
 
       TokenManager.setToken(accessToken)
-      router.push('/admin')
+      const nextPath = new URLSearchParams(window.location.search).get("next")
+      router.push(nextPath && nextPath.startsWith("/") ? nextPath : '/admin')
     } catch (err: any) {
       setError(err?.message || '로그인 중 오류가 발생했습니다.')
     } finally {

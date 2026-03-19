@@ -18,7 +18,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
     const token = TokenManager.getToken()
     if (!token) {
-      router.replace("/admin/login")
+      const currentPath = `${pathname}${window.location.search || ""}`
+      setAuthorized(false)
+      router.replace(`/admin/login?next=${encodeURIComponent(currentPath)}`)
       return
     }
     setAuthorized(true)

@@ -16,6 +16,10 @@ import {
   sanitizeContentHtml,
 } from '../utils/content-renderer';
 import { generateSlug } from '../utils/slug-generator';
+import {
+  IdeaCandidate,
+  IdeaCandidateStatus,
+} from '../../ideas/entity/idea-candidate.entity';
 
 @Injectable()
 export class PostsService {
@@ -78,37 +82,68 @@ export class PostsService {
       );
     }
 
-    let tags: any[] = [];
-    if (createPostDTO.tags && createPostDTO.tags.length > 0) {
-      tags = await this.tagsService.findOrCreateTags(createPostDTO.tags);
-    }
-
     const renderedContent = this.renderContentOrThrow(
       createPostDTO.contentType,
       createPostDTO.contentJson,
       createPostDTO.contentMarkdown,
     );
 
-    // slug가 없으면 title에서 자동 생성
-    const slug = createPostDTO.slug || generateSlug(createPostDTO.title);
+    const {
+      ideaCandidateId,
+      tags: requestedTags,
+      ...createPostInput
+    } = createPostDTO;
 
-    const postData = {
-      ...createPostDTO,
-      slug,
-      isFeatured: createPostDTO.isFeatured ?? false,
-      featuredOrder: createPostDTO.featuredOrder ?? 0,
-      status: createPostDTO.status as PostStatus,
-      tags: tags,
-      contentJson: createPostDTO.contentJson as JSONContent,
-      contentMarkdown: null,
-      contentHtml: renderedContent.html,
-      plainText: renderedContent.plainText,
-      headings: renderedContent.headings,
-      wordCount: renderedContent.wordCount,
-      readTime: createPostDTO.readTime ?? renderedContent.readTime,
-    };
-    const post = this.postRepository.create(postData);
-    return this.postRepository.save(post);
+    return this.postRepository.manager.transaction(async (manager) => {
+      let tags: any[] = [];
+      if (requestedTags && requestedTags.length > 0) {
+        tags = await this.tagsService.findOrCreateTags(requestedTags, manager);
+      }
+
+      const slug = createPostInput.slug || generateSlug(createPostInput.title);
+      const postRepository = manager.getRepository(Post);
+      const postData = {
+        ...createPostInput,
+        slug,
+        isFeatured: createPostInput.isFeatured ?? false,
+        featuredOrder: createPostInput.featuredOrder ?? 0,
+        status: createPostInput.status as PostStatus,
+        tags,
+        contentJson: createPostInput.contentJson as JSONContent,
+        contentMarkdown: null,
+        contentHtml: renderedContent.html,
+        plainText: renderedContent.plainText,
+        headings: renderedContent.headings,
+        wordCount: renderedContent.wordCount,
+        readTime: createPostInput.readTime ?? renderedContent.readTime,
+      };
+
+      const post = await postRepository.save(postRepository.create(postData));
+
+      if (ideaCandidateId) {
+        const ideaCandidateRepository = manager.getRepository(IdeaCandidate);
+        const ideaCandidate = await ideaCandidateRepository.findOne({
+          where: {
+            id: ideaCandidateId,
+            status: IdeaCandidateStatus.OPEN,
+          },
+        });
+
+        if (!ideaCandidate) {
+          throw new BadRequestException('유효한 글감 후보를 찾을 수 없습니다.');
+        }
+
+        ideaCandidate.status = IdeaCandidateStatus.USED;
+        ideaCandidate.usedPostId = post.id;
+        ideaCandidate.usedAt = new Date();
+        await ideaCandidateRepository.save(ideaCandidate);
+      }
+
+      return postRepository.findOneOrFail({
+        where: { id: post.id },
+        relations: ['tags', 'project'],
+      });
+    });
   }
 
   async updatePost(
