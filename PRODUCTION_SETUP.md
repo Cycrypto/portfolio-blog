@@ -1,6 +1,7 @@
 # 🚀 운영 서버 배포 가이드
 
 ## 📋 목차
+
 1. [초기 데이터베이스 설정](#초기-데이터베이스-설정)
 2. [관리자 계정 생성](#관리자-계정-생성)
 3. [프로필 초기화](#프로필-초기화)
@@ -26,12 +27,12 @@ Docker Compose로 배포하면 TypeORM이 자동으로 다음 테이블들을 �
 
 ### 초기 데이터 요구사항
 
-| 항목 | 자동 생성 | 수동 생성 필요 |
-|-----|---------|-------------|
-| 관리자 계정 | ❌ | ✅ 필수 |
-| 프로필 데이터 | ✅ 자동 | - |
-| 게시글 | ❌ | 선택 |
-| 프로젝트 | ❌ | 선택 |
+| 항목          | 자동 생성 | 수동 생성 필요 |
+| ------------- | --------- | -------------- |
+| 관리자 계정   | ❌        | ✅ 필수        |
+| 프로필 데이터 | ✅ 자동   | -              |
+| 게시글        | ❌        | 선택           |
+| 프로젝트      | ❌        | 선택           |
 
 ---
 
@@ -40,18 +41,21 @@ Docker Compose로 배포하면 TypeORM이 자동으로 다음 테이블들을 �
 ### 방법 1: Docker 컨테이너에서 실행 (권장)
 
 #### Step 1: 서버에 접속
+
 ```bash
 ssh ubuntu@your-server-ip
 cd ~/apps/portfolio-blog
 ```
 
 #### Step 2: 환경변수 설정
+
 ```bash
 # docker-compose.prod.yml에 환경변수 추가
 nano docker-compose.prod.yml
 ```
 
 backend 서비스에 다음 환경변수를 추가:
+
 ```yaml
 backend:
   environment:
@@ -62,23 +66,28 @@ backend:
 ```
 
 **⚠️ 보안 주의사항:**
+
 - 강력한 비밀번호 사용 (최소 8자, 영문+숫자+특수문자)
 - 기본값 `admin123` 절대 사용 금지
 - 비밀번호는 생성 후 환경변수에서 제거할 것
 
 #### Step 3: 컨테이너 재시작 (환경변수 적용)
+
 ```bash
 docker-compose -f docker-compose.prod.yml up -d backend
 ```
 
 #### Step 4: Seed 스크립트 실행
+
 ```bash
 # 운영 환경용 스크립트 실행
 docker-compose -f docker-compose.prod.yml exec backend npm run seed:prod
 ```
 
 #### Step 5: 결과 확인
+
 성공 시 다음과 같은 출력을 확인할 수 있습니다:
+
 ```
 ✅ 관리자 계정이 성공적으로 생성되었습니다!
 
@@ -92,11 +101,13 @@ docker-compose -f docker-compose.prod.yml exec backend npm run seed:prod
 ```
 
 #### Step 6: 환경변수 제거 (보안)
+
 ```bash
 nano docker-compose.prod.yml
 ```
 
 생성 완료 후 `ADMIN_PASSWORD` 환경변수를 제거하거나 주석 처리:
+
 ```yaml
 backend:
   environment:
@@ -167,10 +178,12 @@ SELECT id, username, email, roles FROM users WHERE username = 'admin';
 프로필은 **자동으로 초기화**됩니다!
 
 ### 자동 생성 시점
+
 - 첫 번째 API 요청 시 (`GET /api/profile`)
 - ID는 항상 `1`로 고정
 
 ### 기본 프로필 데이터
+
 ```typescript
 {
   name: '박준하',
@@ -182,11 +195,13 @@ SELECT id, username, email, roles FROM users WHERE username = 'admin';
 ```
 
 ### 프로필 수정 방법
+
 1. 관리자 로그인: `https://junha.space/admin`
 2. 프로필 편집 메뉴 접속
 3. 정보 수정 후 저장
 
 또는 API 직접 호출:
+
 ```bash
 curl -X PATCH https://api.junha.space/profile \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -216,7 +231,7 @@ curl -X PATCH https://api.junha.space/profile \
 # docker-compose.prod.yml
 db:
   environment:
-    - POSTGRES_PASSWORD=강력한_비밀번호로_변경  # 기본값 변경 필수!
+    - POSTGRES_PASSWORD=강력한_비밀번호로_변경 # 기본값 변경 필수!
 ```
 
 - [ ] PostgreSQL 비밀번호 변경 (`blogpass123` → 강력한 비밀번호)
@@ -253,9 +268,27 @@ DB_PASSWORD=강력한_db_비밀번호
 JWT_SECRET=랜덤_jwt_시크릿_키_최소_32자
 ```
 
+### 4-1. 문의 알림 이메일 설정
+
+문의 폼이 접수될 때마다 본인 메일로 알림을 받으려면 백엔드 환경변수에 아래 값을 추가합니다.
+
+```env
+CONTACT_NOTIFICATION_ENABLED=true
+CONTACT_NOTIFICATION_TO_EMAIL=owner@example.com
+CONTACT_NOTIFICATION_FROM_EMAIL=onboarding@resend.dev
+CONTACT_NOTIFICATION_FROM_NAME=블로그 문의 알림
+CONTACT_NOTIFICATION_TIMEOUT_MS=10000
+RESEND_API_KEY=re_xxxxxxxxx
+```
+
+- `CONTACT_NOTIFICATION_TO_EMAIL`을 비워두면 관리자 프로필에 저장된 이메일을 자동 fallback으로 사용합니다.
+- `CONTACT_NOTIFICATION_FROM_EMAIL`을 `onboarding@resend.dev`로 두면 Resend 테스트 발송 구성이 바로 가능합니다.
+- 실제 운영 발송에서는 Resend에 연결한 본인 도메인 발신 주소를 쓰는 편이 안전합니다.
+
 ### 5. 로그 관리
 
 생성된 관리자 계정 정보가 포함된 로그 삭제:
+
 ```bash
 docker-compose -f docker-compose.prod.yml logs backend | grep -i "password"
 # 위험한 로그가 있다면 컨테이너 재시작으로 로그 초기화
@@ -269,11 +302,13 @@ docker-compose -f docker-compose.prod.yml restart backend
 ### 관리자 계정이 생성되지 않아요
 
 1. **데이터베이스 연결 확인**
+
    ```bash
    docker-compose -f docker-compose.prod.yml logs backend | tail -50
    ```
 
 2. **데이터베이스 테이블 확인**
+
    ```bash
    docker-compose -f docker-compose.prod.yml exec db psql -U bloguser -d blog_db -c "\dt"
    ```
@@ -286,6 +321,7 @@ docker-compose -f docker-compose.prod.yml restart backend
 ### 비밀번호를 잊어버렸어요
 
 비밀번호 재설정:
+
 ```bash
 # 1. 환경변수에 새 비밀번호 설정
 nano docker-compose.prod.yml  # ADMIN_PASSWORD 추가
@@ -303,11 +339,13 @@ docker-compose -f docker-compose.prod.yml exec backend npm run seed:prod
 ### 관리자 페이지에 접속이 안 돼요
 
 1. **프론트엔드 빌드 확인**
+
    ```bash
    docker-compose -f docker-compose.prod.yml logs frontend
    ```
 
 2. **API 연결 확인**
+
    ```bash
    curl https://api.junha.space/auth/dev-token
    ```
@@ -322,11 +360,13 @@ docker-compose -f docker-compose.prod.yml exec backend npm run seed:prod
 새 백엔드 이미지를 배포했는데 기존 PostgreSQL 볼륨이 오래된 스키마를 유지하고 있으면 `posts` 테이블에 `contentType`, `plainText`, `contentHtml` 같은 컬럼이 없어 500이 발생할 수 있습니다.
 
 1. **백엔드 에러 로그 확인**
+
    ```bash
    docker logs blog-backend --tail 100
    ```
 
 2. **스키마 보정 스크립트 실행**
+
    ```bash
    docker exec -it blog-backend npm run repair:posts-schema
    ```
