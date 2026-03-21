@@ -1,4 +1,8 @@
-import { apiRequest, type ApiDataResponse, unwrapApiResponseData } from '../client/base'
+import {
+  apiRequest,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base'
 import {
   Experience,
   ExperienceType,
@@ -45,10 +49,13 @@ function normalizeExperience(raw: any): Experience {
 }
 
 export async function getExperiences(): Promise<Experience[]> {
-  const result = await apiRequest<ApiDataResponse<Experience[]>>('/experiences', {
-    requireAuth: false,
-    cache: 'no-store',
-  })
+  const result = await apiRequest<ApiDataResponse<Experience[]>>(
+    '/experiences',
+    {
+      requireAuth: false,
+      cache: 'no-store',
+    }
+  )
   const data = unwrapApiResponseData(result)
   return Array.isArray(data) ? data.map(normalizeExperience) : []
 }
@@ -62,10 +69,13 @@ export async function createExperience(dto: CreateExperienceRequest): Promise<Ex
 }
 
 export async function updateExperience(id: string, dto: UpdateExperienceRequest): Promise<Experience> {
-  const result = await apiRequest<ApiDataResponse<Experience>>(`/experiences/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(dto),
-  })
+  const result = await apiRequest<ApiDataResponse<Experience>>(
+    `/experiences/${id}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    }
+  )
   return normalizeExperience(unwrapApiResponseData(result))
 }
 

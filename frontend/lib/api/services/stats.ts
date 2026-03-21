@@ -1,4 +1,8 @@
-import { apiRequest, type ApiDataResponse, unwrapApiResponseData } from '../client/base';
+import {
+  apiRequest,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base';
 import { Post, Project } from '../../types/api';
 
 export interface StatsData {

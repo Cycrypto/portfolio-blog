@@ -19,18 +19,20 @@ import {
   PostValidationException,
 } from '../../posts/exceptions';
 const ADMIN_POSTS_PAGE_SIZE = 100;
+type PostListPayload = { data: Post[]; totalCount: number };
 
 export async function getPosts(
   page: number = 1,
   pageSize: number = 9,
 ): Promise<{ posts: Post[]; totalCount: number }> {
   try {
-    const result = await apiRequest<ApiDataResponse<{
-      data: { data: Post[]; totalCount: number };
-    }>>(`/posts?page=${page}&pageSize=${pageSize}`, {
-      requireAuth: false,
-      cache: 'no-store',
-    });
+    const result = await apiRequest<ApiDataResponse<PostListPayload>>(
+      `/posts?page=${page}&pageSize=${pageSize}`,
+      {
+        requireAuth: false,
+        cache: 'no-store',
+      },
+    );
     const payload = unwrapApiResponseData(result);
 
     return {
@@ -52,9 +54,9 @@ export async function getAdminPosts(
   pageSize: number = ADMIN_POSTS_PAGE_SIZE,
 ): Promise<{ posts: Post[]; totalCount: number }> {
   try {
-    const result = await apiRequest<ApiDataResponse<{
-      data: { data: Post[]; totalCount: number };
-    }>>(`/posts/admin/list?page=${page}&pageSize=${pageSize}`);
+    const result = await apiRequest<ApiDataResponse<PostListPayload>>(
+      `/posts/admin/list?page=${page}&pageSize=${pageSize}`,
+    );
     const payload = unwrapApiResponseData(result);
 
     return {

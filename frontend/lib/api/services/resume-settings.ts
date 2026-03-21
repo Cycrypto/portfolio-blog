@@ -1,4 +1,8 @@
-import { apiRequest, type ApiDataResponse, unwrapApiResponseData } from '../client/base';
+import {
+  apiRequest,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base';
 import type {
   ResumeSettings,
   UpdateResumeSettingsRequest,
@@ -12,20 +16,26 @@ import {
 import { normalizeResumeStringArray } from '@/lib/portfolio/resume-content';
 
 export async function getResumeSettings(): Promise<ResumeSettings> {
-  const result = await apiRequest<ApiDataResponse<ResumeSettings>>('/resume-settings', {
-    requireAuth: false,
-    cache: 'no-store',
-  });
+  const result = await apiRequest<ApiDataResponse<ResumeSettings>>(
+    '/resume-settings',
+    {
+      requireAuth: false,
+      cache: 'no-store',
+    }
+  );
   return normalizeResumeSettings(unwrapApiResponseData(result));
 }
 
 export async function updateResumeSettings(
   data: UpdateResumeSettingsRequest,
 ): Promise<ResumeSettings> {
-  const result = await apiRequest<ApiDataResponse<ResumeSettings>>('/resume-settings', {
-    method: 'PUT',
-    body: JSON.stringify(normalizeResumeSettings(data)),
-  });
+  const result = await apiRequest<ApiDataResponse<ResumeSettings>>(
+    '/resume-settings',
+    {
+      method: 'PUT',
+      body: JSON.stringify(normalizeResumeSettings(data)),
+    }
+  );
   return normalizeResumeSettings(unwrapApiResponseData(result));
 }
 

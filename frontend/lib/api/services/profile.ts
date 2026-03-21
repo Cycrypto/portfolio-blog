@@ -1,4 +1,9 @@
-import { ApiError, apiRequest, unwrapApiResponseData, type ApiDataResponse } from '../client/base'
+import {
+  ApiError,
+  apiRequest,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base'
 import { TokenManager } from '../../auth/token-manager'
 import { normalizeUrlFields } from '@/lib/utils/url'
 
@@ -56,7 +61,10 @@ export const profileService = {
   // 프로필 데이터 가져오기
   async getProfile(): Promise<ProfileData> {
     try {
-      const response = await apiRequest<ApiDataResponse<ProfileData>>('/profile', { requireAuth: false, cache: 'no-store' })
+      const response = await apiRequest<ApiDataResponse<ProfileData>>(
+        '/profile',
+        { requireAuth: false, cache: 'no-store' }
+      )
       return sanitizeProfileData(unwrapApiResponseData(response))
     } catch (error) {
       console.error('Failed to fetch profile:', error)
@@ -67,10 +75,13 @@ export const profileService = {
   // 프로필 데이터 업데이트
   async updateProfile(data: Partial<ProfileData>): Promise<ProfileData> {
     try {
-      const response = await apiRequest<ApiDataResponse<ProfileData>>('/profile', {
-        method: 'PUT',
-        body: JSON.stringify(sanitizeProfilePayload(data)),
-      })
+      const response = await apiRequest<ApiDataResponse<ProfileData>>(
+        '/profile',
+        {
+          method: 'PUT',
+          body: JSON.stringify(sanitizeProfilePayload(data)),
+        }
+      )
       return sanitizeProfileData(unwrapApiResponseData(response))
     } catch (error) {
       console.error('Failed to update profile:', error)

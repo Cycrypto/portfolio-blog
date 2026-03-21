@@ -1,4 +1,8 @@
-import { apiRequest, type ApiDataResponse, unwrapApiResponseData } from '../client/base'
+import {
+  apiRequest,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base'
 import { ContactRequest, ContactResponse } from '../../types/api'
 
 export async function submitContact(contact: ContactRequest): Promise<ContactResponse> {
