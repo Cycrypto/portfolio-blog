@@ -54,7 +54,7 @@ export async function getExperiences(): Promise<Experience[]> {
     {
       requireAuth: false,
       cache: 'no-store',
-    }
+    },
   )
   const data = unwrapApiResponseData(result)
   return Array.isArray(data) ? data.map(normalizeExperience) : []
@@ -74,7 +74,7 @@ export async function updateExperience(id: string, dto: UpdateExperienceRequest)
     {
       method: 'PATCH',
       body: JSON.stringify(dto),
-    }
+    },
   )
   return normalizeExperience(unwrapApiResponseData(result))
 }

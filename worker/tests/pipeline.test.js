@@ -175,6 +175,78 @@ test('createImportAnalysis retries with smaller chunks after a chunk summary fai
   assert.ok(chunkAttempt >= 2);
 });
 
+test('createImportAnalysis retries the final idea analysis once after a transient failure', async () => {
+  let finalAttempt = 0;
+  const oauthClient = {
+    completeJson: async ({ systemPrompt, userPrompt }) => {
+      if (systemPrompt.includes('summarizing one chunk of a longer ChatGPT conversation')) {
+        const payload = JSON.parse(userPrompt);
+        const turnOrders = Array.from(
+          payload.transcript.matchAll(/#(\d+)/g),
+          (match) => Number(match[1]),
+        );
+
+        return {
+          summaryShort: `chunk ${payload.chunkIndex}`,
+          keyPoints: ['point'],
+          technicalTopics: ['next.js'],
+          decisions: [],
+          openQuestions: [],
+          evidenceSnippets: ['snippet'],
+          candidateTurnOrders: turnOrders.slice(0, 1),
+        };
+      }
+
+      finalAttempt += 1;
+      if (finalAttempt === 1) {
+        throw new Error('Model response was not valid JSON.');
+      }
+
+      return {
+        summaryShort: 'Recovered final summary',
+        summaryLong: 'Recovered long summary',
+        keyPoints: ['point'],
+        technicalTopics: ['next.js'],
+        decisions: [],
+        openQuestions: [],
+        evidenceSnippets: ['snippet'],
+        continuationBrief: 'continue',
+        candidates: [
+          {
+            title: 'final analysis recovered',
+            category: 'frontend',
+            tags: ['Next.js'],
+            keywords: ['retry'],
+            evidenceSnippet: 'snippet',
+            score: 7,
+            continuationBrief: 'continue',
+            sourceMessageRefs: [0],
+          },
+        ],
+      };
+    },
+  };
+
+  const result = await createImportAnalysis({
+    body: {
+      sourceTitle: 'Final retry flow',
+      sourceUrl: 'https://chatgpt.com/c/final-retry',
+      extractedAt: new Date().toISOString(),
+      messages: Array.from({ length: 4 }, (_, index) => ({
+        order: index,
+        role: index % 2 === 0 ? 'user' : 'assistant',
+        text: `Turn ${index} discusses cache recovery and import retries.`,
+      })),
+    },
+    oauthClient,
+    config: createConfig(),
+  });
+
+  assert.equal(finalAttempt, 2);
+  assert.equal(result.candidates.length, 1);
+  assert.match(result.candidates[0].title, /^이 대화는 /);
+});
+
 test('createImportAnalysis keeps non-technical themes non-technical when the memory says so', async () => {
   const oauthClient = {
     completeJson: async ({ systemPrompt, userPrompt }) => {

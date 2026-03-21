@@ -80,7 +80,7 @@ export const profileService = {
         {
           method: 'PUT',
           body: JSON.stringify(sanitizeProfilePayload(data)),
-        }
+        },
       )
       return sanitizeProfileData(unwrapApiResponseData(response))
     } catch (error) {

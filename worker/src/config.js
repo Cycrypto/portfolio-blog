@@ -21,6 +21,7 @@ function createConfig() {
       .map((value) => value.trim())
       .filter(Boolean),
     modelOverride: process.env.AI_WORKER_MODEL || null,
+    modelCacheTtlMs: Number(process.env.AI_WORKER_MODEL_CACHE_TTL_MS || 15000),
     requestTimeoutMs: Number(process.env.AI_WORKER_REQUEST_TIMEOUT_MS || 30000),
     importMaxChars: Number(process.env.AI_WORKER_IMPORT_MAX_CHARS || 24000),
     importChunkChars: Number(process.env.AI_WORKER_IMPORT_CHUNK_CHARS || 4500),
