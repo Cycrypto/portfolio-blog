@@ -8,6 +8,11 @@ export interface CommonResponse<T> {
   data: T;
 }
 
+export type ApiDataResponse<T> =
+  | T
+  | { data: T }
+  | { data: { data: T } };
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -80,6 +85,24 @@ export async function apiRequest<T>(
     }
     throw new ApiError(`Network error: ${error.message}`);
   }
+}
+
+function hasDataProperty(value: unknown): value is { data: unknown } {
+  return typeof value === 'object' && value !== null && 'data' in value;
+}
+
+export function unwrapApiResponseData<T>(
+  response: ApiDataResponse<T>
+): T {
+  if (hasDataProperty(response)) {
+    if (hasDataProperty(response.data)) {
+      return response.data.data as T;
+    }
+
+    return response.data as T;
+  }
+
+  return response as T;
 }
 
 export { API_BASE_URL };

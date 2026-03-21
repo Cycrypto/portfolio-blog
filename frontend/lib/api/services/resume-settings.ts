@@ -1,4 +1,8 @@
-import { apiRequest } from '../client/base';
+import {
+  apiRequest,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base';
 import type {
   ResumeSettings,
   UpdateResumeSettingsRequest,
@@ -12,21 +16,27 @@ import {
 import { normalizeResumeStringArray } from '@/lib/portfolio/resume-content';
 
 export async function getResumeSettings(): Promise<ResumeSettings> {
-  const result = await apiRequest<{ data: ResumeSettings }>('/resume-settings', {
+  const result = await apiRequest<ApiDataResponse<ResumeSettings>>(
+    '/resume-settings',
+    {
     requireAuth: false,
     cache: 'no-store',
-  });
-  return normalizeResumeSettings((result as any)?.data?.data ?? (result as any)?.data);
+    }
+  );
+  return normalizeResumeSettings(unwrapApiResponseData(result));
 }
 
 export async function updateResumeSettings(
   data: UpdateResumeSettingsRequest,
 ): Promise<ResumeSettings> {
-  const result = await apiRequest<{ data: ResumeSettings }>('/resume-settings', {
+  const result = await apiRequest<ApiDataResponse<ResumeSettings>>(
+    '/resume-settings',
+    {
     method: 'PUT',
     body: JSON.stringify(normalizeResumeSettings(data)),
-  });
-  return normalizeResumeSettings((result as any)?.data?.data ?? (result as any)?.data);
+    }
+  );
+  return normalizeResumeSettings(unwrapApiResponseData(result));
 }
 
 function normalizeResumeSettings<T extends Partial<ResumeSettings>>(settings: T): T {

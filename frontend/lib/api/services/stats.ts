@@ -1,4 +1,8 @@
-import { apiRequest } from '../client/base';
+import {
+  apiRequest,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base';
 import { Post, Project } from '../../types/api';
 
 export interface StatsData {
@@ -13,6 +17,6 @@ export interface StatsData {
 }
 
 export async function getStats(): Promise<StatsData> {
-  const result = await apiRequest<{ data: StatsData }>('/stats');
-  return (result as any)?.data?.data ?? (result as any)?.data;
+  const result = await apiRequest<ApiDataResponse<StatsData>>('/stats');
+  return unwrapApiResponseData(result);
 }
