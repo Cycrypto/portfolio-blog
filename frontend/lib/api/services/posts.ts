@@ -1,8 +1,6 @@
 import {
   apiRequest,
   ApiError,
-  type ApiDataResponse,
-  unwrapApiResponseData,
 } from '../client/base';
 import {
   Post,
@@ -26,14 +24,14 @@ export async function getPosts(
   pageSize: number = 9,
 ): Promise<{ posts: Post[]; totalCount: number }> {
   try {
-    const result = await apiRequest<ApiDataResponse<PostListPayload>>(
+    const result = await apiRequest<{ data: PostListPayload }>(
       `/posts?page=${page}&pageSize=${pageSize}`,
       {
         requireAuth: false,
         cache: 'no-store',
       },
     );
-    const payload = unwrapApiResponseData(result);
+    const payload = result.data;
 
     return {
       posts: payload.data || [],
@@ -54,10 +52,10 @@ export async function getAdminPosts(
   pageSize: number = ADMIN_POSTS_PAGE_SIZE,
 ): Promise<{ posts: Post[]; totalCount: number }> {
   try {
-    const result = await apiRequest<ApiDataResponse<PostListPayload>>(
+    const result = await apiRequest<{ data: PostListPayload }>(
       `/posts/admin/list?page=${page}&pageSize=${pageSize}`,
     );
-    const payload = unwrapApiResponseData(result);
+    const payload = result.data;
 
     return {
       posts: payload.data || [],
