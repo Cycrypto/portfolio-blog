@@ -7,6 +7,7 @@ import { Save, Settings2 } from 'lucide-react';
 
 import { PostEditorLayout } from '@/components/admin/post-editor/PostEditorLayout';
 import { PostSettingsDialog } from '@/components/admin/post-editor/PostSettingsDialog';
+import { useFeaturedImageUpload } from '@/components/admin/post-editor/useFeaturedImageUpload';
 import { Button } from '@/components/ui/button';
 import { TiptapEditor } from '@/components/editor/TiptapEditor';
 import { TiptapViewer } from '@/components/editor/TiptapViewer';
@@ -16,7 +17,6 @@ import {
   updatePost,
   type PostEdit,
   type UpdatePostRequest,
-  uploadMedia,
 } from '@/lib/api';
 import { normalizeImageUrl } from '@/lib/utils/image';
 import { calculateEditorMetrics } from '@/lib/posts/editor-metrics';
@@ -76,8 +76,6 @@ export default function EditPostPage({ params }: EditPostPageProps) {
     'tiptap',
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploadingFeaturedImage, setIsUploadingFeaturedImage] =
-    useState(false);
   const [isUploadingEditorMedia, setIsUploadingEditorMedia] = useState(false);
   const [isConvertingMarkdown, setIsConvertingMarkdown] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +94,11 @@ export default function EditPostPage({ params }: EditPostPageProps) {
     () => normalizeImageUrl(post?.image),
     [post?.image],
   );
+  const { handleFeaturedImageUpload, isUploadingFeaturedImage } =
+    useFeaturedImageUpload({
+      setError,
+      setFeaturedImage,
+    });
   const isUploadingMedia = isUploadingFeaturedImage || isUploadingEditorMedia;
   const isBusy = isSaving || isUploadingMedia || isConvertingMarkdown;
 
@@ -184,21 +187,6 @@ export default function EditPostPage({ params }: EditPostPageProps) {
     }
     router.push('/admin/posts');
   };
-
-  const handleFeaturedImageUpload = useCallback(async (file: File) => {
-    try {
-      setIsUploadingFeaturedImage(true);
-      setError(null);
-      const url = await uploadMedia(file);
-      setFeaturedImage(url);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : '이미지 업로드에 실패했습니다.',
-      );
-    } finally {
-      setIsUploadingFeaturedImage(false);
-    }
-  }, []);
 
   const buildPostUpdatePayload = useCallback(
     (saveStatus: SaveStatus): UpdatePostRequest => {
