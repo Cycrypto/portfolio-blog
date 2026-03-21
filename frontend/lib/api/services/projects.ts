@@ -1,5 +1,9 @@
-import { apiRequest } from '../client/base'
-import { ApiError } from '../client/base'
+import {
+  apiRequest,
+  ApiError,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base'
 import { Project, CreateProjectRequest, UpdateProjectRequest } from '../../types/api'
 import { normalizeUrlFields } from '@/lib/utils/url'
 
@@ -21,20 +25,20 @@ function normalizeLinkedExperience(raw: any) {
 }
 
 export async function getProjects(): Promise<Project[]> {
-  const result = await apiRequest<{ data: Project[] }>('/projects', {
+  const result = await apiRequest<ApiDataResponse<Project[]>>('/projects', {
     requireAuth: false,
     cache: 'no-store',
   })
-  const projects = (result as any)?.data?.data ?? (result as any)?.data ?? []
+  const projects = unwrapApiResponseData(result)
   return Array.isArray(projects) ? projects.map(normalizeProjectLinks) : []
 }
 
 export async function getProject(id: string): Promise<Project> {
-  const result = await apiRequest<{ data: Project }>(`/projects/${id}`, {
+  const result = await apiRequest<ApiDataResponse<Project>>(`/projects/${id}`, {
     requireAuth: false,
     cache: 'no-store',
   })
-  return normalizeProjectLinks((result as any)?.data?.data ?? (result as any)?.data)
+  return normalizeProjectLinks(unwrapApiResponseData(result))
 }
 
 export async function createProject(data: CreateProjectRequest): Promise<Project> {
