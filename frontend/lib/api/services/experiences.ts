@@ -52,8 +52,8 @@ export async function getExperiences(): Promise<Experience[]> {
   const result = await apiRequest<ApiDataResponse<Experience[]>>(
     '/experiences',
     {
-    requireAuth: false,
-    cache: 'no-store',
+      requireAuth: false,
+      cache: 'no-store',
     }
   )
   const data = unwrapApiResponseData(result)
@@ -72,8 +72,8 @@ export async function updateExperience(id: string, dto: UpdateExperienceRequest)
   const result = await apiRequest<ApiDataResponse<Experience>>(
     `/experiences/${id}`,
     {
-    method: 'PATCH',
-    body: JSON.stringify(dto),
+      method: 'PATCH',
+      body: JSON.stringify(dto),
     }
   )
   return normalizeExperience(unwrapApiResponseData(result))

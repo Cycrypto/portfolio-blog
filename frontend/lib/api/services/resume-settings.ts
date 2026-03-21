@@ -19,8 +19,8 @@ export async function getResumeSettings(): Promise<ResumeSettings> {
   const result = await apiRequest<ApiDataResponse<ResumeSettings>>(
     '/resume-settings',
     {
-    requireAuth: false,
-    cache: 'no-store',
+      requireAuth: false,
+      cache: 'no-store',
     }
   );
   return normalizeResumeSettings(unwrapApiResponseData(result));
@@ -32,8 +32,8 @@ export async function updateResumeSettings(
   const result = await apiRequest<ApiDataResponse<ResumeSettings>>(
     '/resume-settings',
     {
-    method: 'PUT',
-    body: JSON.stringify(normalizeResumeSettings(data)),
+      method: 'PUT',
+      body: JSON.stringify(normalizeResumeSettings(data)),
     }
   );
   return normalizeResumeSettings(unwrapApiResponseData(result));

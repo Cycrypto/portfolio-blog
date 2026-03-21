@@ -1,6 +1,42 @@
+jest.mock('isomorphic-dompurify', () => {
+    const { JSDOM } = require('jsdom');
+    const createDOMPurify = require('dompurify');
+
+    const window = new JSDOM('<!DOCTYPE html><html><body></body></html>').window;
+    const purify = createDOMPurify(window);
+
+    return {
+        __esModule: true,
+        default: purify,
+        sanitize: purify.sanitize.bind(purify),
+        addHook: purify.addHook.bind(purify),
+    };
+});
+
+import { sanitizeContentHtml } from './content-renderer';
 import { normalizeRenderedHtml, sanitizeStyleAttribute } from './rendered-html-normalizer';
 
 describe('rendered-html-normalizer', () => {
+    describe('sanitizeContentHtml', () => {
+        it('removes third-party iframe sources and permission policies', () => {
+            const html = sanitizeContentHtml(
+                '<iframe src="https://evil.example/embed" allow="camera; microphone" allowfullscreen></iframe>',
+            );
+
+            expect(html).toBe('<iframe allowfullscreen=""></iframe>');
+        });
+
+        it('preserves supported YouTube embeds while stripping iframe allow policies', () => {
+            const html = sanitizeContentHtml(
+                '<iframe src="//www.youtube.com/embed/dQw4w9WgXcQ" allow="camera; microphone" allowfullscreen></iframe>',
+            );
+
+            expect(html).toContain('src="https://www.youtube.com/embed/dQw4w9WgXcQ"');
+            expect(html).toContain('allowfullscreen=""');
+            expect(html).not.toContain('allow="');
+        });
+    });
+
     describe('sanitizeStyleAttribute', () => {
         it('preserves allowed alignment styles', () => {
             const style = sanitizeStyleAttribute(

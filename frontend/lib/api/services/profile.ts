@@ -78,8 +78,8 @@ export const profileService = {
       const response = await apiRequest<ApiDataResponse<ProfileData>>(
         '/profile',
         {
-        method: 'PUT',
-        body: JSON.stringify(sanitizeProfilePayload(data)),
+          method: 'PUT',
+          body: JSON.stringify(sanitizeProfilePayload(data)),
         }
       )
       return sanitizeProfileData(unwrapApiResponseData(response))
