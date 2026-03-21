@@ -21,7 +21,7 @@ export async function getResumeSettings(): Promise<ResumeSettings> {
     {
       requireAuth: false,
       cache: 'no-store',
-    }
+    },
   );
   return normalizeResumeSettings(unwrapApiResponseData(result));
 }
@@ -34,7 +34,7 @@ export async function updateResumeSettings(
     {
       method: 'PUT',
       body: JSON.stringify(normalizeResumeSettings(data)),
-    }
+    },
   );
   return normalizeResumeSettings(unwrapApiResponseData(result));
 }
