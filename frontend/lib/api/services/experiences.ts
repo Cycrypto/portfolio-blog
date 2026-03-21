@@ -1,4 +1,4 @@
-import { apiRequest } from '../client/base'
+import { apiRequest, type ApiDataResponse, unwrapApiResponseData } from '../client/base'
 import {
   Experience,
   ExperienceType,
@@ -45,28 +45,28 @@ function normalizeExperience(raw: any): Experience {
 }
 
 export async function getExperiences(): Promise<Experience[]> {
-  const result = await apiRequest<{ data: Experience[] }>('/experiences', {
+  const result = await apiRequest<ApiDataResponse<Experience[]>>('/experiences', {
     requireAuth: false,
     cache: 'no-store',
   })
-  const data = (result as any)?.data?.data ?? (result as any)?.data ?? []
+  const data = unwrapApiResponseData(result)
   return Array.isArray(data) ? data.map(normalizeExperience) : []
 }
 
 export async function createExperience(dto: CreateExperienceRequest): Promise<Experience> {
-  const result = await apiRequest<{ data: Experience }>('/experiences', {
+  const result = await apiRequest<ApiDataResponse<Experience>>('/experiences', {
     method: 'POST',
     body: JSON.stringify(dto),
   })
-  return normalizeExperience((result as any)?.data?.data ?? (result as any)?.data)
+  return normalizeExperience(unwrapApiResponseData(result))
 }
 
 export async function updateExperience(id: string, dto: UpdateExperienceRequest): Promise<Experience> {
-  const result = await apiRequest<{ data: Experience }>(`/experiences/${id}`, {
+  const result = await apiRequest<ApiDataResponse<Experience>>(`/experiences/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(dto),
   })
-  return normalizeExperience((result as any)?.data?.data ?? (result as any)?.data)
+  return normalizeExperience(unwrapApiResponseData(result))
 }
 
 export async function deleteExperience(id: string): Promise<void> {

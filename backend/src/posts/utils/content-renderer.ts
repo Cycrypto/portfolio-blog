@@ -32,6 +32,12 @@ if (typeof window === 'undefined') {
 }
 
 const purify = (DOMPurify as any).default ?? DOMPurify;
+const ALLOWED_IFRAME_HOSTS = new Set([
+    'youtube.com',
+    'www.youtube.com',
+    'youtube-nocookie.com',
+    'www.youtube-nocookie.com',
+]);
 
 purify.addHook('uponSanitizeAttribute', (node, data) => {
     const attrName = data.attrName;
@@ -67,6 +73,16 @@ purify.addHook('uponSanitizeAttribute', (node, data) => {
             data.keepAttr = false;
             return;
         }
+
+        if (node.tagName === 'IFRAME') {
+            const sanitizedIframeSrc = sanitizeIframeSrc(rawAttrValue);
+            if (!sanitizedIframeSrc) {
+                data.keepAttr = false;
+            } else {
+                data.attrValue = sanitizedIframeSrc;
+            }
+            return;
+        }
     }
 
     if (node.tagName === 'IMG' && attrName === 'src') {
@@ -75,6 +91,11 @@ purify.addHook('uponSanitizeAttribute', (node, data) => {
         if (!isAllowed) {
             data.keepAttr = false;
         }
+        return;
+    }
+
+    if (node.tagName === 'IFRAME' && attrName === 'allow') {
+        data.keepAttr = false;
     }
 });
 
@@ -242,6 +263,34 @@ export function convertMarkdownToTiptapJSON(markdown: string): JSONContent {
 export function sanitizeContentHtml(html: string): string {
     const sanitizedHtml = purify.sanitize(html, PURIFY_CONFIG);
     return normalizeRenderedHtml(sanitizedHtml);
+}
+
+function sanitizeIframeSrc(value: string): string | null {
+    const normalizedValue = normalizeUrl(value);
+    if (!normalizedValue) {
+        return null;
+    }
+
+    let parsedUrl: URL;
+    try {
+        parsedUrl = new URL(normalizedValue);
+    } catch {
+        return null;
+    }
+
+    if (parsedUrl.protocol !== 'https:') {
+        return null;
+    }
+
+    if (!ALLOWED_IFRAME_HOSTS.has(parsedUrl.hostname.toLowerCase())) {
+        return null;
+    }
+
+    if (!parsedUrl.pathname.startsWith('/embed/')) {
+        return null;
+    }
+
+    return parsedUrl.toString();
 }
 
 function extractPlainText(html: string): string {

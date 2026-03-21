@@ -1,4 +1,9 @@
-import { apiRequest } from '../client/base';
+import {
+  apiRequest,
+  ApiError,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base';
 import {
   Post,
   PostEdit,
@@ -13,8 +18,6 @@ import {
   PostDeleteException,
   PostValidationException,
 } from '../../posts/exceptions';
-import { ApiError } from '../client/base';
-
 const ADMIN_POSTS_PAGE_SIZE = 100;
 
 export async function getPosts(
@@ -22,16 +25,17 @@ export async function getPosts(
   pageSize: number = 9,
 ): Promise<{ posts: Post[]; totalCount: number }> {
   try {
-    const result = await apiRequest<{
+    const result = await apiRequest<ApiDataResponse<{
       data: { data: Post[]; totalCount: number };
-    }>(`/posts?page=${page}&pageSize=${pageSize}`, {
+    }>>(`/posts?page=${page}&pageSize=${pageSize}`, {
       requireAuth: false,
       cache: 'no-store',
     });
+    const payload = unwrapApiResponseData(result);
 
     return {
-      posts: result.data?.data || [],
-      totalCount: result.data?.totalCount || 0,
+      posts: payload.data || [],
+      totalCount: payload.totalCount || 0,
     };
   } catch (error) {
     if (error instanceof ApiError) {
@@ -48,13 +52,14 @@ export async function getAdminPosts(
   pageSize: number = ADMIN_POSTS_PAGE_SIZE,
 ): Promise<{ posts: Post[]; totalCount: number }> {
   try {
-    const result = await apiRequest<{
+    const result = await apiRequest<ApiDataResponse<{
       data: { data: Post[]; totalCount: number };
-    }>(`/posts/admin/list?page=${page}&pageSize=${pageSize}`);
+    }>>(`/posts/admin/list?page=${page}&pageSize=${pageSize}`);
+    const payload = unwrapApiResponseData(result);
 
     return {
-      posts: result.data?.data || [],
-      totalCount: result.data?.totalCount || 0,
+      posts: payload.data || [],
+      totalCount: payload.totalCount || 0,
     };
   } catch (error) {
     if (error instanceof ApiError) {

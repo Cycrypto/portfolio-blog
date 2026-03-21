@@ -8,6 +8,7 @@ import { Lightbulb, Save, Settings2 } from 'lucide-react';
 import { PostEditorLayout } from '@/components/admin/post-editor/PostEditorLayout';
 import { PostIdeasPanel } from '@/components/admin/post-editor/PostIdeasPanel';
 import { PostSettingsDialog } from '@/components/admin/post-editor/PostSettingsDialog';
+import { useFeaturedImageUpload } from '@/components/admin/post-editor/useFeaturedImageUpload';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -24,7 +25,6 @@ import {
   getAiStatus,
   getIdeaCandidates,
   importChatGptIdeas,
-  uploadMedia,
 } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeImageUrl } from '@/lib/utils/image';
@@ -86,8 +86,6 @@ export default function NewPost() {
   const [isFeatured, setIsFeatured] = useState(false);
   const [featuredOrder, setFeaturedOrder] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploadingFeaturedImage, setIsUploadingFeaturedImage] =
-    useState(false);
   const [isUploadingEditorMedia, setIsUploadingEditorMedia] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -116,6 +114,11 @@ export default function NewPost() {
     () => normalizeImageUrl(featuredImage),
     [featuredImage],
   );
+  const { handleFeaturedImageUpload, isUploadingFeaturedImage } =
+    useFeaturedImageUpload({
+      setError,
+      setFeaturedImage,
+    });
   const isUploadingMedia = isUploadingFeaturedImage || isUploadingEditorMedia;
   const isIdeasBusy = isIdeasLoading || isImportingIdeas;
 
@@ -137,21 +140,6 @@ export default function NewPost() {
     }
     router.push('/admin/posts');
   };
-
-  const handleFeaturedImageUpload = useCallback(async (file: File) => {
-    try {
-      setIsUploadingFeaturedImage(true);
-      setError(null);
-      const url = await uploadMedia(file);
-      setFeaturedImage(url);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : '이미지 업로드에 실패했습니다.',
-      );
-    } finally {
-      setIsUploadingFeaturedImage(false);
-    }
-  }, []);
 
   const fetchIdeaCandidateList = useCallback(async () => {
     try {

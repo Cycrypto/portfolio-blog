@@ -415,9 +415,12 @@ export class PostsService {
 
     if (
       !post.contentHtml ||
-      !post.plainText ||
-      !post.headings ||
-      !post.wordCount
+      post.plainText === null ||
+      post.plainText === undefined ||
+      post.headings === null ||
+      post.headings === undefined ||
+      post.wordCount === null ||
+      post.wordCount === undefined
     ) {
       try {
         const renderedContent = this.renderContentOrThrow(
