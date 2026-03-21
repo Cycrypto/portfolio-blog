@@ -1,8 +1,6 @@
 import {
   apiRequest,
   ApiError,
-  type ApiDataResponse,
-  unwrapApiResponseData,
 } from '../client/base';
 import {
   Post,
@@ -19,19 +17,21 @@ import {
   PostValidationException,
 } from '../../posts/exceptions';
 const ADMIN_POSTS_PAGE_SIZE = 100;
+type PostListPayload = { data: Post[]; totalCount: number };
 
 export async function getPosts(
   page: number = 1,
   pageSize: number = 9,
 ): Promise<{ posts: Post[]; totalCount: number }> {
   try {
-    const result = await apiRequest<ApiDataResponse<{
-      data: { data: Post[]; totalCount: number };
-    }>>(`/posts?page=${page}&pageSize=${pageSize}`, {
-      requireAuth: false,
-      cache: 'no-store',
-    });
-    const payload = unwrapApiResponseData(result);
+    const result = await apiRequest<{ data: PostListPayload }>(
+      `/posts?page=${page}&pageSize=${pageSize}`,
+      {
+        requireAuth: false,
+        cache: 'no-store',
+      },
+    );
+    const payload = result.data;
 
     return {
       posts: payload.data || [],
@@ -52,10 +52,10 @@ export async function getAdminPosts(
   pageSize: number = ADMIN_POSTS_PAGE_SIZE,
 ): Promise<{ posts: Post[]; totalCount: number }> {
   try {
-    const result = await apiRequest<ApiDataResponse<{
-      data: { data: Post[]; totalCount: number };
-    }>>(`/posts/admin/list?page=${page}&pageSize=${pageSize}`);
-    const payload = unwrapApiResponseData(result);
+    const result = await apiRequest<{ data: PostListPayload }>(
+      `/posts/admin/list?page=${page}&pageSize=${pageSize}`,
+    );
+    const payload = result.data;
 
     return {
       posts: payload.data || [],
