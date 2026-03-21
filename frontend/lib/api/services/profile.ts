@@ -1,4 +1,9 @@
-import { ApiError, apiRequest } from '../client/base'
+import {
+  ApiError,
+  apiRequest,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base'
 import { TokenManager } from '../../auth/token-manager'
 import { normalizeUrlFields } from '@/lib/utils/url'
 
@@ -56,12 +61,11 @@ export const profileService = {
   // 프로필 데이터 가져오기
   async getProfile(): Promise<ProfileData> {
     try {
-      const response = await apiRequest<{ data: ProfileData }>('/profile', { requireAuth: false, cache: 'no-store' })
-      // ResponseInterceptor 래핑 + 컨트롤러 { data: profile }
-      // => response.data?.data에 실데이터가 있음
-      // 호환성을 위해 두 경로 모두 체크
-      // @ts-ignore
-      return sanitizeProfileData((response as any)?.data?.data || (response as any)?.data || response as any)
+      const response = await apiRequest<ApiDataResponse<ProfileData>>(
+        '/profile',
+        { requireAuth: false, cache: 'no-store' }
+      )
+      return sanitizeProfileData(unwrapApiResponseData(response))
     } catch (error) {
       console.error('Failed to fetch profile:', error)
       throw new Error('프로필 데이터를 가져오는데 실패했습니다.')
@@ -71,13 +75,14 @@ export const profileService = {
   // 프로필 데이터 업데이트
   async updateProfile(data: Partial<ProfileData>): Promise<ProfileData> {
     try {
-      const response = await apiRequest<{ data: ProfileData }>('/profile', {
-        method: 'PUT',
-        body: JSON.stringify(sanitizeProfilePayload(data)),
-      })
-      // 동일하게 래핑된 구조 처리
-      // @ts-ignore
-      return sanitizeProfileData((response as any)?.data?.data || (response as any)?.data || response as any)
+      const response = await apiRequest<ApiDataResponse<ProfileData>>(
+        '/profile',
+        {
+          method: 'PUT',
+          body: JSON.stringify(sanitizeProfilePayload(data)),
+        }
+      )
+      return sanitizeProfileData(unwrapApiResponseData(response))
     } catch (error) {
       console.error('Failed to update profile:', error)
       if (error instanceof ApiError) {

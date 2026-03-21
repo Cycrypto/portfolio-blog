@@ -8,6 +8,11 @@ export interface CommonResponse<T> {
   data: T;
 }
 
+export type ApiDataResponse<T> =
+  | T
+  | { data: T }
+  | { data: { data: T } };
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -29,18 +34,18 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   const { requireAuth = true, ...requestOptions } = options;
-  
+
   // 기본 헤더 설정
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...requestOptions.headers,
-  };
+  const headers = new Headers(requestOptions.headers);
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   // 인증이 필요한 경우 토큰 추가
   if (requireAuth) {
     const authHeader = TokenManager.getAuthorizationHeader();
     if (authHeader) {
-      headers['Authorization'] = authHeader;
+      headers.set('Authorization', authHeader);
     }
   }
   
@@ -78,8 +83,27 @@ export async function apiRequest<T>(
     if (error instanceof ApiError) {
       throw error;
     }
-    throw new ApiError(`Network error: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new ApiError(`Network error: ${message}`);
   }
+}
+
+function hasDataProperty(value: unknown): value is { data: unknown } {
+  return typeof value === 'object' && value !== null && 'data' in value;
+}
+
+export function unwrapApiResponseData<T>(
+  response: ApiDataResponse<T>
+): T {
+  if (hasDataProperty(response)) {
+    if (hasDataProperty(response.data)) {
+      return response.data.data as T;
+    }
+
+    return response.data as T;
+  }
+
+  return response as T;
 }
 
 export { API_BASE_URL };

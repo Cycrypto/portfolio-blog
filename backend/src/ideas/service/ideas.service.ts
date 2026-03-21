@@ -317,45 +317,42 @@ export class IdeasService {
     }
 
     if (preferWorker) {
-      const health = await this.workerGatewayService.getHealth();
-      if (health.available) {
-        try {
-          const workerResult =
-            await this.workerGatewayService.importChatGptConversation({
-              ...payload,
-              sourceTitle,
-              sourceUrl,
-              extractedAt,
-              messages,
-            });
-
-          const savedWorkerImport = await this.persistIdeaImport({
-            sourceType: IdeaSourceType.CHATGPT,
+      try {
+        const workerResult =
+          await this.workerGatewayService.importChatGptConversation({
+            ...payload,
             sourceTitle,
             sourceUrl,
-            sourceFingerprint,
-            messageCount: messages.length,
             extractedAt,
-            createdByUserId: userId,
-            summary: workerResult.summary,
-            generator: IdeaGeneratorMode.WORKER,
-            workerImportId: workerResult.workerImportId,
-            candidates: normalizeWorkerCandidates(workerResult),
+            messages,
           });
 
-          return {
-            importId: savedWorkerImport.importId,
-            mode: 'worker',
-            deduped: false,
-            candidates: savedWorkerImport.candidates,
-          };
-        } catch (error) {
-          this.logger.warn(
-            `AI worker import failed for ${sourceUrl}: ${
-              error instanceof Error ? error.message : 'unknown error'
-            }`,
-          );
-        }
+        const savedWorkerImport = await this.persistIdeaImport({
+          sourceType: IdeaSourceType.CHATGPT,
+          sourceTitle,
+          sourceUrl,
+          sourceFingerprint,
+          messageCount: messages.length,
+          extractedAt,
+          createdByUserId: userId,
+          summary: workerResult.summary,
+          generator: IdeaGeneratorMode.WORKER,
+          workerImportId: workerResult.workerImportId,
+          candidates: normalizeWorkerCandidates(workerResult),
+        });
+
+        return {
+          importId: savedWorkerImport.importId,
+          mode: 'worker',
+          deduped: false,
+          candidates: savedWorkerImport.candidates,
+        };
+      } catch (error) {
+        this.logger.warn(
+          `AI worker import failed for ${sourceUrl}: ${
+            error instanceof Error ? error.message : 'unknown error'
+          }`,
+        );
       }
     }
 

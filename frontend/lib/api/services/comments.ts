@@ -1,4 +1,9 @@
-import { ApiError, apiRequest } from '../client/base';
+import {
+  ApiError,
+  apiRequest,
+  type ApiDataResponse,
+  unwrapApiResponseData,
+} from '../client/base';
 import { Comment, CreateCommentRequest, UpdateCommentRequest } from '../../types/api';
 import {
   CommentCreateException,
@@ -26,14 +31,14 @@ export async function getAdminComments(postId?: string | number): Promise<Commen
     const query = postId !== undefined && postId !== null && String(postId).trim()
       ? `?postId=${encodeURIComponent(String(postId).trim())}`
       : '';
-    const result = await apiRequest<{ data: { data: Comment[] } }>(
+    const result = await apiRequest<ApiDataResponse<Comment[]>>(
       `/comments/admin/list${query}`,
       {
         cache: 'no-store',
       }
     );
 
-    return result.data?.data || [];
+    return unwrapApiResponseData(result);
   } catch (error) {
     throw error;
   }

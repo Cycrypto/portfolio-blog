@@ -118,7 +118,7 @@ async function createImportAnalysis({ body, oauthClient, config }) {
   let response;
 
   try {
-    response = await createFinalIdeaAnalysis({
+    response = await createFinalIdeaAnalysisWithRetry({
       sourceTitle: body.sourceTitle,
       sourceUrl: body.sourceUrl,
       memory,
@@ -134,6 +134,14 @@ async function createImportAnalysis({ body, oauthClient, config }) {
     candidates: normalizeCandidates(response.candidates || [], response, memory),
     memory,
   };
+}
+
+async function createFinalIdeaAnalysisWithRetry(input) {
+  try {
+    return await createFinalIdeaAnalysis(input);
+  } catch (_error) {
+    return createFinalIdeaAnalysis(input);
+  }
 }
 
 function createStarterMessage(context) {

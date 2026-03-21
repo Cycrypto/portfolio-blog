@@ -1,4 +1,7 @@
 function createOauthClient(config) {
+  let cachedModel = null;
+  let cachedModelExpiresAt = 0;
+
   return {
     async health() {
       try {
@@ -23,41 +26,68 @@ function createOauthClient(config) {
     },
 
     async completeJson({ systemPrompt, userPrompt, temperature = 0.2 }) {
-      const models = await listModels(config);
-      const model = chooseModel(models, config);
-      const response = await fetch(`${config.upstreamBaseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model,
-          temperature,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-        }),
-        signal: AbortSignal.timeout(config.requestTimeoutMs),
-      });
+      const model = await resolveModelForCompletion();
+      try {
+        const response = await fetch(`${config.upstreamBaseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            temperature,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+          }),
+          signal: AbortSignal.timeout(config.requestTimeoutMs),
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Upstream completion failed: ${response.status} ${errorText || response.statusText}`,
-        );
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Upstream completion failed: ${response.status} ${errorText || response.statusText}`,
+          );
+        }
+
+        const payload = await response.json();
+        const content = payload?.choices?.[0]?.message?.content;
+
+        if (!content || typeof content !== 'string') {
+          throw new Error('Upstream response did not contain message content.');
+        }
+
+        return parseJsonContent(content);
+      } catch (error) {
+        invalidateCachedModel();
+        throw error;
       }
-
-      const payload = await response.json();
-      const content = payload?.choices?.[0]?.message?.content;
-
-      if (!content || typeof content !== 'string') {
-        throw new Error('Upstream response did not contain message content.');
-      }
-
-      return parseJsonContent(content);
     },
   };
+
+  async function resolveModelForCompletion() {
+    if (config.modelOverride) {
+      return config.modelOverride;
+    }
+
+    const now = Date.now();
+    if (cachedModel && cachedModelExpiresAt > now) {
+      return cachedModel;
+    }
+
+    const models = await listModels(config);
+    const model = chooseModel(models, config);
+    const ttlMs = getModelCacheTtlMs(config);
+    cachedModel = model;
+    cachedModelExpiresAt = now + ttlMs;
+    return model;
+  }
+
+  function invalidateCachedModel() {
+    cachedModel = null;
+    cachedModelExpiresAt = 0;
+  }
 }
 
 async function listModels(config) {
@@ -99,6 +129,11 @@ function chooseModel(models, config) {
   }
 
   return availableIds[0];
+}
+
+function getModelCacheTtlMs(config) {
+  const ttlMs = Number(config.modelCacheTtlMs);
+  return Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : 15000;
 }
 
 function parseJsonContent(content) {
