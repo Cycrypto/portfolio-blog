@@ -187,6 +187,7 @@ export interface AssistantReply {
 
 export interface DraftGenerationResponse {
   generationId: number;
+  createdAt?: string | null;
   title: string;
   category: string;
   tags: string[];

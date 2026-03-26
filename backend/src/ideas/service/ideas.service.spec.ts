@@ -1,4 +1,5 @@
 import type { Repository } from 'typeorm';
+import { NotFoundException } from '@nestjs/common';
 import { IdeasService } from './ideas.service';
 import { IdeaCandidate, IdeaCandidateStatus } from '../entity/idea-candidate.entity';
 import { IdeaImport } from '../entity/idea-import.entity';
@@ -92,9 +93,39 @@ describe('IdeasService', () => {
         transaction: jest.fn(async (callback) => callback(transactionManager)),
       },
     };
-    ideaCandidateRepository = {};
+    ideaCandidateRepository = {
+      findOne: jest.fn().mockResolvedValue({
+        id: 12,
+        title: 'NestJS 인증 글감',
+        category: 'tutorial',
+        tags: ['nestjs', 'auth'],
+        keywords: ['jwt'],
+        evidenceSnippet: '인증 흐름을 정리한 대화',
+        score: 4,
+        status: IdeaCandidateStatus.OPEN,
+        createdAt: new Date('2026-03-21T00:00:00.000Z'),
+        generator: IdeaGeneratorMode.WORKER,
+        continuationBrief: 'continue',
+        sourceMessageRefs: [0],
+        ideaImport: {
+          workerImportId: 'worker-import-1',
+          sourceTitle: 'NestJS 인증 구현 관련 대화',
+          sourceUrl: 'https://chatgpt.com/c/123',
+          summaryShort: '짧은 요약',
+          summaryLong: '긴 요약',
+          keyPoints: ['key-point'],
+          technicalTopics: ['nestjs'],
+          decisions: ['decision'],
+          openQuestions: ['question'],
+          evidenceSnippets: ['snippet'],
+          continuationBrief: 'continue',
+        },
+      }),
+    };
     assistantSessionRepository = {};
-    draftGenerationRepository = {};
+    draftGenerationRepository = {
+      findOne: jest.fn(),
+    };
     workerGatewayService = {
       getHealth: jest.fn().mockRejectedValue(new Error('health should not be called')),
       importChatGptConversation: jest.fn().mockResolvedValue({
@@ -228,6 +259,54 @@ describe('IdeasService', () => {
           sourceUrl: 'https://chatgpt.com/c/456',
         }),
       ]),
+    );
+  });
+
+  it('returns the latest saved draft generation for an idea candidate', async () => {
+    (draftGenerationRepository.findOne as jest.Mock).mockResolvedValueOnce({
+      id: 9,
+      ideaCandidateId: 12,
+      assistantSessionId: null,
+      title: '저장된 초안 제목',
+      category: 'backend',
+      tags: ['NestJS', 'JWT'],
+      markdown: '# 저장된 초안',
+      createdPostId: null,
+      createdAt: new Date('2026-03-26T08:15:00.000Z'),
+    });
+
+    const result = await service.getLatestIdeaDraft(12);
+
+    expect(ideaCandidateRepository.findOne).toHaveBeenCalledWith({
+      where: { id: 12 },
+      relations: ['ideaImport'],
+    });
+    expect(draftGenerationRepository.findOne).toHaveBeenCalledWith({
+      where: { ideaCandidateId: 12 },
+      order: {
+        createdAt: 'DESC',
+        id: 'DESC',
+      },
+    });
+    expect(result).toMatchObject({
+      generationId: 9,
+      createdAt: '2026-03-26T08:15:00.000Z',
+      title: '저장된 초안 제목',
+      category: 'backend',
+      tags: ['NestJS', 'JWT'],
+      markdown: '# 저장된 초안',
+      contentJson: {
+        type: 'doc',
+        content: [],
+      },
+    });
+  });
+
+  it('throws when no saved draft exists for the idea candidate', async () => {
+    (draftGenerationRepository.findOne as jest.Mock).mockResolvedValueOnce(null);
+
+    await expect(service.getLatestIdeaDraft(12)).rejects.toThrow(
+      new NotFoundException('저장된 AI 초안을 찾을 수 없습니다.'),
     );
   });
 });

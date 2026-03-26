@@ -128,4 +128,21 @@ export class IdeaCandidatesController {
   ): Promise<DraftGenerationResponseDto> {
     return this.ideasService.generateIdeaDraft(id, payload);
   }
+
+  @Get('ideas/:id/draft')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtRoleGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: '선택한 글감의 최신 저장 초안 조회 (Admin Only)' })
+  @ApiParam({ name: 'id', example: 12 })
+  @ApiResponse({
+    status: 200,
+    description: '가장 최근에 저장된 초안 생성 결과를 반환합니다.',
+    type: DraftGenerationResponseDto,
+  })
+  async getLatestIdeaDraft(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<DraftGenerationResponseDto> {
+    return this.ideasService.getLatestIdeaDraft(id);
+  }
 }

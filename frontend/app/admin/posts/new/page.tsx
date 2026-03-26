@@ -22,6 +22,7 @@ import {
   dismissAllIdeaCandidates,
   dismissIdeaCandidate,
   generateIdeaDraft,
+  getLatestIdeaDraft,
   getAiStatus,
   getIdeaCandidates,
   importChatGptIdeas,
@@ -37,6 +38,7 @@ import {
   CreatePostRequest,
   IdeaCandidate,
   ImportChatGptIdeaRequest,
+  DraftGenerationResponse,
 } from '@/lib/types/api';
 
 const EMPTY_CONTENT: JSONContent = {
@@ -90,6 +92,7 @@ export default function NewPost() {
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [restoredDraft, setRestoredDraft] = useState(false);
+  const [hasCheckedStoredDraft, setHasCheckedStoredDraft] = useState(false);
   const [lastDraftSavedAt, setLastDraftSavedAt] = useState<string | null>(null);
   const [ideaCandidates, setIdeaCandidates] = useState<IdeaCandidate[]>([]);
   const [ideasError, setIdeasError] = useState<string | null>(null);
@@ -101,6 +104,9 @@ export default function NewPost() {
   const [aiStatus, setAiStatus] = useState<AiStatusResponse | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+  const [isCheckingSavedIdeaDraft, setIsCheckingSavedIdeaDraft] = useState(false);
+  const [isLoadingSavedIdeaDraft, setIsLoadingSavedIdeaDraft] = useState(false);
+  const [savedIdeaDraft, setSavedIdeaDraft] = useState<DraftGenerationResponse | null>(null);
   const [isDismissingAllIdeas, setIsDismissingAllIdeas] = useState(false);
   const [isDismissingIdeaId, setIsDismissingIdeaId] = useState<number | null>(
     null,
@@ -174,6 +180,8 @@ export default function NewPost() {
 
   const handleSelectIdea = useCallback((idea: IdeaCandidate) => {
     setSelectedIdea(idea);
+    setSavedIdeaDraft(null);
+    setIsCheckingSavedIdeaDraft(true);
     setTitle(buildSuggestedTitleFromIdea(idea));
     setCategory(idea.category || DEFAULT_POST_CATEGORY);
     setTags(idea.tags || []);
@@ -285,6 +293,25 @@ export default function NewPost() {
     }
   }, [selectedIdea?.continuationBrief, toast]);
 
+  const applyIdeaDraftToEditor = useCallback(
+    (draft: DraftGenerationResponse, source: 'generated' | 'saved') => {
+      setTitle(draft.title);
+      setCategory(draft.category || DEFAULT_POST_CATEGORY);
+      setTags(draft.tags || []);
+      setContentJson(draft.contentJson as JSONContent);
+      setIdeasSheetOpen(false);
+      toast({
+        title:
+          source === 'saved' ? '저장된 초안 불러오기 완료' : '초안 생성 완료',
+        description:
+          source === 'saved'
+            ? '이전에 저장된 AI 초안을 에디터에 채웠습니다.'
+            : 'AI가 생성한 Markdown 초안을 에디터에 채웠습니다.',
+      });
+    },
+    [toast],
+  );
+
   const handleGenerateDraft = useCallback(async () => {
     if (!selectedIdea) {
       setActionError('먼저 사용할 핵심 주제를 선택해주세요.');
@@ -299,15 +326,8 @@ export default function NewPost() {
         targetLength: 'medium',
       });
 
-      setTitle(draft.title);
-      setCategory(draft.category || DEFAULT_POST_CATEGORY);
-      setTags(draft.tags || []);
-      setContentJson(draft.contentJson as JSONContent);
-      setIdeasSheetOpen(false);
-      toast({
-        title: '초안 생성 완료',
-        description: 'AI가 생성한 Markdown 초안을 에디터에 채웠습니다.',
-      });
+      setSavedIdeaDraft(draft);
+      applyIdeaDraftToEditor(draft, 'generated');
     } catch (err) {
       console.error('Error generating draft:', err);
       setActionError(
@@ -316,7 +336,34 @@ export default function NewPost() {
     } finally {
       setIsGeneratingDraft(false);
     }
-  }, [selectedIdea, toast]);
+  }, [applyIdeaDraftToEditor, selectedIdea]);
+
+  const handleLoadSavedDraft = useCallback(async () => {
+    if (!selectedIdea) {
+      setActionError('먼저 사용할 핵심 주제를 선택해주세요.');
+      return;
+    }
+
+    if (!savedIdeaDraft) {
+      setActionError('저장된 초안이 없습니다.');
+      return;
+    }
+
+    try {
+      setIsLoadingSavedIdeaDraft(true);
+      setActionError(null);
+      applyIdeaDraftToEditor(savedIdeaDraft, 'saved');
+    } catch (err) {
+      console.error('Error loading saved draft:', err);
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : '저장된 초안을 불러오지 못했습니다.',
+      );
+    } finally {
+      setIsLoadingSavedIdeaDraft(false);
+    }
+  }, [applyIdeaDraftToEditor, savedIdeaDraft, selectedIdea]);
 
   const handleSave = useCallback(
     async (saveStatus: SaveStatus) => {
@@ -405,12 +452,53 @@ export default function NewPost() {
   }, [fetchAiWorkerStatus]);
 
   useEffect(() => {
+    if (!selectedIdea) {
+      setSavedIdeaDraft(null);
+      setIsCheckingSavedIdeaDraft(false);
+      setIsLoadingSavedIdeaDraft(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchSavedDraft = async () => {
+      try {
+        setIsCheckingSavedIdeaDraft(true);
+        const latestDraft = await getLatestIdeaDraft(selectedIdea.id);
+
+        if (!cancelled) {
+          setSavedIdeaDraft(latestDraft);
+        }
+      } catch (err) {
+        console.error('Error fetching saved idea draft:', err);
+
+        if (!cancelled) {
+          setSavedIdeaDraft(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCheckingSavedIdeaDraft(false);
+        }
+      }
+    };
+
+    void fetchSavedDraft();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedIdea]);
+
+  useEffect(() => {
     setIdeaHandoff(new URLSearchParams(window.location.search).get('ideaHandoff'));
   }, []);
 
   useEffect(() => {
     const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!raw) return;
+    if (!raw) {
+      setHasCheckedStoredDraft(true);
+      return;
+    }
 
     try {
       const parsed = JSON.parse(raw) as StoredDraft;
@@ -426,10 +514,16 @@ export default function NewPost() {
     } catch (e) {
       console.error('Failed to parse local draft', e);
       localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } finally {
+      setHasCheckedStoredDraft(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!hasCheckedStoredDraft) {
+      return;
+    }
+
     if (!hasUnsavedChanges) {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
       return;
@@ -459,6 +553,7 @@ export default function NewPost() {
     featuredImage,
     isFeatured,
     featuredOrder,
+    hasCheckedStoredDraft,
     hasUnsavedChanges,
   ]);
 
@@ -722,15 +817,19 @@ export default function NewPost() {
               actionError={actionError}
               aiStatus={aiStatus}
               error={ideasError}
+              hasSavedDraft={Boolean(savedIdeaDraft)}
               ideas={ideaCandidates}
+              isCheckingSavedDraft={isCheckingSavedIdeaDraft}
               isDismissingAllIdeas={isDismissingAllIdeas}
               isDismissingIdeaId={isDismissingIdeaId}
               isGeneratingDraft={isGeneratingDraft}
               isLoading={isIdeasBusy}
+              isLoadingSavedDraft={isLoadingSavedIdeaDraft}
               onDismissAllIdeas={handleDismissAllIdeas}
               onDismissIdea={handleDismissIdea}
               onCopyContinuationBrief={handleCopyContinuationBrief}
               onGenerateDraft={handleGenerateDraft}
+              onLoadSavedDraft={handleLoadSavedDraft}
               onOpenSource={handleOpenIdeaSource}
               onSelectIdea={handleSelectIdea}
               selectedIdea={selectedIdea}
@@ -748,15 +847,19 @@ export default function NewPost() {
             actionError={actionError}
             aiStatus={aiStatus}
             error={ideasError}
+            hasSavedDraft={Boolean(savedIdeaDraft)}
             ideas={ideaCandidates}
+            isCheckingSavedDraft={isCheckingSavedIdeaDraft}
             isDismissingAllIdeas={isDismissingAllIdeas}
             isDismissingIdeaId={isDismissingIdeaId}
             isGeneratingDraft={isGeneratingDraft}
             isLoading={isIdeasBusy}
+            isLoadingSavedDraft={isLoadingSavedIdeaDraft}
             onDismissAllIdeas={handleDismissAllIdeas}
             onDismissIdea={handleDismissIdea}
             onCopyContinuationBrief={handleCopyContinuationBrief}
             onGenerateDraft={handleGenerateDraft}
+            onLoadSavedDraft={handleLoadSavedDraft}
             onOpenSource={handleOpenIdeaSource}
             onSelectIdea={handleSelectIdea}
             selectedIdea={selectedIdea}

@@ -1,4 +1,4 @@
-import { apiRequest } from '../client/base';
+import { ApiError, apiRequest } from '../client/base';
 import {
   AiStatusResponse,
   AssistantReply,
@@ -109,4 +109,25 @@ export async function generateIdeaDraft(
   );
 
   return result.data;
+}
+
+export async function getLatestIdeaDraft(
+  ideaId: number,
+): Promise<DraftGenerationResponse | null> {
+  try {
+    const result = await apiRequest<{ data: DraftGenerationResponse }>(
+      `/ideas/${ideaId}/draft`,
+      {
+        method: 'GET',
+      },
+    );
+
+    return result.data;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
 }

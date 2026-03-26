@@ -21,15 +21,19 @@ interface PostIdeasPanelProps {
   actionError?: string | null
   aiStatus?: AiStatusResponse | null
   error?: string | null
+  hasSavedDraft?: boolean
   ideas: IdeaCandidate[]
+  isCheckingSavedDraft?: boolean
   isDismissingAllIdeas?: boolean
   isGeneratingDraft?: boolean
   isDismissingIdeaId?: number | null
   isLoading: boolean
+  isLoadingSavedDraft?: boolean
   onDismissAllIdeas?: () => void
   onDismissIdea?: (idea: IdeaCandidate) => void
   onCopyContinuationBrief?: () => void
   onGenerateDraft?: () => void
+  onLoadSavedDraft?: () => void
   onOpenSource: (url: string) => void
   onSelectIdea: (idea: IdeaCandidate) => void
   selectedIdea: IdeaCandidate | null
@@ -57,15 +61,19 @@ export function PostIdeasPanel({
   actionError,
   aiStatus,
   error,
+  hasSavedDraft = false,
   ideas,
+  isCheckingSavedDraft = false,
   isDismissingAllIdeas = false,
   isGeneratingDraft = false,
   isDismissingIdeaId = null,
   isLoading,
+  isLoadingSavedDraft = false,
   onDismissAllIdeas,
   onDismissIdea,
   onCopyContinuationBrief,
   onGenerateDraft,
+  onLoadSavedDraft,
   onOpenSource,
   onSelectIdea,
   selectedIdea,
@@ -78,6 +86,7 @@ export function PostIdeasPanel({
     selectedIdea?.continuationBrief?.trim() || null
   const canGenerateDraft =
     aiStatus?.draftAvailable === true && Boolean(selectedIdea)
+  const canLoadSavedDraft = Boolean(selectedIdea) && hasSavedDraft
 
   return (
     <div className="space-y-4">
@@ -194,6 +203,27 @@ export function PostIdeasPanel({
                   <Copy className="mr-2 h-4 w-4" />
                   ChatGPT 이어쓰기 프롬프트 복사
                 </Button>
+
+                {isCheckingSavedDraft || hasSavedDraft ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-auto w-full whitespace-normal border-brand-blue-200 bg-white px-4 py-3 text-brand-blue-700 hover:bg-white"
+                    disabled={
+                      !canLoadSavedDraft ||
+                      isLoadingSavedDraft ||
+                      isCheckingSavedDraft
+                    }
+                    onClick={onLoadSavedDraft}
+                  >
+                    {isLoadingSavedDraft || isCheckingSavedDraft ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <FilePenLine className="mr-2 h-4 w-4" />
+                    )}
+                    저장된 초안 불러오기
+                  </Button>
+                ) : null}
 
                 <Button
                   type="button"

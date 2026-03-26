@@ -270,16 +270,27 @@ export class IdeasService {
       }),
     );
 
-    const response = new DraftGenerationResponseDto();
-    response.generationId = savedGeneration.id;
-    response.title = workerDraft.title;
-    response.category = workerDraft.category;
-    response.tags = workerDraft.tags;
-    response.markdown = workerDraft.markdown;
-    response.contentJson = convertMarkdownToTiptapJSON(
-      workerDraft.markdown,
-    ) as Record<string, unknown>;
-    return response;
+    return this.toDraftGenerationResponseDto(savedGeneration);
+  }
+
+  async getLatestIdeaDraft(
+    ideaCandidateId: number,
+  ): Promise<DraftGenerationResponseDto> {
+    await this.requireIdeaCandidate(ideaCandidateId);
+
+    const latestDraft = await this.draftGenerationRepository.findOne({
+      where: { ideaCandidateId },
+      order: {
+        createdAt: 'DESC',
+        id: 'DESC',
+      },
+    });
+
+    if (!latestDraft) {
+      throw new NotFoundException('저장된 AI 초안을 찾을 수 없습니다.');
+    }
+
+    return this.toDraftGenerationResponseDto(latestDraft);
   }
 
   private async importConversation(
@@ -522,6 +533,22 @@ export class IdeasService {
     responseDto.continuationBrief = candidate.continuationBrief;
     responseDto.sourceMessageRefs = candidate.sourceMessageRefs || [];
     return responseDto;
+  }
+
+  private toDraftGenerationResponseDto(
+    draftGeneration: DraftGeneration,
+  ): DraftGenerationResponseDto {
+    const response = new DraftGenerationResponseDto();
+    response.generationId = draftGeneration.id;
+    response.createdAt = draftGeneration.createdAt?.toISOString() || null;
+    response.title = draftGeneration.title;
+    response.category = draftGeneration.category;
+    response.tags = draftGeneration.tags || [];
+    response.markdown = draftGeneration.markdown;
+    response.contentJson = convertMarkdownToTiptapJSON(
+      draftGeneration.markdown,
+    ) as Record<string, unknown>;
+    return response;
   }
 }
 
