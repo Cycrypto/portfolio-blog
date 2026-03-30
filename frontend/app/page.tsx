@@ -87,6 +87,8 @@ export default async function PortfolioPage() {
   const aboutParagraphs = [profile.about, profile.description].filter(
     (value, index, array) => Boolean(value) && array.indexOf(value) === index,
   );
+  const introParagraphs =
+    aboutParagraphs.length > 0 ? aboutParagraphs : ['소개를 정리 중입니다.'];
   const [featuredBlogPost, ...recentBlogPosts] = featuredPosts;
 
   return (
@@ -305,16 +307,18 @@ export default async function PortfolioPage() {
                 <h2 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-neutral-slate-900 md:text-3xl">
                   짧게 소개하면
                 </h2>
-                {(aboutParagraphs.length > 0 ? aboutParagraphs : ['소개를 정리 중입니다.']).map(
-                  (paragraph, index) => (
+                {introParagraphs.map((paragraph, index) => {
+                  const spacingClass = index > 0 ? 'mt-4' : 'mt-5';
+
+                  return (
                     <p
                       key={`${paragraph}-${index}`}
-                      className={`max-w-3xl text-base leading-relaxed text-neutral-slate-700 md:text-lg ${index > 0 ? 'mt-4' : 'mt-5'}`}
+                      className={`max-w-3xl text-base leading-relaxed text-neutral-slate-700 md:text-lg ${spacingClass}`}
                     >
                       {paragraph}
                     </p>
-                  ),
-                )}
+                  );
+                })}
               </div>
 
               <div className="border-t border-brand-blue-100 px-6 py-6 md:px-8 md:py-8 lg:border-l lg:border-t-0">
@@ -345,6 +349,7 @@ export default async function PortfolioPage() {
                   </div>
                 </dl>
               </div>
+            </div>
           </GlassmorphicCard>
         </div>
       </section>
