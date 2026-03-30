@@ -10,13 +10,13 @@ import { absoluteUrl } from "@/lib/site"
 
 export const metadata: Metadata = {
   title: "프로젝트 | 박준하 포트폴리오",
-  description: "프로젝트와 연결된 기술 글을 함께 보는 목록입니다.",
+  description: "프로젝트를 한눈에 볼 수 있는 목록입니다.",
   alternates: {
     canonical: absoluteUrl('/projects'),
   },
   openGraph: {
     title: "프로젝트 | 박준하 포트폴리오",
-    description: "프로젝트와 연결된 기술 글을 함께 보는 목록입니다.",
+    description: "프로젝트를 한눈에 볼 수 있는 목록입니다.",
     url: absoluteUrl('/projects'),
     type: 'website',
   },
@@ -50,7 +50,7 @@ export default async function ProjectsPage() {
       <div className="container py-10 md:py-12">
         <SectionHeading
           title="프로젝트"
-          subtitle="상세 설명 대신 연결된 기술 글과 함께 보는 구현 기록"
+          subtitle="프로젝트 목록"
         />
 
         <ProjectList

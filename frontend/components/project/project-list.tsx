@@ -1,10 +1,9 @@
 import { ArrowUpRight, ExternalLink, Github } from 'lucide-react';
 
 import { TrackedLink } from '@/components/analytics/TrackedLink';
-import { getPostPath } from '@/lib/posts/post-url';
 import { getProjectPath } from '@/lib/projects/project-url';
 import { cn } from '@/lib/utils';
-import type { LinkedPostSummary, Project } from '@/lib/types/api';
+import type { Project } from '@/lib/types/api';
 
 interface ProjectListProps {
   projects: Project[];
@@ -48,55 +47,8 @@ function getStatusLabel(status?: string) {
   }
 }
 
-function getPublishedPosts(posts?: LinkedPostSummary[]) {
-  return [...(posts || [])]
-    .filter((post) => post.status === 'published')
-    .sort(
-      (a, b) =>
-        new Date(b.publishDate || 0).getTime() -
-        new Date(a.publishDate || 0).getTime(),
-    );
-}
-
 function getProjectNarrative(project: Project) {
   return project.description?.trim() || project.problem?.trim() || '';
-}
-
-function RelatedPostList({
-  posts,
-  trackingLocation,
-}: {
-  posts: LinkedPostSummary[];
-  trackingLocation: string;
-}) {
-  return (
-    <div className="mt-3 space-y-3">
-      {posts.map((post) => (
-        <TrackedLink
-          key={post.id}
-          href={getPostPath({ id: post.id, slug: post.slug })}
-          className="group flex items-start justify-between gap-4 border-l border-brand-blue-200 pl-4 text-sm text-neutral-slate-600 transition-colors hover:border-brand-blue-400 hover:text-brand-blue-700"
-          eventName="cta_click"
-          eventPayload={{
-            location: trackingLocation,
-            target: 'blog',
-            content_id: post.slug || String(post.id),
-          }}
-        >
-          <span className="leading-6">{post.title}</span>
-          {post.publishDate ? (
-            <span className="mt-0.5 flex-shrink-0 text-xs text-neutral-slate-400 transition-colors group-hover:text-brand-blue-500">
-              {new Date(post.publishDate).toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-              })}
-            </span>
-          ) : null}
-        </TrackedLink>
-      ))}
-    </div>
-  );
 }
 
 function ExternalProjectLinks({
@@ -193,7 +145,6 @@ function FeaturedProjectEntry({
 }) {
   const projectPath = getProjectPath(project);
   const projectId = String(project.id);
-  const linkedPosts = getPublishedPosts(project.linkedPosts).slice(0, 3);
   const narrative = getProjectNarrative(project);
   const meta = [
     formatProjectPeriod(project.startDate, project.endDate),
@@ -203,7 +154,7 @@ function FeaturedProjectEntry({
   const techSummary = (project.techStack || []).slice(0, 6).join(' · ');
 
   return (
-    <article className="grid gap-6 border-y border-brand-blue-100 py-8 md:gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+    <article className="border-y border-brand-blue-100 py-8">
       <div className="min-w-0">
         {meta.length > 0 ? (
           <div className="flex flex-wrap gap-x-3 gap-y-2 text-[11px] font-medium uppercase tracking-[0.18em] text-neutral-slate-400">
@@ -228,38 +179,17 @@ function FeaturedProjectEntry({
         </TrackedLink>
 
         <p className="mt-4 max-w-2xl text-base leading-8 text-neutral-slate-600 md:text-lg">
-          {narrative || '연결된 글과 구현 결과를 중심으로 프로젝트 기록을 정리했습니다.'}
+          {narrative || '프로젝트 개요와 구현 내용을 정리했습니다.'}
         </p>
 
-        {techSummary ? (
-          <p className="mt-5 text-sm text-neutral-slate-500">Stack · {techSummary}</p>
-        ) : null}
-      </div>
-
-      <div className="flex flex-col gap-5 border-t border-brand-blue-100 pt-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-neutral-slate-500">
+        <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-neutral-slate-500">
+          {techSummary ? <span>Stack · {techSummary}</span> : null}
           <ExternalProjectLinks
             project={project}
             projectId={projectId}
             location={`${trackingLocation}_featured`}
           />
         </div>
-
-        {linkedPosts.length > 0 ? (
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-neutral-slate-400">
-              관련 글
-            </p>
-            <RelatedPostList
-              posts={linkedPosts}
-              trackingLocation={`${trackingLocation}_featured_post`}
-            />
-          </div>
-        ) : (
-          <p className="text-sm text-neutral-slate-500">
-            연결된 기술 글을 정리 중입니다.
-          </p>
-        )}
       </div>
     </article>
   );
@@ -274,7 +204,6 @@ function ProjectRow({
 }) {
   const projectPath = getProjectPath(project);
   const projectId = String(project.id);
-  const linkedPosts = getPublishedPosts(project.linkedPosts).slice(0, 2);
   const narrative = getProjectNarrative(project);
   const meta = [
     formatProjectPeriod(project.startDate, project.endDate),
@@ -308,18 +237,13 @@ function ProjectRow({
           <ArrowUpRight className="mt-1 h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </TrackedLink>
 
-        {linkedPosts.length > 0 ? (
-          <RelatedPostList
-            posts={linkedPosts}
-            trackingLocation={`${trackingLocation}_row_post`}
-          />
-        ) : narrative ? (
+        {narrative ? (
           <p className="mt-4 max-w-2xl text-sm leading-7 text-neutral-slate-600">
             {narrative}
           </p>
         ) : (
           <p className="mt-4 text-sm text-neutral-slate-500">
-            연결된 글을 정리 중입니다.
+            프로젝트 설명을 정리 중입니다.
           </p>
         )}
 
