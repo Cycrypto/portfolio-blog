@@ -24,6 +24,7 @@ import {
   extractExperienceHighlights,
   normalizeResumeStringArray,
 } from '@/lib/portfolio/resume-content';
+import { ResumeWebView } from '@/components/resume/ResumeWebView';
 import { absoluteUrl } from '@/lib/site';
 import type { Experience, Project } from '@/lib/types/api';
 import { normalizeImageUrl } from '@/lib/utils/image';
@@ -151,7 +152,19 @@ function ContactRow({ item }: { item: ContactItem }) {
   );
 }
 
-export default async function ResumePage() {
+interface ResumePageProps {
+  searchParams?: Promise<{
+    preview?: string;
+  }>;
+}
+
+export default async function ResumePage({ searchParams }: ResumePageProps) {
+  const params = searchParams ? await searchParams : undefined;
+
+  if (params?.preview === '1') {
+    return <ResumeWebView preview />;
+  }
+
   const snapshot = await buildResumeSnapshot();
   const { settings, profile, summaryBullets, featuredSkills, selectedExperiences, selectedProjects } =
     snapshot;
