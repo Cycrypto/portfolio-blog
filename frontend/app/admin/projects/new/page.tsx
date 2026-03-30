@@ -23,6 +23,7 @@ import { normalizeImageUrl } from "@/lib/utils/image"
 import { generateSlug } from "@/lib/utils/slug"
 import { Experience, Post } from "@/lib/types/api"
 import { formatExperiencePeriod } from "@/lib/experience/utils"
+import { dispatchResumePreviewRefresh } from "@/lib/resume/preview-events"
 
 export default function NewProject() {
   const router = useRouter()
@@ -202,6 +203,7 @@ export default function NewProject() {
         images: images.map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image)),
         linkedPostIds,
       })
+      dispatchResumePreviewRefresh()
       router.push('/admin/projects')
     } catch (err) {
       setError('프로젝트 저장에 실패했습니다.')

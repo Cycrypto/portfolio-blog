@@ -14,7 +14,7 @@ export default function ResumeSettingsPage() {
     <AdminShell
       active="resume"
       title="이력서 설정"
-      description="PDF 헤더 정보와 노출할 프로젝트를 한 화면에서 관리합니다"
+      description="프리뷰, 웹 보기, PDF 다운로드를 나눠 이력서 편집 결과를 더 빠르게 확인합니다"
       actions={<ResumePreviewButton />}
     >
       <ResumeSettingsEditor />

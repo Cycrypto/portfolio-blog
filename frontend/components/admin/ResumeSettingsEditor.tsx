@@ -10,6 +10,7 @@ import {
   RESUME_MAX_SELECTED_PROJECTS,
   RESUME_MAX_SUMMARY_BULLETS,
 } from "@/lib/resume/constants"
+import { dispatchResumePreviewRefresh } from "@/lib/resume/preview-events"
 import { normalizeResumeStringArray } from "@/lib/portfolio/resume-content"
 import type { Project, ResumeSettings } from "@/lib/types/api"
 import { useToast } from "@/hooks/use-toast"
@@ -291,6 +292,7 @@ export function ResumeSettingsEditor() {
       })
 
       setSettings(normalizeSettings(saved))
+      dispatchResumePreviewRefresh()
       toast({
         title: "저장 완료",
         description: "이력서 설정을 저장했습니다.",
@@ -332,12 +334,11 @@ export function ResumeSettingsEditor() {
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
       <div className="space-y-6 xl:col-span-2">
         <Card className="surface-default shadow-none">
-          <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <CardHeader>
             <div>
               <CardTitle>PDF 헤더 정보</CardTitle>
               <CardDescription>이력서 상단에 표시되는 텍스트와 연락처를 관리합니다.</CardDescription>
             </div>
-            <ResumePreviewButton />
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -605,6 +606,33 @@ export function ResumeSettingsEditor() {
 
       <div className="space-y-6">
         <Card className="surface-default shadow-none">
+          <CardHeader className="border-b border-brand-blue-100">
+            <CardTitle>프리뷰 워크플로우</CardTitle>
+            <CardDescription>
+              빠른 확인은 프리뷰, 전체 검토는 웹 보기, 제출용 결과물은 PDF 다운로드로 역할을 나눕니다.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
+            <div className="space-y-3">
+              <div className="rounded-lg border border-brand-blue-100 bg-brand-blue-50/40 px-4 py-3">
+                <p className="text-sm font-semibold text-neutral-slate-800">1. 저장</p>
+                <p className="mt-1 text-xs text-neutral-slate-500">변경 내용은 저장 후에만 프리뷰와 PDF에 반영됩니다.</p>
+              </div>
+              <div className="rounded-lg border border-brand-blue-100 bg-white px-4 py-3">
+                <p className="text-sm font-semibold text-neutral-slate-800">2. 빠른 프리뷰</p>
+                <p className="mt-1 text-xs text-neutral-slate-500">시트 안에서 최신 HTML resume을 바로 열어 수정 결과를 확인합니다.</p>
+              </div>
+              <div className="rounded-lg border border-brand-blue-100 bg-white px-4 py-3">
+                <p className="text-sm font-semibold text-neutral-slate-800">3. 최종 확인</p>
+                <p className="mt-1 text-xs text-neutral-slate-500">전체 페이지 검토는 웹 보기, 제출용 파일은 PDF 다운로드를 사용합니다.</p>
+              </div>
+            </div>
+
+            <ResumePreviewButton stretch />
+          </CardContent>
+        </Card>
+
+        <Card className="surface-default shadow-none">
           <CardHeader>
             <div className="flex items-center justify-between gap-2">
               <div>
@@ -729,7 +757,9 @@ export function ResumeSettingsEditor() {
                 {error}
               </p>
             ) : null}
-            <ResumePreviewButton className="w-full" />
+            <p className="text-xs leading-5 text-neutral-slate-500">
+              저장 후 위 프리뷰에서 최신 상태를 바로 확인하세요. 최종 제출 전에는 웹 보기나 PDF 다운로드로 한번 더 점검하는 흐름을 권장합니다.
+            </p>
             <Button
               className="w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700"
               onClick={handleSave}
