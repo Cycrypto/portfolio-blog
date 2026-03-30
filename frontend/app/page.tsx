@@ -68,12 +68,12 @@ export default async function PortfolioPage() {
     availableForWork,
   } = snapshot;
 
-  const heroHeadline =
+  const heroSubheadline =
     profile.subtitle ||
     '문제를 구조화하고 안정적인 백엔드 시스템을 설계합니다.';
   const heroDescriptionSource = profile.description || profile.about || '';
   const heroDescription =
-    heroDescriptionSource && heroDescriptionSource !== heroHeadline
+    heroDescriptionSource && heroDescriptionSource !== heroSubheadline
       ? heroDescriptionSource.length > 140
         ? `${heroDescriptionSource.slice(0, 140).trimEnd()}...`
         : heroDescriptionSource
@@ -107,9 +107,13 @@ export default async function PortfolioPage() {
                 {profile.title || 'Backend Engineer'}
               </div>
 
-              <h1 className="max-w-[11ch] text-5xl font-bold leading-[0.98] tracking-[-0.04em] text-neutral-slate-900 sm:text-6xl md:text-7xl">
-                {heroHeadline}
+              <h1 className="text-4xl font-bold leading-[0.98] tracking-[-0.04em] text-neutral-slate-900 sm:text-5xl md:text-6xl">
+                안녕하세요 박준하입니다!
               </h1>
+
+              <p className="max-w-[28rem] text-2xl font-semibold leading-tight tracking-[-0.03em] text-neutral-slate-800 md:text-3xl">
+                {heroSubheadline}
+              </p>
 
               <p className="max-w-[36rem] text-base leading-relaxed text-neutral-slate-600 md:text-lg">
                 {heroDescription}
@@ -259,10 +263,7 @@ export default async function PortfolioPage() {
               </div>
 
               <div className="absolute inset-x-0 bottom-0 p-6 text-white md:p-8">
-                <p className="text-xs font-semibold tracking-[0.22em] text-white/70">
-                  BACKEND PORTFOLIO
-                </p>
-                <p className="mt-3 text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
+                <p className="text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
                   {profile.name}
                 </p>
                 <div className="mt-6 grid grid-cols-1 gap-4 border-t border-white/15 pt-5 text-sm text-white/82 sm:grid-cols-2">
