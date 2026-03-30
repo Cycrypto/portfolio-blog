@@ -1,10 +1,12 @@
-"use client"
+'use client';
 
-import { motion } from "framer-motion"
+import { motion } from 'framer-motion';
+
+import { Panel } from '@/components/ui/panel';
 
 interface SkillBadgeProps {
-  name: string
-  level: number
+  name: string;
+  level: number;
 }
 
 export function SkillBadge({ name, level }: SkillBadgeProps) {
@@ -16,11 +18,16 @@ export function SkillBadge({ name, level }: SkillBadgeProps) {
       viewport={{ once: true }}
       whileHover={{ y: -5 }}
     >
-      <div className="relative overflow-hidden rounded-xl bg-white/80 backdrop-blur-sm border border-brand-blue-200/50 p-6 h-full transition-all duration-300 hover:border-brand-blue-200/50 hover:shadow-lg">
+      <Panel
+        variant="glass"
+        className="relative h-full overflow-hidden p-6 transition-all duration-300 hover:shadow-lg"
+      >
         <div className="absolute -inset-1 bg-gradient-to-r from-brand-blue-500/10 to-brand-blue-700/10 rounded-xl blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
 
         <div className="relative">
-          <div className="text-center mb-4 font-medium text-lg text-neutral-slate-800">{name}</div>
+          <div className="text-center mb-4 font-medium text-lg text-neutral-slate-800">
+            {name}
+          </div>
 
           <div className="relative h-2.5 w-full bg-slate-200 rounded-full overflow-hidden">
             <motion.div
@@ -32,9 +39,11 @@ export function SkillBadge({ name, level }: SkillBadgeProps) {
             />
           </div>
 
-          <div className="mt-2 text-right text-sm text-neutral-slate-500">{level}%</div>
+          <div className="mt-2 text-right text-sm text-neutral-slate-500">
+            {level}%
+          </div>
         </div>
-      </div>
+      </Panel>
     </motion.div>
-  )
+  );
 }

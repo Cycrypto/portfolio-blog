@@ -1,42 +1,43 @@
-"use client"
+'use client';
 
-import Link from "next/link"
-import Image from "next/image"
-import { ArrowUpRight, Github } from "lucide-react"
-import { motion } from "framer-motion"
+import Link from 'next/link';
+import Image from 'next/image';
+import { ArrowUpRight, Github } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { trackEvent } from "@/lib/analytics/track"
-import { normalizeImageUrl } from "@/lib/utils/image"
-import { getProjectPath } from "@/lib/projects/project-url"
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { trackEvent } from '@/lib/analytics/track';
+import { normalizeImageUrl } from '@/lib/utils/image';
+import { getProjectPath } from '@/lib/projects/project-url';
 
 interface ProjectCardProps {
-  id: number | string
-  slug?: string | null
-  title: string
-  description?: string
-  tags?: string[]
-  image?: string
-  demoUrl?: string
-  repoUrl?: string
-  trackingLocation?: string
+  id: number | string;
+  slug?: string | null;
+  title: string;
+  description?: string;
+  tags?: string[];
+  image?: string;
+  demoUrl?: string;
+  repoUrl?: string;
+  trackingLocation?: string;
 }
 
 export function ProjectCard({
   id,
   slug,
   title,
-  description = "",
+  description = '',
   tags = [],
   image,
-  repoUrl = "",
-  trackingLocation = "project_list_card",
+  repoUrl = '',
+  trackingLocation = 'project_list_card',
 }: ProjectCardProps) {
-  const normalizedImage = normalizeImageUrl(image)
-  const projectDescription = description.trim() || "프로젝트 요약을 준비 중입니다."
-  const projectPath = getProjectPath({ id, slug })
-  const contentId = String(id)
+  const normalizedImage = normalizeImageUrl(image);
+  const projectDescription =
+    description.trim() || '프로젝트 요약을 준비 중입니다.';
+  const projectPath = getProjectPath({ id, slug });
+  const contentId = String(id);
 
   return (
     <motion.div
@@ -64,26 +65,24 @@ export function ProjectCard({
             <Link
               href={projectPath}
               onClick={() => {
-                trackEvent("cta_click", {
+                trackEvent('cta_click', {
                   location: trackingLocation,
-                  target: "project",
+                  target: 'project',
                   content_id: contentId,
-                })
+                });
               }}
             >
               <h3 className="text-xl font-bold mb-2 text-neutral-slate-800 hover:text-brand-blue-600 transition-colors cursor-pointer">
                 {title}
               </h3>
             </Link>
-            <p className="text-neutral-slate-600 mb-4 line-clamp-3">{projectDescription}</p>
+            <p className="text-neutral-slate-600 mb-4 line-clamp-3">
+              {projectDescription}
+            </p>
 
             <div className="flex flex-wrap gap-2 mb-6">
               {tags.map((tag, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="bg-brand-blue-100 hover:bg-brand-blue-200 text-brand-blue-700 border-brand-blue-200"
-                >
+                <Badge key={index} variant="brand">
                   {tag}
                 </Badge>
               ))}
@@ -102,11 +101,11 @@ export function ProjectCard({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => {
-                      trackEvent("project_outbound_click", {
+                      trackEvent('project_outbound_click', {
                         project_id: contentId,
-                        target: "repo",
+                        target: 'repo',
                         location: trackingLocation,
-                      })
+                      });
                     }}
                   >
                     <Github className="mr-2 h-4 w-4" />
@@ -114,21 +113,19 @@ export function ProjectCard({
                   </Link>
                 </Button>
               ) : (
-                <span className="inline-flex items-center text-sm text-neutral-slate-400">코드 비공개</span>
+                <span className="inline-flex items-center text-sm text-neutral-slate-400">
+                  코드 비공개
+                </span>
               )}
-              <Button
-                size="sm"
-                className="bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 hover:from-brand-blue-600 hover:to-brand-blue-900 border-0"
-                asChild
-              >
+              <Button size="sm" variant="brand" asChild>
                 <Link
                   href={projectPath}
                   onClick={() => {
-                    trackEvent("cta_click", {
+                    trackEvent('cta_click', {
                       location: trackingLocation,
-                      target: "project",
+                      target: 'project',
                       content_id: contentId,
-                    })
+                    });
                   }}
                 >
                   자세히 보기
@@ -140,5 +137,5 @@ export function ProjectCard({
         </div>
       </div>
     </motion.div>
-  )
+  );
 }

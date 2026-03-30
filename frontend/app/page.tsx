@@ -71,7 +71,8 @@ export default async function PortfolioPage() {
   } = snapshot;
 
   const heroHeadline =
-    profile.subtitle || '문제를 구조화하고 안정적인 백엔드 시스템을 설계합니다.';
+    profile.subtitle ||
+    '문제를 구조화하고 안정적인 백엔드 시스템을 설계합니다.';
   const heroDescriptionSource = profile.description || profile.about || '';
   const heroDescription =
     heroDescriptionSource && heroDescriptionSource !== heroHeadline
@@ -124,7 +125,7 @@ export default async function PortfolioPage() {
             </div>
 
             <div className="flex flex-wrap gap-3 pt-1">
-              <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+              <Button variant="brand" asChild>
                 <TrackedLink
                   href="/api/resume"
                   eventName="cta_click"
@@ -133,11 +134,7 @@ export default async function PortfolioPage() {
                   이력서 다운로드 <Download className="ml-2 h-4 w-4" />
                 </TrackedLink>
               </Button>
-              <Button
-                variant="outline"
-                className="border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
-                asChild
-              >
+              <Button variant="brand-outline" asChild>
                 <TrackedLink
                   href="#contact"
                   eventName="cta_click"
@@ -160,7 +157,9 @@ export default async function PortfolioPage() {
                     : 'border-neutral-slate-200 bg-white/90 text-neutral-slate-500'
                 }`}
               >
-                {availableForWork ? '현재 협업 가능' : profile.status || '상태 업데이트 예정'}
+                {availableForWork
+                  ? '현재 협업 가능'
+                  : profile.status || '상태 업데이트 예정'}
               </span>
             </div>
 
@@ -177,7 +176,11 @@ export default async function PortfolioPage() {
                   }}
                   className="inline-flex"
                 >
-                  <Button variant="ghost" size="icon" className="rounded-full border border-brand-blue-200 bg-white/90 text-neutral-slate-700 hover:bg-brand-blue-50">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full border border-brand-blue-200 bg-white/90 text-neutral-slate-700 hover:bg-brand-blue-50"
+                  >
                     <Github className="h-5 w-5" />
                     <span className="sr-only">GitHub</span>
                   </Button>
@@ -195,7 +198,11 @@ export default async function PortfolioPage() {
                   }}
                   className="inline-flex"
                 >
-                  <Button variant="ghost" size="icon" className="rounded-full border border-brand-blue-200 bg-white/90 text-neutral-slate-700 hover:bg-brand-blue-50">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full border border-brand-blue-200 bg-white/90 text-neutral-slate-700 hover:bg-brand-blue-50"
+                  >
                     <Linkedin className="h-5 w-5" />
                     <span className="sr-only">LinkedIn</span>
                   </Button>
@@ -211,7 +218,11 @@ export default async function PortfolioPage() {
                   }}
                   className="inline-flex"
                 >
-                  <Button variant="ghost" size="icon" className="rounded-full border border-brand-blue-200 bg-white/90 text-neutral-slate-700 hover:bg-brand-blue-50">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full border border-brand-blue-200 bg-white/90 text-neutral-slate-700 hover:bg-brand-blue-50"
+                  >
                     <Mail className="h-5 w-5" />
                     <span className="sr-only">이메일</span>
                   </Button>
@@ -250,7 +261,9 @@ export default async function PortfolioPage() {
                   {profile.name}
                 </p>
                 <p className="mt-2 max-w-xs text-sm leading-relaxed text-white/78 md:text-base">
-                  {profile.statusMessage || profile.title || '포트폴리오 정보를 정리하고 있습니다.'}
+                  {profile.statusMessage ||
+                    profile.title ||
+                    '포트폴리오 정보를 정리하고 있습니다.'}
                 </p>
 
                 <div className="mt-6 grid grid-cols-1 gap-4 border-t border-white/15 pt-5 text-sm text-white/82 sm:grid-cols-2">
@@ -262,7 +275,9 @@ export default async function PortfolioPage() {
                   </div>
                   <div>
                     <p className="text-white/55">주요 기술</p>
-                    <p className="mt-1 font-medium text-white">{heroSkillSummary}</p>
+                    <p className="mt-1 font-medium text-white">
+                      {heroSkillSummary}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -282,7 +297,9 @@ export default async function PortfolioPage() {
                 <dl className="mt-4 space-y-4">
                   {supportMetrics.map((metric) => (
                     <div key={metric.label}>
-                      <dt className="text-sm text-neutral-slate-500">{metric.label}</dt>
+                      <dt className="text-sm text-neutral-slate-500">
+                        {metric.label}
+                      </dt>
                       <dd className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-neutral-slate-900">
                         {metric.value}
                       </dd>
@@ -308,7 +325,10 @@ export default async function PortfolioPage() {
                     href="/blog"
                     className="hidden text-sm font-medium text-brand-blue-700 transition-colors hover:text-brand-blue-800 sm:inline-flex"
                     eventName="cta_click"
-                    eventPayload={{ location: 'home_highlight_band', target: 'blog' }}
+                    eventPayload={{
+                      location: 'home_highlight_band',
+                      target: 'blog',
+                    }}
                   >
                     글 전체 보기
                   </TrackedLink>
@@ -343,7 +363,9 @@ export default async function PortfolioPage() {
                       );
                     })
                   ) : (
-                    <p className="text-sm text-neutral-slate-500">새 글을 준비 중입니다.</p>
+                    <p className="text-sm text-neutral-slate-500">
+                      새 글을 준비 중입니다.
+                    </p>
                   )}
                 </div>
               </div>
@@ -358,7 +380,11 @@ export default async function PortfolioPage() {
                 {visibleSkills.length > 0 ? (
                   <div className="mt-5 flex flex-wrap gap-2.5">
                     {visibleSkills.map((skill) => (
-                      <SkillBadge key={skill.name} name={skill.name} level={skill.level} />
+                      <SkillBadge
+                        key={skill.name}
+                        name={skill.name}
+                        level={skill.level}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -401,16 +427,17 @@ export default async function PortfolioPage() {
             </div>
 
             <GlassmorphicCard>
-              {(aboutParagraphs.length > 0 ? aboutParagraphs : ['소개를 정리 중입니다.']).map(
-                (paragraph, index) => (
-                  <p
-                    key={`${paragraph}-${index}`}
-                    className={`text-lg text-neutral-slate-700 ${index > 0 ? 'mt-4' : ''}`}
-                  >
-                    {paragraph}
-                  </p>
-                ),
-              )}
+              {(aboutParagraphs.length > 0
+                ? aboutParagraphs
+                : ['소개를 정리 중입니다.']
+              ).map((paragraph, index) => (
+                <p
+                  key={`${paragraph}-${index}`}
+                  className={`text-lg text-neutral-slate-700 ${index > 0 ? 'mt-4' : ''}`}
+                >
+                  {paragraph}
+                </p>
+              ))}
 
               <div className="mt-8 grid grid-cols-2 gap-4">
                 <div>
@@ -425,7 +452,9 @@ export default async function PortfolioPage() {
                 </div>
                 <div>
                   <div className="text-sm text-neutral-slate-500">위치</div>
-                  <div className="font-medium">{profile.location || '미등록'}</div>
+                  <div className="font-medium">
+                    {profile.location || '미등록'}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-neutral-slate-500">상태</div>
@@ -438,15 +467,23 @@ export default async function PortfolioPage() {
           </div>
 
           <div className="mt-12">
-            <h3 className="text-xl font-bold text-neutral-slate-800">핵심 기술</h3>
+            <h3 className="text-xl font-bold text-neutral-slate-800">
+              핵심 기술
+            </h3>
             {visibleSkills.length > 0 ? (
               <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                 {visibleSkills.map((skill) => (
-                  <SkillBadge key={skill.name} name={skill.name} level={skill.level} />
+                  <SkillBadge
+                    key={skill.name}
+                    name={skill.name}
+                    level={skill.level}
+                  />
                 ))}
               </div>
             ) : (
-              <p className="mt-3 text-neutral-slate-500">기술 스택을 정리 중입니다.</p>
+              <p className="mt-3 text-neutral-slate-500">
+                기술 스택을 정리 중입니다.
+              </p>
             )}
           </div>
         </div>
@@ -454,10 +491,7 @@ export default async function PortfolioPage() {
 
       <section id="experience" className="section-spacing">
         <div className="container">
-          <SectionHeading
-            title="경험"
-            subtitle="어떤 역할을 맡아왔는지"
-          />
+          <SectionHeading title="경험" subtitle="어떤 역할을 맡아왔는지" />
 
           <div className="mt-12">
             <Timeline initialExperiences={experiences} />
@@ -479,11 +513,14 @@ export default async function PortfolioPage() {
                 trackingLocation="home_projects"
               />
               <div className="mt-10 text-center">
-                <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+                <Button variant="brand" asChild>
                   <TrackedLink
                     href="/projects"
                     eventName="cta_click"
-                    eventPayload={{ location: 'home_projects_section', target: 'project' }}
+                    eventPayload={{
+                      location: 'home_projects_section',
+                      target: 'project',
+                    }}
                   >
                     프로젝트 전체 보기 <ArrowRight className="ml-2 h-4 w-4" />
                   </TrackedLink>
@@ -492,12 +529,17 @@ export default async function PortfolioPage() {
             </>
           ) : (
             <GlassmorphicCard className="mt-12 text-center">
-              <p className="text-neutral-slate-600">공개할 프로젝트를 준비 중입니다.</p>
-              <Button className="mt-4 bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+              <p className="text-neutral-slate-600">
+                공개할 프로젝트를 준비 중입니다.
+              </p>
+              <Button variant="brand" className="mt-4" asChild>
                 <TrackedLink
                   href="/projects"
                   eventName="cta_click"
-                  eventPayload={{ location: 'home_projects_section', target: 'project' }}
+                  eventPayload={{
+                    location: 'home_projects_section',
+                    target: 'project',
+                  }}
                 >
                   프로젝트 목록 보기
                 </TrackedLink>
@@ -540,7 +582,8 @@ export default async function PortfolioPage() {
                     key={post.id}
                     title={post.title}
                     excerpt={
-                      post.excerpt || `${post.category} 주제에서 해결 과정을 정리한 글입니다.`
+                      post.excerpt ||
+                      `${post.category} 주제에서 해결 과정을 정리한 글입니다.`
                     }
                     date={formatPostDate(post.publishDate)}
                     readTime={`${post.readTime}분`}
@@ -553,11 +596,14 @@ export default async function PortfolioPage() {
                 ))}
               </div>
               <div className="mt-10 text-center">
-                <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+                <Button variant="brand" asChild>
                   <TrackedLink
                     href="/blog"
                     eventName="cta_click"
-                    eventPayload={{ location: 'home_blog_section', target: 'blog' }}
+                    eventPayload={{
+                      location: 'home_blog_section',
+                      target: 'blog',
+                    }}
                   >
                     글 전체 보기 <BookOpen className="ml-2 h-4 w-4" />
                   </TrackedLink>
@@ -567,11 +613,14 @@ export default async function PortfolioPage() {
           ) : (
             <GlassmorphicCard className="mt-12 text-center">
               <p className="text-neutral-slate-600">새 글을 준비 중입니다.</p>
-              <Button className="mt-4 bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+              <Button variant="brand" className="mt-4" asChild>
                 <TrackedLink
                   href="/blog"
                   eventName="cta_click"
-                  eventPayload={{ location: 'home_blog_section', target: 'blog' }}
+                  eventPayload={{
+                    location: 'home_blog_section',
+                    target: 'blog',
+                  }}
                 >
                   글 목록 보기
                 </TrackedLink>
@@ -587,7 +636,9 @@ export default async function PortfolioPage() {
 
           <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-2">
             <GlassmorphicCard>
-              <h3 className="mb-4 text-xl font-bold text-neutral-slate-800">연락처</h3>
+              <h3 className="mb-4 text-xl font-bold text-neutral-slate-800">
+                연락처
+              </h3>
               <p className="mb-6 text-neutral-slate-600">
                 협업이나 채용 관련 문의를 남겨주시면 확인 후 답변드리겠습니다.
                 필요한 경우 이력서 PDF도 바로 내려받을 수 있습니다.
@@ -600,8 +651,12 @@ export default async function PortfolioPage() {
                       <Mail className="h-5 w-5 text-brand-blue-600" />
                     </div>
                     <div>
-                      <div className="text-sm text-neutral-slate-500">이메일</div>
-                      <div className="break-all font-medium">{profile.email}</div>
+                      <div className="text-sm text-neutral-slate-500">
+                        이메일
+                      </div>
+                      <div className="break-all font-medium">
+                        {profile.email}
+                      </div>
                     </div>
                   </div>
                 ) : null}
@@ -612,8 +667,12 @@ export default async function PortfolioPage() {
                       <Github className="h-5 w-5 text-brand-blue-600" />
                     </div>
                     <div>
-                      <div className="text-sm text-neutral-slate-500">GitHub</div>
-                      <div className="break-all font-medium">{profile.github}</div>
+                      <div className="text-sm text-neutral-slate-500">
+                        GitHub
+                      </div>
+                      <div className="break-all font-medium">
+                        {profile.github}
+                      </div>
                     </div>
                   </div>
                 ) : null}
@@ -624,8 +683,12 @@ export default async function PortfolioPage() {
                       <Linkedin className="h-5 w-5 text-brand-blue-600" />
                     </div>
                     <div>
-                      <div className="text-sm text-neutral-slate-500">LinkedIn</div>
-                      <div className="break-all font-medium">{profile.linkedin}</div>
+                      <div className="text-sm text-neutral-slate-500">
+                        LinkedIn
+                      </div>
+                      <div className="break-all font-medium">
+                        {profile.linkedin}
+                      </div>
                     </div>
                   </div>
                 ) : null}
@@ -640,30 +703,33 @@ export default async function PortfolioPage() {
                     }`}
                   />
                   <span className="text-sm text-neutral-slate-700">
-                    {profile.statusMessage || '새로운 프로젝트와 협업 기회를 찾고 있습니다'}
+                    {profile.statusMessage ||
+                      '새로운 프로젝트와 협업 기회를 찾고 있습니다'}
                   </span>
                 </div>
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
+                <Button variant="brand" asChild>
                   <TrackedLink
                     href="/api/resume"
                     eventName="cta_click"
-                    eventPayload={{ location: 'home_contact', target: 'resume' }}
+                    eventPayload={{
+                      location: 'home_contact',
+                      target: 'resume',
+                    }}
                   >
                     이력서 다운로드 <Download className="ml-2 h-4 w-4" />
                   </TrackedLink>
                 </Button>
-                <Button
-                  variant="outline"
-                  className="border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
-                  asChild
-                >
+                <Button variant="brand-outline" asChild>
                   <TrackedLink
                     href="/projects"
                     eventName="cta_click"
-                    eventPayload={{ location: 'home_contact', target: 'projects' }}
+                    eventPayload={{
+                      location: 'home_contact',
+                      target: 'projects',
+                    }}
                   >
                     대표 프로젝트 보기
                   </TrackedLink>
@@ -679,7 +745,9 @@ export default async function PortfolioPage() {
       <footer className="border-t border-neutral-slate-200 bg-white py-10">
         <div className="container flex flex-col items-center justify-between gap-5 md:flex-row">
           <div>
-            <p className="text-xl font-bold text-neutral-slate-800">{profile.name} 블로그</p>
+            <p className="text-xl font-bold text-neutral-slate-800">
+              {profile.name} 블로그
+            </p>
             <p className="mt-2 text-sm text-neutral-slate-500">
               © {new Date().getFullYear()} {profile.name}. 모든 권리 보유.
             </p>
@@ -709,7 +777,10 @@ export default async function PortfolioPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 eventName="social_click"
-                eventPayload={{ channel: 'linkedin', location: 'footer_social' }}
+                eventPayload={{
+                  channel: 'linkedin',
+                  location: 'footer_social',
+                }}
               >
                 <Button
                   variant="ghost"
