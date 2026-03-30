@@ -17,7 +17,7 @@ export function AdminShell({ active, title, description, actions, children }: Ad
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50">
-      <SidebarProvider className="mx-auto min-h-screen max-w-[1600px]">
+      <SidebarProvider className="min-h-screen">
         <Sidebar className="border-r border-sidebar-border">
           <AdminSidebar active={active} />
           <SidebarRail />
