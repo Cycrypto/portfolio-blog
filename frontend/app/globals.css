@@ -74,6 +74,14 @@
     --border: var(--brand-indigo-500);              /* 베이지 보더 */
     --input: var(--brand-indigo-500);
     --ring: var(--brand-indigo-600);                /* 베이지 포커스 링 */
+    --sidebar-background: var(--neutral-slate-50);
+    --sidebar-foreground: var(--neutral-slate-800);
+    --sidebar-primary: var(--brand-blue-600);
+    --sidebar-primary-foreground: 255 255 255;
+    --sidebar-accent: var(--brand-blue-100);
+    --sidebar-accent-foreground: var(--brand-blue-900);
+    --sidebar-border: var(--brand-blue-100);
+    --sidebar-ring: var(--brand-indigo-600);
 
     /* === Layout === */
     --radius: 0.5rem;

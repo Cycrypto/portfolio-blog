@@ -24,6 +24,7 @@ interface BlogPost {
   tags: string[]
   image?: string
   slug: string
+  eyebrow?: string
 }
 
 export default function BlogPage() {
@@ -147,6 +148,7 @@ export default function BlogPage() {
       tags: post.tags || [post.category],
       image: normalizeImageUrl(post.image),
       slug,
+      eyebrow: post.category,
     }
   }
 
@@ -160,6 +162,9 @@ export default function BlogPage() {
     setSelectedTag("")
     setCurrentPage(1)
   }
+
+  const transformedPosts = posts.map(transformToBlogPost)
+  const [featuredPost, ...listPosts] = transformedPosts
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50">
@@ -255,31 +260,43 @@ export default function BlogPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10">
           {loading ? (
-            <div className="col-span-full py-14 text-center text-neutral-slate-500">글을 불러오는 중입니다...</div>
+            <div className="py-14 text-center text-neutral-slate-500">글을 불러오는 중입니다...</div>
           ) : error ? (
-            <div className="col-span-full">
-              <div className="surface-default py-10 text-center">
-                <p className="text-destructive">{error}</p>
-                <Button
-                  variant="outline"
-                  className="mt-4 border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
-                  onClick={() => setRefreshKey((prev) => prev + 1)}
-                >
-                  <RefreshCcw className="mr-2 h-4 w-4" />
-                  다시 시도
-                </Button>
-              </div>
+            <div className="surface-default py-10 text-center">
+              <p className="text-destructive">{error}</p>
+              <Button
+                variant="outline"
+                className="mt-4 border-brand-blue-200 bg-white text-brand-blue-700 hover:bg-brand-blue-50"
+                onClick={() => setRefreshKey((prev) => prev + 1)}
+              >
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                다시 시도
+              </Button>
             </div>
           ) : posts.length === 0 ? (
-            <div className="col-span-full">
-              <div className="surface-default py-10 text-center text-neutral-slate-500">
-                {searchKeyword || selectedTag ? "조건에 맞는 글이 없습니다." : "아직 공개한 글이 없습니다."}
-              </div>
+            <div className="surface-default py-10 text-center text-neutral-slate-500">
+              {searchKeyword || selectedTag ? "조건에 맞는 글이 없습니다." : "아직 공개한 글이 없습니다."}
             </div>
           ) : (
-            posts.map((post) => <BlogCard key={post.id} {...transformToBlogPost(post)} trackingLocation="blog_list_card" />)
+            <>
+              {featuredPost ? (
+                <BlogCard
+                  {...featuredPost}
+                  variant="featured"
+                  trackingLocation="blog_list_featured"
+                />
+              ) : null}
+              {listPosts.map((post) => (
+                <BlogCard
+                  key={post.slug}
+                  {...post}
+                  variant="list"
+                  trackingLocation="blog_list_row"
+                />
+              ))}
+            </>
           )}
         </div>
 

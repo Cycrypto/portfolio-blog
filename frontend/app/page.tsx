@@ -66,51 +66,64 @@ export default async function PortfolioPage() {
     featuredProjects,
     experiences,
     careerDurationLabel,
+    metrics,
     availableForWork,
   } = snapshot;
 
-  const heroSubtitleSource =
-    profile.subtitle || profile.description || profile.about || '';
-  const heroSubtitle =
-    heroSubtitleSource.length > 96
-      ? `${heroSubtitleSource.slice(0, 96).trimEnd()}...`
-      : heroSubtitleSource;
+  const heroHeadline =
+    profile.subtitle || '문제를 구조화하고 안정적인 백엔드 시스템을 설계합니다.';
+  const heroDescriptionSource = profile.description || profile.about || '';
+  const heroDescription =
+    heroDescriptionSource && heroDescriptionSource !== heroHeadline
+      ? heroDescriptionSource.length > 140
+        ? `${heroDescriptionSource.slice(0, 140).trimEnd()}...`
+        : heroDescriptionSource
+      : '대표 프로젝트와 기술 기록으로 문제 해결 과정과 구현 선택을 정리합니다.';
   const normalizedProfileImage = normalizeImageUrl(profile.profileImage);
   const heroSkills = (profile.skills || []).slice(0, 3);
   const visibleSkills = (profile.skills || []).slice(0, 8);
-  const heroRecentPosts = featuredPosts.slice(0, 2);
+  const heroSkillSummary =
+    heroSkills.length > 0
+      ? heroSkills.map((skill) => skill.name).join(' · ')
+      : '기술 스택 정리 중';
+  const supportPosts = featuredPosts.slice(0, 2);
+  const supportMetrics = metrics.slice(0, 3);
   const aboutParagraphs = [profile.about, profile.description].filter(
     (value, index, array) => Boolean(value) && array.indexOf(value) === index,
   );
+  const [featuredBlogPost, ...recentBlogPosts] = featuredPosts;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50 text-neutral-slate-900">
       <FloatingNav />
 
-      <section className="relative overflow-hidden pb-12 pt-20 md:pb-14 md:pt-24">
+      <section className="relative overflow-hidden px-0 pb-14 pt-24 md:pb-20 md:pt-28">
         <div className="pointer-events-none absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_12%,rgba(148,180,193,0.2),transparent_38%),radial-gradient(circle_at_85%_16%,rgba(220,232,239,0.6),transparent_42%)]" />
-          <div className="absolute left-8 top-10 h-56 w-56 rounded-full bg-brand-blue-100/70 blur-3xl" />
-          <div className="absolute bottom-10 right-12 h-56 w-56 rounded-full bg-brand-indigo-50/80 blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_14%,rgba(148,180,193,0.28),transparent_34%),radial-gradient(circle_at_82%_18%,rgba(220,232,239,0.85),transparent_38%),linear-gradient(180deg,rgba(245,248,250,0.32),rgba(255,255,255,0))]" />
+          <div className="absolute left-4 top-6 h-56 w-56 rounded-full bg-brand-blue-100/70 blur-3xl md:left-12 md:top-12 md:h-72 md:w-72" />
+          <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-brand-indigo-50/90 blur-3xl md:bottom-6 md:right-12 md:h-80 md:w-80" />
           <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-white/80" />
         </div>
 
-        <div className="container relative z-10 grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-12">
-          <div className="space-y-5 md:space-y-6 lg:order-2">
-            <div className="inline-flex items-center rounded-full border border-brand-blue-200 bg-brand-blue-50 px-4 py-2 text-sm font-medium text-brand-blue-700">
-              {profile.title}
+        <div className="container relative z-10 grid min-h-[calc(100svh-6.5rem)] grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,1.02fr)_minmax(320px,0.98fr)] lg:gap-14">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="inline-flex items-center rounded-full border border-brand-blue-200/80 bg-white/80 px-4 py-2 text-sm font-medium text-brand-blue-700 shadow-sm shadow-brand-blue-100/40 backdrop-blur">
+                {profile.name}
+                <span className="mx-2 text-brand-blue-300">/</span>
+                {profile.title || 'Backend Engineer'}
+              </div>
+
+              <h1 className="max-w-[11ch] text-5xl font-bold leading-[0.98] tracking-[-0.04em] text-neutral-slate-900 sm:text-6xl md:text-7xl">
+                {heroHeadline}
+              </h1>
+
+              <p className="max-w-[36rem] text-base leading-relaxed text-neutral-slate-600 md:text-lg">
+                {heroDescription}
+              </p>
             </div>
 
-            <h1 className="text-4xl font-bold leading-[1.08] tracking-tight text-neutral-slate-800 md:text-6xl">
-              안녕하세요,
-              <span className="block text-brand-blue-700">{profile.name}입니다</span>
-            </h1>
-
-            <p className="max-w-[620px] text-base leading-relaxed text-neutral-slate-600 md:text-lg">
-              {heroSubtitle}
-            </p>
-
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="flex flex-wrap gap-3 pt-1">
               <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
                 <TrackedLink
                   href="/resume"
@@ -148,26 +161,23 @@ export default async function PortfolioPage() {
               </a>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-slate-600">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-blue-200/80 bg-white px-3 py-1">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-slate-600">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-blue-200/80 bg-white/90 px-3 py-1.5 shadow-sm shadow-brand-blue-100/30">
                 <MapPin className="h-3.5 w-3.5 text-brand-blue-600" />
                 {profile.location || '위치 정보 없음'}
               </span>
-              <span className="rounded-full border border-brand-blue-200/80 bg-white px-3 py-1">
-                {profile.status || '상태 확인 필요'}
-              </span>
               <span
-                className={`rounded-full border px-3 py-1 ${
+                className={`rounded-full border px-3 py-1.5 ${
                   availableForWork
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                    : 'border-neutral-slate-200 bg-white text-neutral-slate-500'
+                    : 'border-neutral-slate-200 bg-white/90 text-neutral-slate-500'
                 }`}
               >
-                {availableForWork ? '협업 가능' : '상태 업데이트 예정'}
+                {availableForWork ? '현재 협업 가능' : profile.status || '상태 업데이트 예정'}
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-3 pt-1">
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               {profile.github ? (
                 <TrackedLink
                   href={profile.github}
@@ -178,12 +188,9 @@ export default async function PortfolioPage() {
                     channel: 'github',
                     location: 'home_hero_social',
                   }}
+                  className="inline-flex"
                 >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full border border-brand-blue-200 bg-white text-neutral-slate-700 hover:bg-brand-blue-50"
-                  >
+                  <Button variant="ghost" size="icon" className="rounded-full border border-brand-blue-200 bg-white/90 text-neutral-slate-700 hover:bg-brand-blue-50">
                     <Github className="h-5 w-5" />
                     <span className="sr-only">GitHub</span>
                   </Button>
@@ -199,12 +206,9 @@ export default async function PortfolioPage() {
                     channel: 'linkedin',
                     location: 'home_hero_social',
                   }}
+                  className="inline-flex"
                 >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full border border-brand-blue-200 bg-white text-neutral-slate-700 hover:bg-brand-blue-50"
-                  >
+                  <Button variant="ghost" size="icon" className="rounded-full border border-brand-blue-200 bg-white/90 text-neutral-slate-700 hover:bg-brand-blue-50">
                     <Linkedin className="h-5 w-5" />
                     <span className="sr-only">LinkedIn</span>
                   </Button>
@@ -218,12 +222,9 @@ export default async function PortfolioPage() {
                     channel: 'email',
                     location: 'home_hero_social',
                   }}
+                  className="inline-flex"
                 >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full border border-brand-blue-200 bg-white text-neutral-slate-700 hover:bg-brand-blue-50"
-                  >
+                  <Button variant="ghost" size="icon" className="rounded-full border border-brand-blue-200 bg-white/90 text-neutral-slate-700 hover:bg-brand-blue-50">
                     <Mail className="h-5 w-5" />
                     <span className="sr-only">이메일</span>
                   </Button>
@@ -232,127 +233,152 @@ export default async function PortfolioPage() {
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-[560px] lg:order-1">
-            <div className="surface-default relative overflow-hidden border-brand-blue-200/80 bg-white/95 p-6 shadow-xl shadow-brand-blue-100/40 backdrop-blur md:p-8">
-              <div className="pointer-events-none absolute -right-16 -top-14 h-44 w-44 rounded-full bg-brand-blue-100/80 blur-3xl" />
-              <div className="pointer-events-none absolute -left-20 bottom-4 h-32 w-32 rounded-full bg-brand-indigo-50/90 blur-3xl" />
+          <div className="mx-auto w-full max-w-[520px] lg:justify-self-end">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] border border-white/60 bg-brand-blue-900 shadow-[0_35px_90px_-40px_rgba(33,52,72,0.55)]">
+              {normalizedProfileImage ? (
+                <Image
+                  src={normalizedProfileImage}
+                  alt={profile.name}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 42vw"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(148,180,193,0.65),transparent_28%),linear-gradient(145deg,rgba(84,119,146,1),rgba(33,52,72,1))]" />
+              )}
 
-              <div className="relative">
-                <div className="flex items-start gap-4">
-                  <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-brand-blue-200/80 bg-brand-blue-50">
-                    {normalizedProfileImage ? (
-                      <Image
-                        src={normalizedProfileImage}
-                        alt={profile.name}
-                        fill
-                        sizes="64px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-brand-blue-700">
-                        {profile.name.slice(0, 1)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold tracking-[0.16em] text-brand-blue-600">
-                      한눈에 보기
-                    </p>
-                    <p className="mt-1 text-xl font-bold text-neutral-slate-800">
-                      {profile.name}
-                    </p>
-                    <p className="mt-1 text-sm text-neutral-slate-600">
-                      {profile.title}
-                    </p>
-                  </div>
-                </div>
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(33,52,72,0.06),rgba(33,52,72,0.18)_30%,rgba(33,52,72,0.82)_68%,rgba(33,52,72,0.96))]" />
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-white/10 to-transparent" />
 
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">
-                    <p className="text-xs text-neutral-slate-500">실무 경력</p>
-                    <p className="mt-1 text-lg font-semibold text-neutral-slate-800">
+              <div className="absolute left-5 top-5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium tracking-[0.16em] text-white/90 backdrop-blur">
+                {availableForWork ? 'OPEN TO WORK' : 'PORTFOLIO'}
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 p-6 text-white md:p-8">
+                <p className="text-xs font-semibold tracking-[0.22em] text-white/70">
+                  BACKEND PORTFOLIO
+                </p>
+                <p className="mt-3 text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
+                  {profile.name}
+                </p>
+                <p className="mt-2 max-w-xs text-sm leading-relaxed text-white/78 md:text-base">
+                  {profile.statusMessage || profile.title || '포트폴리오 정보를 정리하고 있습니다.'}
+                </p>
+
+                <div className="mt-6 grid grid-cols-1 gap-4 border-t border-white/15 pt-5 text-sm text-white/82 sm:grid-cols-2">
+                  <div>
+                    <p className="text-white/55">실무 경력</p>
+                    <p className="mt-1 font-medium text-white">
                       {careerDurationLabel || '정리 중'}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">
-                    <p className="text-xs text-neutral-slate-500">대표 프로젝트</p>
-                    <p className="mt-1 text-lg font-semibold text-neutral-slate-800">
-                      {featuredProjects.length}개
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">
-                    <p className="text-xs text-neutral-slate-500">기술 글</p>
-                    <p className="mt-1 text-lg font-semibold text-neutral-slate-800">
-                      {featuredPosts.length}개
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-brand-blue-200/80 bg-white px-4 py-3">
-                    <p className="text-xs text-neutral-slate-500">현재 상태</p>
-                    <p className="mt-1 text-sm font-semibold text-brand-blue-700">
-                      {profile.status || '확인 필요'}
-                    </p>
+                  <div>
+                    <p className="text-white/55">주요 기술</p>
+                    <p className="mt-1 font-medium text-white">{heroSkillSummary}</p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                <div className="mt-6">
-                  <p className="text-xs font-semibold text-neutral-slate-500">
-                    최근 글
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {heroRecentPosts.length > 0 ? (
-                      heroRecentPosts.map((post) => {
-                        const postIdentifier = post.slug || String(post.id);
-                        return (
-                          <TrackedLink
-                            key={post.id}
-                            href={`/blog/${postIdentifier}`}
-                            className="group flex items-start justify-between rounded-lg border border-brand-blue-200/70 bg-white px-3 py-2.5 transition-colors hover:bg-brand-blue-50/60"
-                            eventName="cta_click"
-                            eventPayload={{
-                              location: 'home_hero_recent_post',
-                              target: 'blog',
-                              content_id: postIdentifier,
-                            }}
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-neutral-slate-800 group-hover:text-brand-blue-700">
-                                {post.title}
-                              </p>
-                              <p className="mt-1 text-xs text-neutral-slate-500">
-                                {new Date(post.publishDate).toLocaleDateString('ko-KR', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                })}
-                              </p>
-                            </div>
-                            <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-blue-500 transition-transform duration-200 group-hover:translate-x-0.5" />
-                          </TrackedLink>
-                        );
-                      })
-                    ) : (
-                      <div className="rounded-lg border border-brand-blue-200/70 bg-white px-3 py-3 text-sm text-neutral-slate-500">
-                        새 글을 준비 중입니다.
-                      </div>
-                    )}
+      <section className="pb-10 md:pb-14">
+        <div className="container">
+          <div className="overflow-hidden rounded-[1.75rem] border border-brand-blue-200/70 bg-white/85 shadow-[0_20px_70px_-50px_rgba(33,52,72,0.45)] backdrop-blur">
+            <div className="grid gap-8 px-6 py-6 lg:grid-cols-[0.85fr_1fr_1fr] lg:px-8 lg:py-8">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.18em] text-brand-blue-600">
+                  QUICK FACTS
+                </p>
+                <dl className="mt-4 space-y-4">
+                  {supportMetrics.map((metric) => (
+                    <div key={metric.label}>
+                      <dt className="text-sm text-neutral-slate-500">{metric.label}</dt>
+                      <dd className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-neutral-slate-900">
+                        {metric.value}
+                      </dd>
+                      <p className="mt-1 text-sm text-neutral-slate-500">
+                        {metric.description}
+                      </p>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              <div className="border-t border-brand-blue-100 pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.18em] text-brand-blue-600">
+                      RECENT WRITING
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-neutral-slate-900">
+                      구현 기록과 문제 해결 메모
+                    </p>
                   </div>
+                  <TrackedLink
+                    href="/blog"
+                    className="hidden text-sm font-medium text-brand-blue-700 transition-colors hover:text-brand-blue-800 sm:inline-flex"
+                    eventName="cta_click"
+                    eventPayload={{ location: 'home_highlight_band', target: 'blog' }}
+                  >
+                    글 전체 보기
+                  </TrackedLink>
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {heroSkills.length > 0 ? (
-                    heroSkills.map((skill) => (
-                      <span
-                        key={skill.name}
-                        className="rounded-full border border-brand-blue-200/80 bg-brand-blue-50 px-3 py-1 text-xs font-medium text-brand-blue-700"
-                      >
-                        {skill.name}
-                      </span>
-                    ))
+                <div className="mt-5 space-y-3">
+                  {supportPosts.length > 0 ? (
+                    supportPosts.map((post) => {
+                      const postIdentifier = post.slug || String(post.id);
+                      return (
+                        <TrackedLink
+                          key={post.id}
+                          href={`/blog/${postIdentifier}`}
+                          className="group flex items-start justify-between gap-4 border-b border-brand-blue-100/80 pb-3 last:border-b-0 last:pb-0"
+                          eventName="cta_click"
+                          eventPayload={{
+                            location: 'home_highlight_band_recent_post',
+                            target: 'blog',
+                            content_id: postIdentifier,
+                          }}
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-neutral-slate-900 transition-colors group-hover:text-brand-blue-700">
+                              {post.title}
+                            </p>
+                            <p className="mt-1 text-sm text-neutral-slate-500">
+                              {formatPostDate(post.publishDate)}
+                            </p>
+                          </div>
+                          <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-blue-500 transition-transform duration-200 group-hover:translate-x-1" />
+                        </TrackedLink>
+                      );
+                    })
                   ) : (
-                    <span className="rounded-full border border-brand-blue-200/80 bg-brand-blue-50 px-3 py-1 text-xs font-medium text-brand-blue-700">
-                      기술 스택 정리 중
-                    </span>
+                    <p className="text-sm text-neutral-slate-500">새 글을 준비 중입니다.</p>
                   )}
                 </div>
+              </div>
+
+              <div className="border-t border-brand-blue-100 pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+                <p className="text-xs font-semibold tracking-[0.18em] text-brand-blue-600">
+                  STACK SNAPSHOT
+                </p>
+                <p className="mt-2 text-lg font-semibold text-neutral-slate-900">
+                  자주 사용하는 기술
+                </p>
+                {visibleSkills.length > 0 ? (
+                  <div className="mt-5 flex flex-wrap gap-2.5">
+                    {visibleSkills.map((skill) => (
+                      <SkillBadge key={skill.name} name={skill.name} level={skill.level} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-5 text-sm text-neutral-slate-500">
+                    기술 스택을 정리 중입니다.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -370,7 +396,6 @@ export default async function PortfolioPage() {
                   src={normalizedProfileImage}
                   alt={profile.name}
                   fill
-                  priority
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
                 />
@@ -504,8 +529,26 @@ export default async function PortfolioPage() {
 
           {featuredPosts.length > 0 ? (
             <>
-              <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {featuredPosts.map((post) => (
+              <div className="mt-12">
+                {featuredBlogPost ? (
+                  <BlogCard
+                    key={featuredBlogPost.id}
+                    title={featuredBlogPost.title}
+                    excerpt={
+                      featuredBlogPost.excerpt ||
+                      `${featuredBlogPost.category} 주제에서 해결 과정을 정리한 글입니다.`
+                    }
+                    date={formatPostDate(featuredBlogPost.publishDate)}
+                    readTime={`${featuredBlogPost.readTime}분`}
+                    tags={featuredBlogPost.tags || [featuredBlogPost.category]}
+                    image={featuredBlogPost.image}
+                    slug={featuredBlogPost.slug || String(featuredBlogPost.id)}
+                    eyebrow={featuredBlogPost.category}
+                    variant="featured"
+                    trackingLocation="home_blog_featured"
+                  />
+                ) : null}
+                {recentBlogPosts.map((post) => (
                   <BlogCard
                     key={post.id}
                     title={post.title}
@@ -517,7 +560,8 @@ export default async function PortfolioPage() {
                     tags={post.tags || [post.category]}
                     image={post.image}
                     slug={post.slug || String(post.id)}
-                    trackingLocation="home_blog_card"
+                    eyebrow={post.category}
+                    trackingLocation="home_blog_row"
                   />
                 ))}
               </div>
