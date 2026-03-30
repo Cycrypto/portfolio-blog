@@ -43,7 +43,6 @@ export function FloatingNav() {
   }, [isMobile])
 
   const navItems = [
-    { name: "소개", href: "#about" },
     { name: "경험", href: "#experience" },
     { name: "프로젝트", href: "#projects" },
     { name: "블로그", href: "#blog" },

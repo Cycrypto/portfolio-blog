@@ -84,11 +84,6 @@ export default async function PortfolioPage() {
     heroSkills.length > 0
       ? heroSkills.map((skill) => skill.name).join(' · ')
       : '기술 스택 정리 중';
-  const aboutParagraphs = [profile.about, profile.description].filter(
-    (value, index, array) => Boolean(value) && array.indexOf(value) === index,
-  );
-  const introParagraphs =
-    aboutParagraphs.length > 0 ? aboutParagraphs : ['소개를 정리 중입니다.'];
   const [featuredBlogPost, ...recentBlogPosts] = featuredPosts;
 
   return (
@@ -270,12 +265,6 @@ export default async function PortfolioPage() {
                 <p className="mt-3 text-3xl font-semibold tracking-[-0.03em] md:text-4xl">
                   {profile.name}
                 </p>
-                <p className="mt-2 max-w-xs text-sm leading-relaxed text-white/78 md:text-base">
-                  {profile.statusMessage ||
-                    profile.title ||
-                    '포트폴리오 정보를 정리하고 있습니다.'}
-                </p>
-
                 <div className="mt-6 grid grid-cols-1 gap-4 border-t border-white/15 pt-5 text-sm text-white/82 sm:grid-cols-2">
                   <div>
                     <p className="text-white/55">실무 경력</p>
@@ -293,64 +282,6 @@ export default async function PortfolioPage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section id="about" className="pb-14 md:pb-16">
-        <div className="container">
-          <GlassmorphicCard className="p-0">
-            <div className="grid gap-0 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)]">
-              <div className="px-6 py-6 md:px-8 md:py-8">
-                <p className="text-xs font-semibold tracking-[0.18em] text-brand-blue-600">
-                  ABOUT
-                </p>
-                <h2 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-neutral-slate-900 md:text-3xl">
-                  짧게 소개하면
-                </h2>
-                {introParagraphs.map((paragraph, index) => {
-                  const spacingClass = index > 0 ? 'mt-4' : 'mt-5';
-
-                  return (
-                    <p
-                      key={`${paragraph}-${index}`}
-                      className={`max-w-3xl text-base leading-relaxed text-neutral-slate-700 md:text-lg ${spacingClass}`}
-                    >
-                      {paragraph}
-                    </p>
-                  );
-                })}
-              </div>
-
-              <div className="border-t border-brand-blue-100 px-6 py-6 md:px-8 md:py-8 lg:border-l lg:border-t-0">
-                <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-1">
-                  <div>
-                    <dt className="text-sm text-neutral-slate-500">실무 경력</dt>
-                    <dd className="mt-1 text-lg font-semibold text-neutral-slate-900">
-                      {careerDurationLabel || '정리 중'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-neutral-slate-500">주요 기술</dt>
-                    <dd className="mt-1 text-sm font-medium leading-relaxed text-neutral-slate-800">
-                      {heroSkillSummary}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-neutral-slate-500">이메일</dt>
-                    <dd className="mt-1 break-all text-sm font-medium text-neutral-slate-800">
-                      {profile.email || '비공개'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-neutral-slate-500">상태</dt>
-                    <dd className="mt-1 text-sm font-medium text-brand-blue-700">
-                      {availableForWork ? '현재 협업 가능' : profile.status || '확인 필요'}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
-          </GlassmorphicCard>
         </div>
       </section>
 
