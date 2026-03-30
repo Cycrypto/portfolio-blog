@@ -2,11 +2,17 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { TokenManager } from "@/lib/auth/token-manager"
+
+type LoginFieldErrors = {
+  password?: string
+  username?: string
+}
 
 export default function AdminLogin() {
   const router = useRouter()
@@ -14,18 +20,43 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<LoginFieldErrors>({})
+
+  const clearFieldError = (field: keyof LoginFieldErrors) => {
+    setFieldErrors((currentErrors) => {
+      if (!currentErrors[field]) {
+        return currentErrors
+      }
+
+      const nextErrors = { ...currentErrors }
+      delete nextErrors[field]
+      return nextErrors
+    })
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!username.trim() || !password.trim()) {
-      setError('사용자명과 비밀번호를 모두 입력해주세요.')
+    const nextFieldErrors: LoginFieldErrors = {}
+
+    if (!username.trim()) {
+      nextFieldErrors.username = "사용자명을 입력해주세요."
+    }
+
+    if (!password.trim()) {
+      nextFieldErrors.password = "비밀번호를 입력해주세요."
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors)
+      setError("사용자명과 비밀번호를 모두 입력해주세요.")
       return
     }
 
     try {
       setLoading(true)
       setError(null)
+      setFieldErrors({})
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}/login`, {
         method: 'POST',
@@ -70,37 +101,58 @@ export default function AdminLogin() {
             </span>
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">사용자명</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="사용자명을 입력하세요"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={loading}
-                autoComplete="username"
-              />
-            </div>
+        <CardContent className="pt-6">
+          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+            <FieldGroup>
+              <Field invalid={Boolean(fieldErrors.username)} disabled={loading}>
+                <FieldLabel htmlFor="username">사용자명</FieldLabel>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="사용자명을 입력하세요"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value)
+                    clearFieldError("username")
+                  }}
+                  disabled={loading}
+                  autoComplete="username"
+                  aria-invalid={Boolean(fieldErrors.username)}
+                />
+                <FieldError>{fieldErrors.username}</FieldError>
+              </Field>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">비밀번호</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="비밀번호를 입력하세요"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                autoComplete="current-password"
-              />
-            </div>
+              <Field invalid={Boolean(fieldErrors.password)} disabled={loading}>
+                <FieldLabel htmlFor="password">비밀번호</FieldLabel>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="비밀번호를 입력하세요"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    clearFieldError("password")
+                  }}
+                  disabled={loading}
+                  autoComplete="current-password"
+                  aria-invalid={Boolean(fieldErrors.password)}
+                />
+                <FieldError>{fieldErrors.password}</FieldError>
+              </Field>
+            </FieldGroup>
 
-            {error && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</div>}
+            {error ? (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
 
-            <Button type="submit" className="w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-brand-blue-600 text-white hover:bg-brand-blue-700"
+              disabled={loading}
+              aria-busy={loading}
+            >
               {loading ? '로그인 중...' : '로그인'}
             </Button>
           </form>
