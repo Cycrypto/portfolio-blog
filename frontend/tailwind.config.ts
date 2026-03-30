@@ -46,6 +46,16 @@ const config = {
           DEFAULT: "rgb(var(--accent))",
           foreground: "rgb(var(--accent-foreground))",
         },
+        sidebar: {
+          DEFAULT: "rgb(var(--sidebar-background))",
+          foreground: "rgb(var(--sidebar-foreground))",
+          primary: "rgb(var(--sidebar-primary))",
+          "primary-foreground": "rgb(var(--sidebar-primary-foreground))",
+          accent: "rgb(var(--sidebar-accent))",
+          "accent-foreground": "rgb(var(--sidebar-accent-foreground))",
+          border: "rgb(var(--sidebar-border))",
+          ring: "rgb(var(--sidebar-ring))",
+        },
         popover: {
           DEFAULT: "rgb(var(--popover))",
           foreground: "rgb(var(--popover-foreground))",
