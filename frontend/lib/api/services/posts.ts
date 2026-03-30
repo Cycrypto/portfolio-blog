@@ -78,7 +78,7 @@ export async function getAllAdminPosts(): Promise<{
   totalCount: number;
 }> {
   let page = 1;
-  let mergedPosts: Post[] = [];
+  const postMap = new Map<number, Post>();
   let totalCount = 0;
 
   while (true) {
@@ -87,13 +87,20 @@ export async function getAllAdminPosts(): Promise<{
       ADMIN_POSTS_PAGE_SIZE,
     );
 
-    mergedPosts = [...mergedPosts, ...posts];
     totalCount = nextTotalCount;
+    const previousCount = postMap.size;
 
-    if (
-      mergedPosts.length >= totalCount ||
-      posts.length < ADMIN_POSTS_PAGE_SIZE
-    ) {
+    for (const post of posts) {
+      postMap.set(post.id, post);
+    }
+
+    if (postMap.size >= totalCount || posts.length === 0) {
+      break;
+    }
+
+    // Joined admin list queries can return fewer unique posts than the
+    // requested page size, so only stop when a page adds no new posts.
+    if (postMap.size === previousCount) {
       break;
     }
 
@@ -101,7 +108,7 @@ export async function getAllAdminPosts(): Promise<{
   }
 
   return {
-    posts: mergedPosts,
+    posts: Array.from(postMap.values()),
     totalCount,
   };
 }

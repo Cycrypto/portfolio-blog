@@ -230,6 +230,58 @@ and apply the smallest workflow or test fix. Summarize whether the breakage is c
 - CI changes:
   Confirm the exact failing step is addressed without broad workflow churn.
 
+## GitHub Issue And Worktree Flow
+
+When the user asks Codex to implement work that maps to a GitHub issue, use this workflow unless the user explicitly overrides it.
+
+1. Resolve the issue first.
+   Confirm the target issue number, its acceptance criteria, and whether the issue body includes:
+   - `Work Status`
+   - `Suggested Branch`
+
+2. Start from the issue branch.
+   If the issue body has a `Suggested Branch`, use it as the default branch name.
+   If a new branch must be created, use the repository branch prefix convention: `codex/<task-name>`.
+
+3. Use a dedicated worktree or branch checkout for issue work.
+   Keep the issue's implementation isolated from unrelated local work.
+   Do not mix multiple issue scopes in one worktree unless the user explicitly requests it.
+
+4. Update issue status before implementation starts.
+   In the issue `Work Status` checklist:
+   - switch from `진행 전` to `진행 중` when the worktree/branch is created and implementation begins
+   - switch to `진행 완료` only when the implementation, validation, and handoff are complete enough for review or merge preparation
+
+5. Keep a Korean work log for every non-trivial issue branch.
+   Create or update a log under `docs/worklogs/` using the naming rule from [docs/worklogs/README.md](docs/worklogs/README.md).
+   The work log is not a chat transcript. It is an execution record and design-decision record.
+
+6. Record meaningful design decisions.
+   For each non-trivial choice, document:
+   - what changed
+   - why this approach was chosen
+   - what alternatives were rejected
+   - what follow-up or risk remains
+
+7. Close the loop before handoff.
+   Before asking the user to review or before opening a PR, make sure:
+   - the issue status is current
+   - the work log reflects the final implementation and validation state
+   - unresolved risks or follow-ups are explicitly written down
+
+## Issue Authoring Rules
+
+When Codex creates new implementation issues in this repository, prefer including these sections in the issue body:
+
+- `Work Status`
+- `Suggested Branch`
+- `Summary`
+- `Scope`
+- `Out of Scope`
+- `Acceptance Criteria`
+
+If labels are relevant, assign them during issue creation instead of leaving classification for later.
+
 ## Prompting Notes
 
 - Custom agents are not auto-spawned. Ask explicitly for the agents you want.
