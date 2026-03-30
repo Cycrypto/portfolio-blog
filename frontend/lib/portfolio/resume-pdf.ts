@@ -5,7 +5,9 @@ import PDFDocument from 'pdfkit';
 
 import {
   formatExperiencePeriod,
+  getCareerDurationLabel,
   getExperienceTypeLabel,
+  getExperienceTypeTheme,
 } from '@/lib/experience/utils';
 import { absoluteUrl } from '@/lib/site';
 import { normalizeImageUrl } from '@/lib/utils/image';
@@ -19,20 +21,22 @@ import {
 
 const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
-const PAGE_MARGIN_X = 52;
-const PAGE_MARGIN_TOP = 44;
-const PAGE_MARGIN_BOTTOM = 40;
+const PAGE_MARGIN_X = 44;
+const PAGE_MARGIN_TOP = 36;
+const PAGE_MARGIN_BOTTOM = 34;
 const CONTENT_WIDTH = PAGE_WIDTH - PAGE_MARGIN_X * 2;
 const CONTENT_LIMIT_Y = PAGE_HEIGHT - PAGE_MARGIN_BOTTOM;
 
 const COLORS = {
-  ink: '#0F172A',
+  ink: '#172033',
   body: '#334155',
-  muted: '#64748B',
+  muted: '#5F6F82',
   faint: '#94A3B8',
-  rule: '#E2E8F0',
-  accent: '#1D4ED8',
-  accentSoft: '#DBEAFE',
+  rule: '#D9E2EA',
+  accent: '#547792',
+  accentStrong: '#38556D',
+  accentSoft: '#EDF4F7',
+  accentLine: '#C7D6E1',
   photoStroke: '#CBD5E1',
 };
 
@@ -47,6 +51,8 @@ interface ExperienceModel {
   period: string;
   relatedProjects: string;
   bullets: string[];
+  themeColor: string;
+  themeTint: string;
 }
 
 interface ProjectModel {
@@ -313,6 +319,38 @@ function drawRule(
     .restore();
 }
 
+function drawPill(
+  doc: PDFKit.PDFDocument,
+  x: number,
+  y: number,
+  label: string,
+  fillColor: string,
+  textColor: string,
+): number {
+  doc.font('resumeSans').fontSize(8.1);
+  const textWidth = doc.widthOfString(label, {
+    characterSpacing: 0.7,
+  });
+  const width = textWidth + 18;
+
+  doc
+    .save()
+    .roundedRect(x, y, width, 17, 8.5)
+    .fill(fillColor)
+    .restore();
+
+  doc
+    .font('resumeSans')
+    .fontSize(8.1)
+    .fillColor(textColor)
+    .text(label, x + 9, y + 4.6, {
+      width: textWidth + 1,
+      characterSpacing: 0.7,
+    });
+
+  return width;
+}
+
 function drawSectionHeading(
   doc: PDFKit.PDFDocument,
   state: LayoutState,
@@ -323,16 +361,21 @@ function drawSectionHeading(
   const heading = continued ? `${title} (계속)` : title;
 
   doc
-    .font('resumeSans')
-    .fontSize(10.5)
+    .font('resumeSerif')
+    .fontSize(15.2)
     .fillColor(COLORS.ink)
     .text(heading, PAGE_MARGIN_X, state.cursor, {
-      width: 160,
+      width: 170,
     });
 
   const titleWidth = doc.widthOfString(heading);
-  drawRule(doc, state.cursor + 7, PAGE_MARGIN_X + titleWidth + 14, CONTENT_WIDTH - titleWidth - 14);
-  state.cursor += 22;
+  drawRule(
+    doc,
+    state.cursor + 11,
+    PAGE_MARGIN_X + titleWidth + 16,
+    Math.max(0, CONTENT_WIDTH - titleWidth - 16),
+  );
+  state.cursor += 24;
 }
 
 function drawBulletLine(
@@ -342,20 +385,53 @@ function drawBulletLine(
   width: number,
   text: string,
   fontSize = 10.2,
+  bulletColor = COLORS.accent,
+  bulletOffset = 13,
 ): number {
   doc
     .save()
-    .roundedRect(x, y + 6, 4, 4, 2)
-    .fill(COLORS.accent)
+    .circle(x + 3, y + 9, 2.1)
+    .fill(bulletColor)
     .restore();
 
   doc
     .font('resumeSans')
     .fontSize(fontSize)
     .fillColor(COLORS.body)
-    .text(text, x + 12, y, {
-      width: width - 12,
+    .text(text, x + bulletOffset, y, {
+      width: width - bulletOffset,
       lineGap: 3,
+    });
+
+  return doc.y;
+}
+
+function drawHeaderInfo(
+  doc: PDFKit.PDFDocument,
+  x: number,
+  y: number,
+  width: number,
+  label: string,
+  value: string,
+): number {
+  doc
+    .font('resumeSans')
+    .fontSize(7.5)
+    .fillColor(COLORS.faint)
+    .text(label, x, y, {
+      width,
+      characterSpacing: 1,
+    });
+
+  const valueY = doc.y + 2;
+
+  doc
+    .font('resumeSans')
+    .fontSize(9.4)
+    .fillColor(COLORS.body)
+    .text(value, x, valueY, {
+      width,
+      lineGap: 2,
     });
 
   return doc.y;
@@ -368,11 +444,12 @@ function drawHeader(
   state: LayoutState,
 ): void {
   const hasPhoto = Boolean(snapshot.settings.showPhoto && photoBuffer);
-  const photoWidth = hasPhoto ? 78 : 0;
-  const photoGap = hasPhoto ? 18 : 0;
-  const textWidth = CONTENT_WIDTH - photoWidth - photoGap;
+  const railWidth = hasPhoto ? 176 : 190;
+  const columnGap = 26;
+  const photoWidth = hasPhoto ? 82 : 0;
+  const textWidth = CONTENT_WIDTH - railWidth - columnGap;
   const textX = PAGE_MARGIN_X;
-  const photoX = PAGE_MARGIN_X + textWidth + photoGap;
+  const railX = PAGE_MARGIN_X + textWidth + columnGap;
   const topY = state.cursor;
 
   const name = snapshot.settings.name || snapshot.profile.name || '이름 미기재';
@@ -385,75 +462,83 @@ function drawHeader(
         snapshot.profile.description ||
         snapshot.profile.about,
     ),
-    150,
+    210,
   );
 
-  const primaryContact = unique([
-    snapshot.settings.location,
-    snapshot.settings.email,
-  ]).join('  |  ');
-  const secondaryContact = unique([
-    shortenLink(snapshot.settings.github),
-    shortenLink(snapshot.settings.linkedin),
-  ]).join('  |  ');
+  const contactItems = [
+    snapshot.settings.location
+      ? { label: 'LOCATION', value: snapshot.settings.location }
+      : null,
+    snapshot.settings.email
+      ? { label: 'EMAIL', value: snapshot.settings.email }
+      : null,
+    snapshot.settings.github
+      ? { label: 'GITHUB', value: shortenLink(snapshot.settings.github) }
+      : null,
+    snapshot.settings.linkedin
+      ? { label: 'LINKEDIN', value: shortenLink(snapshot.settings.linkedin) }
+      : null,
+  ].filter(
+    (
+      item,
+    ): item is {
+      label: string;
+      value: string;
+    } => Boolean(item),
+  );
+
+  const skillText = snapshot.featuredSkills
+    .map((skill) => clampText(skill, 18))
+    .join(' · ');
+
+  drawPill(
+    doc,
+    textX,
+    topY,
+    'RESUME',
+    COLORS.accentSoft,
+    COLORS.accentStrong,
+  );
+
+  let textCursor = topY + 28;
 
   doc
     .font('resumeSerif')
-    .fontSize(28)
+    .fontSize(31)
     .fillColor(COLORS.ink)
-    .text(name, textX, topY, {
+    .text(name, textX, textCursor, {
       width: textWidth,
     });
 
-  let cursor = doc.y + 2;
+  textCursor = doc.y + 4;
 
   doc
     .font('resumeSans')
-    .fontSize(13.4)
-    .fillColor(COLORS.accent)
-    .text(title, textX, cursor, {
+    .fontSize(15.2)
+    .fillColor(COLORS.accentStrong)
+    .text(title, textX, textCursor, {
       width: textWidth,
     });
 
-  cursor = doc.y + 8;
-
-  if (primaryContact) {
-    doc
-      .font('resumeSans')
-      .fontSize(9.5)
-      .fillColor(COLORS.body)
-      .text(primaryContact, textX, cursor, {
-        width: textWidth,
-      });
-    cursor = doc.y + 3;
-  }
-
-  if (secondaryContact) {
-    doc
-      .font('resumeSans')
-      .fontSize(9.5)
-      .fillColor(COLORS.muted)
-      .text(secondaryContact, textX, cursor, {
-        width: textWidth,
-      });
-    cursor = doc.y + 8;
-  }
+  textCursor = doc.y + 9;
 
   if (headline) {
     doc
       .font('resumeSans')
-      .fontSize(10.6)
+      .fontSize(11.1)
       .fillColor(COLORS.body)
-      .text(headline, textX, cursor, {
+      .text(headline, textX, textCursor, {
         width: textWidth,
-        lineGap: 3,
+        lineGap: 4,
       });
-    cursor = doc.y + 4;
+    textCursor = doc.y;
   }
+
+  let railCursor = topY;
 
   if (hasPhoto && photoBuffer) {
     try {
-      doc.image(photoBuffer, photoX, topY + 4, {
+      doc.image(photoBuffer, railX, railCursor, {
         fit: [photoWidth, 96],
         align: 'center',
         valign: 'center',
@@ -466,14 +551,136 @@ function drawHeader(
       .save()
       .lineWidth(0.8)
       .strokeColor(COLORS.photoStroke)
-      .roundedRect(photoX, topY + 4, photoWidth, 96, 10)
+      .roundedRect(railX, railCursor, photoWidth, 96, 12)
+      .stroke()
+      .restore();
+
+    railCursor += 108;
+  }
+
+  if (contactItems.length > 0) {
+    doc
+      .font('resumeSans')
+      .fontSize(7.6)
+      .fillColor(COLORS.accentStrong)
+      .text('CONTACT', railX, railCursor, {
+        width: railWidth,
+        characterSpacing: 1.4,
+      });
+    railCursor = doc.y + 6;
+
+    for (const item of contactItems) {
+      railCursor = drawHeaderInfo(
+        doc,
+        railX,
+        railCursor,
+        railWidth,
+        item.label,
+        item.value,
+      ) + 8;
+    }
+  }
+
+  if (skillText) {
+    doc
+      .font('resumeSans')
+      .fontSize(7.6)
+      .fillColor(COLORS.accentStrong)
+      .text('CORE SKILLS', railX, railCursor, {
+        width: railWidth,
+        characterSpacing: 1.4,
+      });
+
+    const skillY = doc.y + 6;
+
+    doc
+      .font('resumeSans')
+      .fontSize(9.4)
+      .fillColor(COLORS.body)
+      .text(skillText, railX, skillY, {
+        width: railWidth,
+        lineGap: 3,
+      });
+
+    railCursor = doc.y;
+  }
+
+  const headerBottom = Math.max(textCursor, railCursor);
+
+  if (headerBottom > topY + 10) {
+    doc
+      .save()
+      .lineWidth(1)
+      .strokeColor(COLORS.accentLine)
+      .moveTo(railX - 14, topY + 3)
+      .lineTo(railX - 14, headerBottom)
       .stroke()
       .restore();
   }
 
-  state.cursor = hasPhoto ? Math.max(cursor, topY + 108) : cursor;
-  drawRule(doc, state.cursor + 2);
-  state.cursor += 20;
+  drawRule(doc, headerBottom + 10);
+  state.cursor = headerBottom + 24;
+}
+
+function drawMetricsRow(
+  doc: PDFKit.PDFDocument,
+  snapshot: ResumeSnapshot,
+  state: LayoutState,
+): void {
+  const stats = [
+    {
+      label: '실무 경력',
+      value: getCareerDurationLabel(snapshot.selectedExperiences) || '정리 중',
+    },
+    {
+      label: '대표 프로젝트',
+      value: `${snapshot.selectedProjects.length}개`,
+    },
+    {
+      label: '핵심 기술',
+      value: `${snapshot.featuredSkills.length}개`,
+    },
+  ];
+
+  ensureSpace(doc, state, 58);
+  const topY = state.cursor;
+  const columnWidth = CONTENT_WIDTH / stats.length;
+
+  for (let index = 0; index < stats.length; index += 1) {
+    const stat = stats[index];
+    const x = PAGE_MARGIN_X + columnWidth * index;
+
+    doc
+      .font('resumeSans')
+      .fontSize(8)
+      .fillColor(COLORS.faint)
+      .text(stat.label, x, topY, {
+        width: columnWidth - 18,
+        characterSpacing: 0.6,
+      });
+
+    doc
+      .font('resumeSans')
+      .fontSize(15.5)
+      .fillColor(COLORS.ink)
+      .text(stat.value, x, topY + 14, {
+        width: columnWidth - 18,
+      });
+
+    if (index < stats.length - 1) {
+      doc
+        .save()
+        .lineWidth(0.8)
+        .strokeColor(COLORS.rule)
+        .moveTo(x + columnWidth - 14, topY + 2)
+        .lineTo(x + columnWidth - 14, topY + 34)
+        .stroke()
+        .restore();
+    }
+  }
+
+  drawRule(doc, topY + 44);
+  state.cursor = topY + 58;
 }
 
 function drawSummarySection(
@@ -486,7 +693,7 @@ function drawSummarySection(
   if (snapshot.summaryBullets.length === 0) {
     doc
       .font('resumeSans')
-      .fontSize(10)
+      .fontSize(10.1)
       .fillColor(COLORS.muted)
       .text('요약 정보가 없습니다.', PAGE_MARGIN_X, state.cursor, {
         width: CONTENT_WIDTH,
@@ -495,29 +702,48 @@ function drawSummarySection(
     return;
   }
 
-  for (const bullet of snapshot.summaryBullets) {
+  snapshot.summaryBullets.forEach((bullet, index) => {
     const height =
       measureText(
         doc,
         'resumeSans',
-        10.2,
+        10.7,
         bullet,
-        CONTENT_WIDTH - 12,
-        3,
-      ) + 8;
+        CONTENT_WIDTH - 34,
+        4,
+      ) + 10;
 
     ensureSpace(doc, state, height + 4);
-    state.cursor = drawBulletLine(
-      doc,
-      PAGE_MARGIN_X,
-      state.cursor,
-      CONTENT_WIDTH,
-      bullet,
-      10.2,
-    ) + 8;
-  }
+    doc
+      .font('resumeSans')
+      .fontSize(8.6)
+      .fillColor(COLORS.faint)
+      .text(String(index + 1).padStart(2, '0'), PAGE_MARGIN_X, state.cursor + 1, {
+        width: 14,
+      });
 
-  state.cursor += 4;
+    doc
+      .save()
+      .lineWidth(1.3)
+      .strokeColor(COLORS.accent)
+      .moveTo(PAGE_MARGIN_X + 18, state.cursor + 1)
+      .lineTo(PAGE_MARGIN_X + 18, state.cursor + height - 4)
+      .stroke()
+      .restore();
+
+    doc
+      .font('resumeSans')
+      .fontSize(10.7)
+      .fillColor(COLORS.body)
+      .text(bullet, PAGE_MARGIN_X + 30, state.cursor, {
+        width: CONTENT_WIDTH - 30,
+        lineGap: 4,
+      });
+
+    state.cursor = doc.y + 10;
+  });
+
+  state.cursor += 2;
 }
 
 function measureSkillRow(
@@ -608,6 +834,7 @@ function buildExperienceModel(experience: Experience): ExperienceModel {
   const relatedProjects = (experience.linkedProjects || [])
     .map((project) => cleanText(project.title))
     .filter(Boolean);
+  const theme = getExperienceTypeTheme(experience.type);
 
   const bullets = normalizeResumeStringArray(
     experience.resumeHighlights?.length
@@ -633,6 +860,8 @@ function buildExperienceModel(experience: Experience): ExperienceModel {
           )
         : '',
     bullets,
+    themeColor: theme.pdfColor,
+    themeTint: theme.pdfTint,
   };
 }
 
@@ -640,18 +869,19 @@ function measureExperienceBlock(
   doc: PDFKit.PDFDocument,
   model: ExperienceModel,
 ): number {
-  const periodWidth = 112;
-  const bodyWidth = CONTENT_WIDTH - periodWidth - 12;
-  let height = 14;
+  const periodWidth = 116;
+  const contentWidth = CONTENT_WIDTH - 18;
+  const bodyWidth = contentWidth - periodWidth - 14;
+  let height = 20;
 
-  height += measureText(doc, 'resumeSans', 12, model.title, CONTENT_WIDTH, 2) + 4;
+  height += measureText(doc, 'resumeSans', 13.3, model.title, contentWidth, 2) + 4;
 
   if (model.organization || model.period) {
     const organizationHeight = model.organization
-      ? measureText(doc, 'resumeSans', 9.7, model.organization, bodyWidth, 2)
+      ? measureText(doc, 'resumeSans', 10.1, model.organization, bodyWidth, 2)
       : 0;
     const periodHeight = model.period
-      ? measureText(doc, 'resumeSans', 9.5, model.period, periodWidth, 2)
+      ? measureText(doc, 'resumeSans', 9.4, model.period, periodWidth, 2)
       : 0;
     height += Math.max(organizationHeight, periodHeight, 12) + 6;
   }
@@ -661,19 +891,19 @@ function measureExperienceBlock(
       measureText(
         doc,
         'resumeSans',
-        9.2,
+        9.1,
         model.relatedProjects,
-        CONTENT_WIDTH,
+        contentWidth,
         2,
       ) + 6;
   }
 
   for (const bullet of model.bullets) {
     height +=
-      measureText(doc, 'resumeSans', 10, bullet, CONTENT_WIDTH - 12, 3) + 7;
+      measureText(doc, 'resumeSans', 10.1, bullet, contentWidth - 13, 3) + 8;
   }
 
-  return height + 10;
+  return height + 12;
 }
 
 function drawExperienceBlock(
@@ -681,36 +911,42 @@ function drawExperienceBlock(
   state: LayoutState,
   model: ExperienceModel,
 ): void {
-  const periodWidth = 112;
-  const bodyWidth = CONTENT_WIDTH - periodWidth - 12;
+  const periodWidth = 116;
+  const contentX = PAGE_MARGIN_X + 18;
+  const contentWidth = CONTENT_WIDTH - 18;
+  const bodyWidth = contentWidth - periodWidth - 14;
+  const blockTop = state.cursor;
+  const blockHeight = measureExperienceBlock(doc, model);
+
+  doc
+    .save()
+    .lineWidth(1.6)
+    .strokeColor(model.themeColor)
+    .moveTo(PAGE_MARGIN_X + 5, blockTop + 4)
+    .lineTo(PAGE_MARGIN_X + 5, blockTop + blockHeight - 10)
+    .stroke()
+    .restore();
+
+  drawPill(doc, contentX, state.cursor, model.label, model.themeTint, model.themeColor);
+  state.cursor += 22;
 
   doc
     .font('resumeSans')
-    .fontSize(8.8)
-    .fillColor(COLORS.accent)
-    .text(model.label, PAGE_MARGIN_X, state.cursor, {
-      width: CONTENT_WIDTH,
-    });
-
-  state.cursor = doc.y + 2;
-
-  doc
-    .font('resumeSans')
-    .fontSize(12)
+    .fontSize(13.3)
     .fillColor(COLORS.ink)
-    .text(model.title, PAGE_MARGIN_X, state.cursor, {
-      width: CONTENT_WIDTH,
+    .text(model.title, contentX, state.cursor, {
+      width: contentWidth,
       lineGap: 2,
     });
 
-  state.cursor = doc.y + 3;
+  state.cursor = doc.y + 4;
 
   if (model.organization) {
     doc
       .font('resumeSans')
-      .fontSize(9.7)
+      .fontSize(10.1)
       .fillColor(COLORS.body)
-      .text(model.organization, PAGE_MARGIN_X, state.cursor, {
+      .text(model.organization, contentX, state.cursor, {
         width: bodyWidth,
         lineGap: 2,
       });
@@ -719,11 +955,11 @@ function drawExperienceBlock(
   if (model.period) {
     doc
       .font('resumeSans')
-      .fontSize(9.5)
+      .fontSize(9.4)
       .fillColor(COLORS.muted)
       .text(
         model.period,
-        PAGE_MARGIN_X + CONTENT_WIDTH - periodWidth,
+        contentX + contentWidth - periodWidth,
         state.cursor,
         {
           width: periodWidth,
@@ -737,9 +973,9 @@ function drawExperienceBlock(
       doc.y,
       state.cursor +
         Math.max(
-          measureText(doc, 'resumeSans', 9.7, model.organization, bodyWidth, 2),
+          measureText(doc, 'resumeSans', 10.1, model.organization, bodyWidth, 2),
           model.period
-            ? measureText(doc, 'resumeSans', 9.5, model.period, periodWidth, 2)
+            ? measureText(doc, 'resumeSans', 9.4, model.period, periodWidth, 2)
             : 0,
           12,
         ),
@@ -748,10 +984,10 @@ function drawExperienceBlock(
   if (model.relatedProjects) {
     doc
       .font('resumeSans')
-      .fontSize(9.2)
-      .fillColor(COLORS.muted)
-      .text(model.relatedProjects, PAGE_MARGIN_X, state.cursor, {
-        width: CONTENT_WIDTH,
+      .fontSize(9.1)
+      .fillColor(model.themeColor)
+      .text(model.relatedProjects, contentX, state.cursor, {
+        width: contentWidth,
         lineGap: 2,
       });
     state.cursor = doc.y + 5;
@@ -761,16 +997,17 @@ function drawExperienceBlock(
     state.cursor =
       drawBulletLine(
         doc,
-        PAGE_MARGIN_X,
+        contentX,
         state.cursor,
-        CONTENT_WIDTH,
+        contentWidth,
         bullet,
-        10,
+        10.1,
+        model.themeColor,
       ) + 7;
   }
 
-  drawRule(doc, state.cursor);
-  state.cursor += 10;
+  drawRule(doc, state.cursor + 1, contentX, contentWidth);
+  state.cursor += 12;
 }
 
 function drawExperienceSection(
@@ -877,22 +1114,22 @@ function measureProjectBlock(
   doc: PDFKit.PDFDocument,
   model: ProjectModel,
 ): number {
-  let height = 0;
+  let height = 8;
 
-  height += measureText(doc, 'resumeSans', 12, model.title, CONTENT_WIDTH, 2) + 4;
+  height += measureText(doc, 'resumeSans', 12.8, model.title, CONTENT_WIDTH, 2) + 4;
 
   if (model.meta) {
-    height += measureText(doc, 'resumeSans', 9.4, model.meta, CONTENT_WIDTH, 2) + 6;
+    height += measureText(doc, 'resumeSans', 9.2, model.meta, CONTENT_WIDTH, 2) + 6;
   }
 
   if (model.summary) {
     height +=
-      measureText(doc, 'resumeSans', 10, model.summary, CONTENT_WIDTH, 3) + 6;
+      measureText(doc, 'resumeSans', 10.1, model.summary, CONTENT_WIDTH, 3) + 6;
   }
 
   for (const bullet of model.bullets) {
     height +=
-      measureText(doc, 'resumeSans', 9.8, bullet, CONTENT_WIDTH - 12, 3) + 7;
+      measureText(doc, 'resumeSans', 9.8, bullet, CONTENT_WIDTH - 13, 3) + 7;
   }
 
   if (model.stack) {
@@ -915,12 +1152,23 @@ function drawProjectBlock(
   state: LayoutState,
   model: ProjectModel,
 ): void {
+  const blockTop = state.cursor;
+
+  doc
+    .save()
+    .lineWidth(1.1)
+    .strokeColor(COLORS.accentLine)
+    .moveTo(PAGE_MARGIN_X + 4, blockTop + 2)
+    .lineTo(PAGE_MARGIN_X + 4, blockTop + 18)
+    .stroke()
+    .restore();
+
   doc
     .font('resumeSans')
-    .fontSize(12)
+    .fontSize(12.8)
     .fillColor(COLORS.ink)
-    .text(model.title, PAGE_MARGIN_X, state.cursor, {
-      width: CONTENT_WIDTH,
+    .text(model.title, PAGE_MARGIN_X + 14, state.cursor, {
+      width: CONTENT_WIDTH - 14,
       lineGap: 2,
     });
 
@@ -929,9 +1177,9 @@ function drawProjectBlock(
   if (model.meta) {
     doc
       .font('resumeSans')
-      .fontSize(9.4)
+      .fontSize(9.2)
       .fillColor(COLORS.muted)
-      .text(model.meta, PAGE_MARGIN_X, state.cursor, {
+      .text(model.meta, PAGE_MARGIN_X + 14, state.cursor, {
         width: CONTENT_WIDTH,
         lineGap: 2,
       });
@@ -941,10 +1189,10 @@ function drawProjectBlock(
   if (model.summary) {
     doc
       .font('resumeSans')
-      .fontSize(10)
+      .fontSize(10.1)
       .fillColor(COLORS.body)
-      .text(model.summary, PAGE_MARGIN_X, state.cursor, {
-        width: CONTENT_WIDTH,
+      .text(model.summary, PAGE_MARGIN_X + 14, state.cursor, {
+        width: CONTENT_WIDTH - 14,
         lineGap: 3,
       });
     state.cursor = doc.y + 5;
@@ -954,11 +1202,12 @@ function drawProjectBlock(
     state.cursor =
       drawBulletLine(
         doc,
-        PAGE_MARGIN_X,
+        PAGE_MARGIN_X + 14,
         state.cursor,
-        CONTENT_WIDTH,
+        CONTENT_WIDTH - 14,
         bullet,
         9.8,
+        COLORS.accent,
       ) + 7;
   }
 
@@ -967,14 +1216,14 @@ function drawProjectBlock(
       .font('resumeSans')
       .fontSize(9)
       .fillColor(COLORS.muted)
-      .text(`기술 스택: ${model.stack}`, PAGE_MARGIN_X, state.cursor, {
-        width: CONTENT_WIDTH,
+      .text(`기술 스택: ${model.stack}`, PAGE_MARGIN_X + 14, state.cursor, {
+        width: CONTENT_WIDTH - 14,
         lineGap: 2,
       });
     state.cursor = doc.y + 6;
   }
 
-  drawRule(doc, state.cursor);
+  drawRule(doc, state.cursor + 1, PAGE_MARGIN_X + 14, CONTENT_WIDTH - 14);
   state.cursor += 10;
 }
 
@@ -1034,8 +1283,8 @@ function drawResumeContent(
   };
 
   drawHeader(doc, snapshot, photoBuffer, state);
+  drawMetricsRow(doc, snapshot, state);
   drawSummarySection(doc, snapshot, state);
-  drawSkillsSection(doc, snapshot.featuredSkills, state);
 
   const careerExperiences = snapshot.selectedExperiences.filter(
     (experience) => experience.type === 'career',

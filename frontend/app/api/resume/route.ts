@@ -9,7 +9,7 @@ export async function GET() {
     const snapshot = await buildResumeSnapshot();
     const pdf = await renderResumePdf(snapshot);
 
-    return new Response(pdf, {
+    return new Response(new Uint8Array(pdf), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
