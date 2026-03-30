@@ -82,6 +82,7 @@ export default async function PortfolioPage() {
   const aboutParagraphs = [profile.about, profile.description].filter(
     (value, index, array) => Boolean(value) && array.indexOf(value) === index,
   );
+  const [featuredBlogPost, ...recentBlogPosts] = featuredPosts;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-slate-50 via-white to-brand-blue-50 text-neutral-slate-900">
@@ -491,8 +492,26 @@ export default async function PortfolioPage() {
 
           {featuredPosts.length > 0 ? (
             <>
-              <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {featuredPosts.map((post) => (
+              <div className="mt-12">
+                {featuredBlogPost ? (
+                  <BlogCard
+                    key={featuredBlogPost.id}
+                    title={featuredBlogPost.title}
+                    excerpt={
+                      featuredBlogPost.excerpt ||
+                      `${featuredBlogPost.category} 주제에서 해결 과정을 정리한 글입니다.`
+                    }
+                    date={formatPostDate(featuredBlogPost.publishDate)}
+                    readTime={`${featuredBlogPost.readTime}분`}
+                    tags={featuredBlogPost.tags || [featuredBlogPost.category]}
+                    image={featuredBlogPost.image}
+                    slug={featuredBlogPost.slug || String(featuredBlogPost.id)}
+                    eyebrow={featuredBlogPost.category}
+                    variant="featured"
+                    trackingLocation="home_blog_featured"
+                  />
+                ) : null}
+                {recentBlogPosts.map((post) => (
                   <BlogCard
                     key={post.id}
                     title={post.title}
@@ -504,7 +523,8 @@ export default async function PortfolioPage() {
                     tags={post.tags || [post.category]}
                     image={post.image}
                     slug={post.slug || String(post.id)}
-                    trackingLocation="home_blog_card"
+                    eyebrow={post.category}
+                    trackingLocation="home_blog_row"
                   />
                 ))}
               </div>
