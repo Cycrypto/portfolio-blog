@@ -2,10 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
@@ -263,6 +270,11 @@ export default function EditProject() {
   const filteredPosts = adminPosts
     .filter((post) => post.title.toLowerCase().includes(postSearch.toLowerCase()))
     .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
+  const titleError =
+    !title.trim() && error === "프로젝트명을 입력하세요."
+      ? error
+      : undefined
+  const formError = error && error !== titleError ? error : null
 
   return (
     <AdminShell
@@ -289,44 +301,48 @@ export default function EditProject() {
                   <CardTitle>기본 정보</CardTitle>
                   <CardDescription>프로젝트명과 짧은 맥락만 먼저 정리하세요</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="title">프로젝트명</Label>
-                    <Input
-                      id="title"
-                      placeholder="프로젝트 이름을 입력하세요"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      className="text-lg"
-                    />
-                    {slugPreview ? (
-                      <p className="mt-2 text-xs text-neutral-slate-500">
-                        공개 URL: <code>{`/projects/${slugPreview}`}</code>
-                      </p>
-                    ) : null}
-                  </div>
+                <CardContent>
+                  <FieldGroup>
+                    <Field invalid={Boolean(titleError)}>
+                      <FieldLabel htmlFor="title">프로젝트명</FieldLabel>
+                      <Input
+                        id="title"
+                        placeholder="프로젝트 이름을 입력하세요"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="text-lg"
+                        aria-invalid={Boolean(titleError)}
+                      />
+                      {slugPreview ? (
+                        <FieldDescription>
+                          공개 URL: <code>{`/projects/${slugPreview}`}</code>
+                        </FieldDescription>
+                      ) : null}
+                      <FieldError>{titleError}</FieldError>
+                    </Field>
 
-                  <div>
-                    <Label htmlFor="description">짧은 소개 (선택)</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="비워두면 연결된 글 제목이 프로젝트 맥락을 대신합니다"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
+                    <Field>
+                      <FieldLabel htmlFor="description">짧은 소개 (선택)</FieldLabel>
+                      <Textarea
+                        id="description"
+                        placeholder="비워두면 연결된 글 제목이 프로젝트 맥락을 대신합니다"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        rows={3}
+                      />
+                    </Field>
 
-                  <div>
-                    <Label htmlFor="long-description">추가 메모 (선택)</Label>
-                    <Textarea
-                      id="long-description"
-                      placeholder="상세 설명을 길게 적지 않아도 됩니다. 필요할 때만 보조 메모를 남기세요"
-                      value={longDescription}
-                      onChange={(e) => setLongDescription(e.target.value)}
-                      rows={4}
-                    />
-                  </div>
+                    <Field>
+                      <FieldLabel htmlFor="long-description">추가 메모 (선택)</FieldLabel>
+                      <Textarea
+                        id="long-description"
+                        placeholder="상세 설명을 길게 적지 않아도 됩니다. 필요할 때만 보조 메모를 남기세요"
+                        value={longDescription}
+                        onChange={(e) => setLongDescription(e.target.value)}
+                        rows={4}
+                      />
+                    </Field>
+                  </FieldGroup>
                 </CardContent>
               </Card>
 
@@ -335,74 +351,83 @@ export default function EditProject() {
                   <CardTitle>케이스 스터디</CardTitle>
                   <CardDescription>랜딩, 상세 페이지, 이력서 PDF에서 재사용됩니다</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="role">내 역할</Label>
-                    <Textarea
-                      id="role"
-                      placeholder="예: 백엔드 설계 및 인증/배포 전담"
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="problem">문제 정의</Label>
-                    <Textarea
-                      id="problem"
-                      placeholder="어떤 문제를 해결하려는 프로젝트였는지 적어주세요"
-                      value={problem}
-                      onChange={(e) => setProblem(e.target.value)}
-                      rows={4}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="approach">접근 방식</Label>
-                    <Textarea
-                      id="approach"
-                      placeholder="설계 판단, 핵심 구현, 기술 선택 이유를 정리하세요"
-                      value={approach}
-                      onChange={(e) => setApproach(e.target.value)}
-                      rows={5}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="outcomes">결과 및 회고</Label>
-                    <Textarea
-                      id="outcomes"
-                      placeholder="결과, 개선 효과, 회고를 정리하세요"
-                      value={outcomes}
-                      onChange={(e) => setOutcomes(e.target.value)}
-                      rows={4}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>성과 지표</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="예: 응답 시간을 35% 단축"
-                        value={newMetric}
-                        onChange={(e) => setNewMetric(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault()
-                            addMetric()
-                          }
-                        }}
+                <CardContent>
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="role">내 역할</FieldLabel>
+                      <Textarea
+                        id="role"
+                        placeholder="예: 백엔드 설계 및 인증/배포 전담"
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        rows={3}
                       />
-                      <Button onClick={addMetric} size="sm">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {impactMetrics.map((metric) => (
-                        <Badge key={metric} variant="secondary" className="flex items-center gap-1">
-                          {metric}
-                          <X className="w-3 h-3 cursor-pointer" onClick={() => removeMetric(metric)} />
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="problem">문제 정의</FieldLabel>
+                      <Textarea
+                        id="problem"
+                        placeholder="어떤 문제를 해결하려는 프로젝트였는지 적어주세요"
+                        value={problem}
+                        onChange={(e) => setProblem(e.target.value)}
+                        rows={4}
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="approach">접근 방식</FieldLabel>
+                      <Textarea
+                        id="approach"
+                        placeholder="설계 판단, 핵심 구현, 기술 선택 이유를 정리하세요"
+                        value={approach}
+                        onChange={(e) => setApproach(e.target.value)}
+                        rows={5}
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="outcomes">결과 및 회고</FieldLabel>
+                      <Textarea
+                        id="outcomes"
+                        placeholder="결과, 개선 효과, 회고를 정리하세요"
+                        value={outcomes}
+                        onChange={(e) => setOutcomes(e.target.value)}
+                        rows={4}
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel>성과 지표</FieldLabel>
+                      <FieldDescription>
+                        정량 지표나 개선 결과를 한 줄씩 추가하세요.
+                      </FieldDescription>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="예: 응답 시간을 35% 단축"
+                          value={newMetric}
+                          onChange={(e) => setNewMetric(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault()
+                              addMetric()
+                            }
+                          }}
+                        />
+                        <Button onClick={addMetric} size="sm">
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {impactMetrics.map((metric) => (
+                          <Badge key={metric} variant="secondary" className="flex items-center gap-1">
+                            {metric}
+                            <X className="w-3 h-3 cursor-pointer" onClick={() => removeMetric(metric)} />
+                          </Badge>
+                        ))}
+                      </div>
+                    </Field>
+                  </FieldGroup>
                 </CardContent>
               </Card>
 
@@ -411,59 +436,66 @@ export default function EditProject() {
                   <CardTitle>이력서용 내용</CardTitle>
                   <CardDescription>PDF 이력서에 보여줄 요약 내용을 편집합니다</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="resume-title">이력서용 프로젝트 제목</Label>
-                    <Input
-                      id="resume-title"
-                      placeholder="기본 프로젝트명을 그대로 쓰려면 비워두세요"
-                      value={resumeTitle}
-                      onChange={(e) => setResumeTitle(e.target.value)}
-                    />
-                    <CharacterCount value={resumeTitle} />
-                  </div>
-                  <div>
-                    <Label htmlFor="resume-summary">이력서용 요약</Label>
-                    <Textarea
-                      id="resume-summary"
-                      placeholder="이 프로젝트를 이력서에서 어떻게 소개할지 작성하세요"
-                      rows={4}
-                      value={resumeSummary}
-                      onChange={(e) => setResumeSummary(e.target.value)}
-                    />
-                    <CharacterCount value={resumeSummary} />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>이력서 하이라이트</Label>
-                      <ResumePreviewButton className="h-8" />
-                    </div>
-                    <div className="flex gap-2">
+                <CardContent>
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="resume-title">이력서용 프로젝트 제목</FieldLabel>
                       <Input
-                        placeholder="예: 결제 실패율 22% 감소"
-                        value={newResumeHighlight}
-                        onChange={(e) => setNewResumeHighlight(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault()
-                            addResumeHighlight()
-                          }
-                        }}
+                        id="resume-title"
+                        placeholder="기본 프로젝트명을 그대로 쓰려면 비워두세요"
+                        value={resumeTitle}
+                        onChange={(e) => setResumeTitle(e.target.value)}
                       />
-                      <Button onClick={addResumeHighlight} size="sm">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <CharacterCount value={newResumeHighlight} helper="입력 중 bullet" />
-                    <div className="flex flex-wrap gap-2">
-                      {resumeHighlights.map((highlight) => (
-                        <Badge key={highlight} variant="secondary" className="flex items-center gap-1">
-                          {highlight}
-                          <X className="w-3 h-3 cursor-pointer" onClick={() => removeResumeHighlight(highlight)} />
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+                      <CharacterCount value={resumeTitle} />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="resume-summary">이력서용 요약</FieldLabel>
+                      <Textarea
+                        id="resume-summary"
+                        placeholder="이 프로젝트를 이력서에서 어떻게 소개할지 작성하세요"
+                        rows={4}
+                        value={resumeSummary}
+                        onChange={(e) => setResumeSummary(e.target.value)}
+                      />
+                      <CharacterCount value={resumeSummary} />
+                    </Field>
+
+                    <Field>
+                      <div className="flex items-center justify-between gap-3">
+                        <FieldLabel>이력서 하이라이트</FieldLabel>
+                        <ResumePreviewButton className="h-8" />
+                      </div>
+                      <FieldDescription>
+                        짧은 bullet 형태로 핵심 성과를 정리합니다.
+                      </FieldDescription>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="예: 결제 실패율 22% 감소"
+                          value={newResumeHighlight}
+                          onChange={(e) => setNewResumeHighlight(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault()
+                              addResumeHighlight()
+                            }
+                          }}
+                        />
+                        <Button onClick={addResumeHighlight} size="sm">
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <CharacterCount value={newResumeHighlight} helper="입력 중 bullet" />
+                      <div className="flex flex-wrap gap-2">
+                        {resumeHighlights.map((highlight) => (
+                          <Badge key={highlight} variant="secondary" className="flex items-center gap-1">
+                            {highlight}
+                            <X className="w-3 h-3 cursor-pointer" onClick={() => removeResumeHighlight(highlight)} />
+                          </Badge>
+                        ))}
+                      </div>
+                    </Field>
+                  </FieldGroup>
                 </CardContent>
               </Card>
 
@@ -674,93 +706,102 @@ export default function EditProject() {
                 <CardHeader>
                   <CardTitle>프로젝트 상태</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="status">상태</Label>
-                    <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="planned">계획</SelectItem>
-                        <SelectItem value="in-progress">진행중</SelectItem>
-                        <SelectItem value="active">활성</SelectItem>
-                        <SelectItem value="completed">완료</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <CardContent>
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="status">상태</FieldLabel>
+                      <Select value={status} onValueChange={setStatus}>
+                        <SelectTrigger id="status">
+                          <SelectValue placeholder="상태 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="planned">계획</SelectItem>
+                          <SelectItem value="in-progress">진행중</SelectItem>
+                          <SelectItem value="active">활성</SelectItem>
+                          <SelectItem value="completed">완료</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
 
-                  <div>
-                    <Label htmlFor="category">카테고리</Label>
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="카테고리 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="web">웹 애플리케이션</SelectItem>
-                        <SelectItem value="mobile">모바일 앱</SelectItem>
-                        <SelectItem value="desktop">데스크톱 앱</SelectItem>
-                        <SelectItem value="ai">AI/ML</SelectItem>
-                        <SelectItem value="blockchain">블록체인</SelectItem>
-                        <SelectItem value="game">게임</SelectItem>
-                        <SelectItem value="tool">도구/유틸리티</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <Field>
+                      <FieldLabel htmlFor="category">카테고리</FieldLabel>
+                      <Select value={category} onValueChange={setCategory}>
+                        <SelectTrigger id="category">
+                          <SelectValue placeholder="카테고리 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="web">웹 애플리케이션</SelectItem>
+                          <SelectItem value="mobile">모바일 앱</SelectItem>
+                          <SelectItem value="desktop">데스크톱 앱</SelectItem>
+                          <SelectItem value="ai">AI/ML</SelectItem>
+                          <SelectItem value="blockchain">블록체인</SelectItem>
+                          <SelectItem value="game">게임</SelectItem>
+                          <SelectItem value="tool">도구/유틸리티</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
 
-                  <div>
-                    <Label htmlFor="experience">연결 경험</Label>
-                    <Select value={experienceId} onValueChange={setExperienceId}>
-                      <SelectTrigger id="experience">
-                        <SelectValue placeholder={isLoadingExperiences ? "경험 불러오는 중..." : "경험 선택"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">연결 안 함</SelectItem>
-                        {experiences.map((experience) => (
-                          <SelectItem key={experience.id} value={String(experience.id)}>
-                            {experience.title} · {experience.organization} · {formatExperiencePeriod(experience.startDate, experience.endDate)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-2 text-xs text-neutral-slate-500">프로젝트는 하나의 경험에만 연결됩니다.</p>
-                  </div>
+                    <Field>
+                      <FieldLabel htmlFor="experience">연결 경험</FieldLabel>
+                      <Select value={experienceId} onValueChange={setExperienceId}>
+                        <SelectTrigger id="experience">
+                          <SelectValue placeholder={isLoadingExperiences ? "경험 불러오는 중..." : "경험 선택"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">연결 안 함</SelectItem>
+                          {experiences.map((experience) => (
+                            <SelectItem key={experience.id} value={String(experience.id)}>
+                              {experience.title} · {experience.organization} · {formatExperiencePeriod(experience.startDate, experience.endDate)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>
+                        프로젝트는 하나의 경험에만 연결됩니다.
+                      </FieldDescription>
+                    </Field>
 
-                  <div>
-                    <Label>진행률: {progress[0]}%</Label>
-                    <Slider value={progress} onValueChange={setProgress} max={100} step={5} className="mt-2" />
-                  </div>
+                    <Field>
+                      <FieldLabel>진행률: {progress[0]}%</FieldLabel>
+                      <Slider value={progress} onValueChange={setProgress} max={100} step={5} />
+                    </Field>
 
-                  <div className="rounded-lg border border-brand-blue-100 bg-brand-blue-50/60 p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <Label htmlFor="featured-project">대표 프로젝트 노출</Label>
-                        <p className="mt-1 text-xs text-neutral-slate-500">랜딩과 이력서 PDF에 우선 사용됩니다</p>
+                    <Field className="rounded-lg border border-brand-blue-100 bg-brand-blue-50/60 p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex flex-col gap-1">
+                          <FieldLabel htmlFor="featured-project">대표 프로젝트 노출</FieldLabel>
+                          <FieldDescription className="text-xs">
+                            랜딩과 이력서 PDF에 우선 사용됩니다
+                          </FieldDescription>
+                        </div>
+                        <Switch id="featured-project" checked={isFeatured} onCheckedChange={setIsFeatured} />
                       </div>
-                      <Switch id="featured-project" checked={isFeatured} onCheckedChange={setIsFeatured} />
-                    </div>
-                    <div className="mt-4">
-                      <Label htmlFor="featured-order">대표 노출 순서</Label>
-                      <Input
-                        id="featured-order"
-                        type="number"
-                        min={0}
-                        value={featuredOrder}
-                        onChange={(e) => setFeaturedOrder(Number(e.target.value) || 0)}
-                        disabled={!isFeatured}
-                        className="mt-2"
-                      />
-                    </div>
-                  </div>
+                      <Field disabled={!isFeatured}>
+                        <FieldLabel htmlFor="featured-order">대표 노출 순서</FieldLabel>
+                        <Input
+                          id="featured-order"
+                          type="number"
+                          min={0}
+                          value={featuredOrder}
+                          onChange={(e) => setFeaturedOrder(Number(e.target.value) || 0)}
+                          disabled={!isFeatured}
+                        />
+                      </Field>
+                    </Field>
 
-                  <Separator />
+                    <Separator />
 
-                  {error && <div className="text-sm text-destructive">{error}</div>}
+                    {formError ? (
+                      <Alert variant="destructive">
+                        <AlertDescription>{formError}</AlertDescription>
+                      </Alert>
+                    ) : null}
 
-                  <Button onClick={handleSave} className="w-full" disabled={isSaving}>
-                    <Save className="w-4 h-4 mr-2" />
-                    {isSaving ? '저장 중...' : '프로젝트 수정'}
-                  </Button>
+                    <Button onClick={handleSave} className="w-full" disabled={isSaving} aria-busy={isSaving}>
+                      <Save className="w-4 h-4 mr-2" />
+                      {isSaving ? '저장 중...' : '프로젝트 수정'}
+                    </Button>
+                  </FieldGroup>
                 </CardContent>
               </Card>
 
@@ -768,20 +809,23 @@ export default function EditProject() {
                 <CardHeader>
                   <CardTitle>프로젝트 기간</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="start-date">시작일</Label>
-                    <Input
-                      id="start-date"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="end-date">종료일</Label>
-                    <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                  </div>
+                <CardContent>
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="start-date">시작일</FieldLabel>
+                      <Input
+                        id="start-date"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="end-date">종료일</FieldLabel>
+                      <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                    </Field>
+                  </FieldGroup>
                 </CardContent>
               </Card>
 
@@ -789,33 +833,36 @@ export default function EditProject() {
                 <CardHeader>
                   <CardTitle>프로젝트 링크</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="github">GitHub</Label>
-                    <div className="relative">
-                      <Github className="w-5 h-5 text-neutral-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                      <Input
-                        id="github"
-                        className="pl-10"
-                        placeholder="https://github.com/..."
-                        value={githubUrl}
-                        onChange={(e) => setGithubUrl(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="live">라이브 링크</Label>
-                    <div className="relative">
-                      <LinkIcon className="w-5 h-5 text-neutral-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                      <Input
-                        id="live"
-                        className="pl-10"
-                        placeholder="https://example.com"
-                        value={liveUrl}
-                        onChange={(e) => setLiveUrl(e.target.value)}
-                      />
-                    </div>
-                  </div>
+                <CardContent>
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="github">GitHub</FieldLabel>
+                      <div className="relative">
+                        <Github className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-neutral-slate-500" />
+                        <Input
+                          id="github"
+                          className="pl-10"
+                          placeholder="https://github.com/..."
+                          value={githubUrl}
+                          onChange={(e) => setGithubUrl(e.target.value)}
+                        />
+                      </div>
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor="live">라이브 링크</FieldLabel>
+                      <div className="relative">
+                        <LinkIcon className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-neutral-slate-500" />
+                        <Input
+                          id="live"
+                          className="pl-10"
+                          placeholder="https://example.com"
+                          value={liveUrl}
+                          onChange={(e) => setLiveUrl(e.target.value)}
+                        />
+                      </div>
+                    </Field>
+                  </FieldGroup>
                 </CardContent>
               </Card>
             </div>
