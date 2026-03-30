@@ -16,7 +16,6 @@ import { GlassmorphicCard } from '@/components/common/glassmorphic-card';
 import { ContactForm } from '@/components/common/contact-form';
 import { FloatingNav } from '@/components/common/layout/floating-nav';
 import { SectionHeading } from '@/components/common/section-heading';
-import { SkillBadge } from '@/components/common/skill-badge';
 import { Timeline } from '@/components/home/timeline';
 import { ProjectList } from '@/components/project/project-list';
 import { Button } from '@/components/ui/button';
@@ -27,14 +26,14 @@ import { normalizeImageUrl } from '@/lib/utils/image';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: '박준하 | 백엔드 포트폴리오',
+  title: '박준하 | 포트폴리오',
   description:
     '문제를 구조화하고 안정적인 백엔드 시스템을 설계하는 개발자 박준하의 포트폴리오와 기술 기록입니다.',
   alternates: {
     canonical: absoluteUrl('/'),
   },
   openGraph: {
-    title: '박준하 | 백엔드 포트폴리오',
+    title: '박준하 | 포트폴리오',
     description:
       '대표 프로젝트, 기술 기록, 경험과 함께 보는 채용형 포트폴리오입니다.',
     url: absoluteUrl('/'),
@@ -44,7 +43,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: '박준하 | 백엔드 포트폴리오',
+    title: '박준하 | 포트폴리오',
     description:
       '대표 프로젝트, 기술 기록, 경험과 함께 보는 채용형 포트폴리오입니다.',
   },
@@ -66,7 +65,6 @@ export default async function PortfolioPage() {
     featuredProjects,
     experiences,
     careerDurationLabel,
-    metrics,
     availableForWork,
   } = snapshot;
 
@@ -79,16 +77,13 @@ export default async function PortfolioPage() {
       ? heroDescriptionSource.length > 140
         ? `${heroDescriptionSource.slice(0, 140).trimEnd()}...`
         : heroDescriptionSource
-      : '대표 프로젝트와 기술 기록으로 문제 해결 과정과 구현 선택을 정리합니다.';
+      : '대표 프로젝트와 기술 글로 구현 방식과 판단 근거를 보여드립니다.';
   const normalizedProfileImage = normalizeImageUrl(profile.profileImage);
   const heroSkills = (profile.skills || []).slice(0, 3);
-  const visibleSkills = (profile.skills || []).slice(0, 8);
   const heroSkillSummary =
     heroSkills.length > 0
       ? heroSkills.map((skill) => skill.name).join(' · ')
       : '기술 스택 정리 중';
-  const supportPosts = featuredPosts.slice(0, 2);
-  const supportMetrics = metrics.slice(0, 3);
   const aboutParagraphs = [profile.about, profile.description].filter(
     (value, index, array) => Boolean(value) && array.indexOf(value) === index,
   );
@@ -148,18 +143,15 @@ export default async function PortfolioPage() {
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-slate-600">
-              <span>제출용 파일이 필요하면</span>
-              <a
-                href="/api/resume"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center font-medium text-brand-blue-700 transition-colors hover:text-brand-blue-900"
-              >
-                PDF 다운로드
-                <Download className="ml-1 h-4 w-4" />
-              </a>
-            </div>
+            <a
+              href="/api/resume"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center text-sm font-medium text-brand-blue-700 transition-colors hover:text-brand-blue-900"
+            >
+              PDF 이력서 다운로드
+              <Download className="ml-1 h-4 w-4" />
+            </a>
 
             <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-slate-600">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-blue-200/80 bg-white/90 px-3 py-1.5 shadow-sm shadow-brand-blue-100/30">
@@ -302,212 +294,67 @@ export default async function PortfolioPage() {
         </div>
       </section>
 
-      <section className="pb-10 md:pb-14">
+      <section id="about" className="pb-14 md:pb-16">
         <div className="container">
-          <div className="overflow-hidden rounded-[1.75rem] border border-brand-blue-200/70 bg-white/85 shadow-[0_20px_70px_-50px_rgba(33,52,72,0.45)] backdrop-blur">
-            <div className="grid gap-8 px-6 py-6 lg:grid-cols-[0.85fr_1fr_1fr] lg:px-8 lg:py-8">
-              <div>
+          <GlassmorphicCard className="p-0">
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)]">
+              <div className="px-6 py-6 md:px-8 md:py-8">
                 <p className="text-xs font-semibold tracking-[0.18em] text-brand-blue-600">
-                  QUICK FACTS
+                  ABOUT
                 </p>
-                <dl className="mt-4 space-y-4">
-                  {supportMetrics.map((metric) => (
-                    <div key={metric.label}>
-                      <dt className="text-sm text-neutral-slate-500">
-                        {metric.label}
-                      </dt>
-                      <dd className="mt-1 text-2xl font-semibold tracking-[-0.03em] text-neutral-slate-900">
-                        {metric.value}
-                      </dd>
-                      <p className="mt-1 text-sm text-neutral-slate-500">
-                        {metric.description}
-                      </p>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-
-              <div className="border-t border-brand-blue-100 pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold tracking-[0.18em] text-brand-blue-600">
-                      RECENT WRITING
+                <h2 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-neutral-slate-900 md:text-3xl">
+                  짧게 소개하면
+                </h2>
+                {(aboutParagraphs.length > 0 ? aboutParagraphs : ['소개를 정리 중입니다.']).map(
+                  (paragraph, index) => (
+                    <p
+                      key={`${paragraph}-${index}`}
+                      className={`max-w-3xl text-base leading-relaxed text-neutral-slate-700 md:text-lg ${index > 0 ? 'mt-4' : 'mt-5'}`}
+                    >
+                      {paragraph}
                     </p>
-                    <p className="mt-2 text-lg font-semibold text-neutral-slate-900">
-                      구현 기록과 문제 해결 메모
-                    </p>
-                  </div>
-                  <TrackedLink
-                    href="/blog"
-                    className="hidden text-sm font-medium text-brand-blue-700 transition-colors hover:text-brand-blue-800 sm:inline-flex"
-                    eventName="cta_click"
-                    eventPayload={{
-                      location: 'home_highlight_band',
-                      target: 'blog',
-                    }}
-                  >
-                    글 전체 보기
-                  </TrackedLink>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {supportPosts.length > 0 ? (
-                    supportPosts.map((post) => {
-                      const postIdentifier = post.slug || String(post.id);
-                      return (
-                        <TrackedLink
-                          key={post.id}
-                          href={`/blog/${postIdentifier}`}
-                          className="group flex items-start justify-between gap-4 border-b border-brand-blue-100/80 pb-3 last:border-b-0 last:pb-0"
-                          eventName="cta_click"
-                          eventPayload={{
-                            location: 'home_highlight_band_recent_post',
-                            target: 'blog',
-                            content_id: postIdentifier,
-                          }}
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-neutral-slate-900 transition-colors group-hover:text-brand-blue-700">
-                              {post.title}
-                            </p>
-                            <p className="mt-1 text-sm text-neutral-slate-500">
-                              {formatPostDate(post.publishDate)}
-                            </p>
-                          </div>
-                          <ArrowRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-blue-500 transition-transform duration-200 group-hover:translate-x-1" />
-                        </TrackedLink>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-neutral-slate-500">
-                      새 글을 준비 중입니다.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="border-t border-brand-blue-100 pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-                <p className="text-xs font-semibold tracking-[0.18em] text-brand-blue-600">
-                  STACK SNAPSHOT
-                </p>
-                <p className="mt-2 text-lg font-semibold text-neutral-slate-900">
-                  자주 사용하는 기술
-                </p>
-                {visibleSkills.length > 0 ? (
-                  <div className="mt-5 flex flex-wrap gap-2.5">
-                    {visibleSkills.map((skill) => (
-                      <SkillBadge
-                        key={skill.name}
-                        name={skill.name}
-                        level={skill.level}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-5 text-sm text-neutral-slate-500">
-                    기술 스택을 정리 중입니다.
-                  </p>
+                  ),
                 )}
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section id="about" className="section-spacing">
-        <div className="container">
-          <SectionHeading title="소개" subtitle="핵심 정보만 빠르게" />
-
-          <div className="mt-14 grid grid-cols-1 items-start gap-10 lg:grid-cols-2">
-            <div className="surface-default relative aspect-square overflow-hidden">
-              {normalizedProfileImage ? (
-                <Image
-                  src={normalizedProfileImage}
-                  alt={profile.name}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-brand-blue-50 text-center">
+              <div className="border-t border-brand-blue-100 px-6 py-6 md:px-8 md:py-8 lg:border-l lg:border-t-0">
+                <dl className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-1">
                   <div>
-                    <p className="text-lg font-semibold text-brand-blue-700">
-                      {profile.name}
-                    </p>
-                    <p className="mt-1 text-sm text-brand-blue-600">
-                      프로필 이미지를 준비 중입니다.
-                    </p>
+                    <dt className="text-sm text-neutral-slate-500">실무 경력</dt>
+                    <dd className="mt-1 text-lg font-semibold text-neutral-slate-900">
+                      {careerDurationLabel || '정리 중'}
+                    </dd>
                   </div>
-                </div>
-              )}
-            </div>
-
-            <GlassmorphicCard>
-              {(aboutParagraphs.length > 0
-                ? aboutParagraphs
-                : ['소개를 정리 중입니다.']
-              ).map((paragraph, index) => (
-                <p
-                  key={`${paragraph}-${index}`}
-                  className={`text-lg text-neutral-slate-700 ${index > 0 ? 'mt-4' : ''}`}
-                >
-                  {paragraph}
-                </p>
-              ))}
-
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-neutral-slate-500">이름</div>
-                  <div className="font-medium">{profile.name}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-neutral-slate-500">이메일</div>
-                  <div className="break-all font-medium">
-                    {profile.email || '비공개'}
+                  <div>
+                    <dt className="text-sm text-neutral-slate-500">주요 기술</dt>
+                    <dd className="mt-1 text-sm font-medium leading-relaxed text-neutral-slate-800">
+                      {heroSkillSummary}
+                    </dd>
                   </div>
-                </div>
-                <div>
-                  <div className="text-sm text-neutral-slate-500">위치</div>
-                  <div className="font-medium">
-                    {profile.location || '미등록'}
+                  <div>
+                    <dt className="text-sm text-neutral-slate-500">이메일</dt>
+                    <dd className="mt-1 break-all text-sm font-medium text-neutral-slate-800">
+                      {profile.email || '비공개'}
+                    </dd>
                   </div>
-                </div>
-                <div>
-                  <div className="text-sm text-neutral-slate-500">상태</div>
-                  <div className="font-medium text-brand-blue-700">
-                    {profile.status || '확인 필요'}
+                  <div>
+                    <dt className="text-sm text-neutral-slate-500">상태</dt>
+                    <dd className="mt-1 text-sm font-medium text-brand-blue-700">
+                      {availableForWork ? '현재 협업 가능' : profile.status || '확인 필요'}
+                    </dd>
                   </div>
-                </div>
+                </dl>
               </div>
-            </GlassmorphicCard>
-          </div>
-
-          <div className="mt-12">
-            <h3 className="text-xl font-bold text-neutral-slate-800">
-              핵심 기술
-            </h3>
-            {visibleSkills.length > 0 ? (
-              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                {visibleSkills.map((skill) => (
-                  <SkillBadge
-                    key={skill.name}
-                    name={skill.name}
-                    level={skill.level}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="mt-3 text-neutral-slate-500">
-                기술 스택을 정리 중입니다.
-              </p>
-            )}
-          </div>
+          </GlassmorphicCard>
         </div>
       </section>
 
       <section id="experience" className="section-spacing">
         <div className="container">
-          <SectionHeading title="경험" subtitle="어떤 역할을 맡아왔는지" />
+          <SectionHeading
+            title="경험"
+            subtitle="주요 경험"
+          />
 
           <div className="mt-12">
             <Timeline initialExperiences={experiences} />
@@ -519,7 +366,7 @@ export default async function PortfolioPage() {
         <div className="container">
           <SectionHeading
             title="대표 프로젝트"
-            subtitle="프로젝트 제목과 연결된 기술 글로 보는 구현 기록"
+            subtitle="문제 정의, 구현, 결과"
           />
 
           {featuredProjects.length > 0 ? (
@@ -569,7 +416,7 @@ export default async function PortfolioPage() {
         <div className="container">
           <SectionHeading
             title="최신 글"
-            subtitle="문제 해결 과정과 구현 기록"
+            subtitle="구현 기록"
           />
 
           {featuredPosts.length > 0 ? (
@@ -648,7 +495,7 @@ export default async function PortfolioPage() {
 
       <section id="contact" className="section-spacing">
         <div className="container">
-          <SectionHeading title="연락하기" subtitle="협업 문의는 여기서" />
+          <SectionHeading title="연락하기" subtitle="간단히 연락" />
 
           <div className="mt-12 grid grid-cols-1 gap-8 lg:grid-cols-2">
             <GlassmorphicCard>
@@ -656,8 +503,8 @@ export default async function PortfolioPage() {
                 연락처
               </h3>
               <p className="mb-6 text-neutral-slate-600">
-                협업이나 채용 관련 문의를 남겨주시면 확인 후 답변드리겠습니다.
-                필요한 경우 이력서 PDF도 바로 내려받을 수 있습니다.
+                협업, 채용, 프로젝트 문의를 받습니다.
+                PDF 이력서도 바로 확인할 수 있습니다.
               </p>
 
               <div className="space-y-4">
@@ -719,8 +566,7 @@ export default async function PortfolioPage() {
                     }`}
                   />
                   <span className="text-sm text-neutral-slate-700">
-                    {profile.statusMessage ||
-                      '새로운 프로젝트와 협업 기회를 찾고 있습니다'}
+                    {profile.statusMessage || '새 프로젝트와 협업을 찾고 있습니다'}
                   </span>
                 </div>
               </div>

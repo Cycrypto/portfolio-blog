@@ -104,12 +104,12 @@ export function ContactForm() {
         location: "contact_section",
       })
       toast.success("문의가 접수되었습니다.", {
-        description: "내용을 확인한 뒤 답변드리겠습니다.",
+        description: "확인 후 답변드리겠습니다.",
       })
       form.reset()
     } catch (error) {
       console.error('Failed to submit contact form', error)
-      toast.error("문의 전송에 실패했습니다.", {
+      toast.error("전송하지 못했습니다.", {
         description: "잠시 후 다시 시도해주세요.",
       })
     } finally {
@@ -126,7 +126,7 @@ export function ContactForm() {
     >
       <div className="surface-elevated p-6">
         <div>
-          <h3 className="text-2xl font-bold mb-6 text-neutral-slate-800">문의 남기기</h3>
+          <h3 className="mb-6 text-2xl font-bold text-neutral-slate-800">메시지 보내기</h3>
 
           <form
             onSubmit={handleSubmit}
@@ -154,14 +154,14 @@ export function ContactForm() {
                   id="contact-email"
                   name="email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder="이메일"
                   required
                   disabled={isSubmitting}
                   aria-invalid={Boolean(errors.email)}
                   onChange={() => clearFieldError("email")}
                 />
                 <FieldDescription>
-                  회신을 받을 수 있는 주소를 남겨주세요.
+                  답변 받을 주소를 남겨주세요.
                 </FieldDescription>
                 <FieldError>{errors.email}</FieldError>
               </Field>
@@ -171,7 +171,7 @@ export function ContactForm() {
                 <Input
                   id="contact-subject"
                   name="subject"
-                  placeholder="예: 프로젝트 협업 문의"
+                  placeholder="제목"
                   required
                   disabled={isSubmitting}
                   aria-invalid={Boolean(errors.subject)}
@@ -185,7 +185,7 @@ export function ContactForm() {
                 <Textarea
                   id="contact-message"
                   name="message"
-                  placeholder="문의 내용을 적어주세요"
+                  placeholder="간단히 남겨주세요"
                   rows={5}
                   required
                   disabled={isSubmitting}
@@ -193,12 +193,11 @@ export function ContactForm() {
                   onChange={() => clearFieldError("message")}
                 />
                 <FieldDescription>
-                  프로젝트 맥락이나 원하는 협업 방식이 있으면 함께 적어주세요.
+                  필요한 배경이나 협업 방식이 있으면 함께 적어주세요.
                 </FieldDescription>
                 <FieldError>{errors.message}</FieldError>
               </Field>
             </FieldGroup>
-
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-brand-blue-500 to-brand-blue-700 hover:from-brand-blue-600 hover:to-brand-blue-900 border-0"
@@ -209,7 +208,7 @@ export function ContactForm() {
                 <>전송 중...</>
               ) : (
                 <>
-                  문의 보내기 <Send className="ml-2 h-4 w-4" />
+                  메시지 보내기 <Send className="ml-2 h-4 w-4" />
                 </>
               )}
             </Button>
