@@ -113,11 +113,11 @@ export default async function PortfolioPage() {
             <div className="flex flex-wrap gap-3 pt-2">
               <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
                 <TrackedLink
-                  href="/api/resume"
+                  href="/resume"
                   eventName="cta_click"
-                  eventPayload={{ location: 'home_hero', target: 'resume' }}
+                  eventPayload={{ location: 'home_hero', target: 'resume_view' }}
                 >
-                  이력서 다운로드 <Download className="ml-2 h-4 w-4" />
+                  이력서 보기 <ArrowRight className="ml-2 h-4 w-4" />
                 </TrackedLink>
               </Button>
               <Button
@@ -133,6 +133,19 @@ export default async function PortfolioPage() {
                   문의 남기기
                 </TrackedLink>
               </Button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-slate-600">
+              <span>제출용 파일이 필요하면</span>
+              <a
+                href="/api/resume"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center font-medium text-brand-blue-700 transition-colors hover:text-brand-blue-900"
+              >
+                PDF 다운로드
+                <Download className="ml-1 h-4 w-4" />
+              </a>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-slate-600">
@@ -604,11 +617,11 @@ export default async function PortfolioPage() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button className="bg-brand-blue-600 text-white hover:bg-brand-blue-700" asChild>
                   <TrackedLink
-                    href="/api/resume"
+                    href="/resume"
                     eventName="cta_click"
-                    eventPayload={{ location: 'home_contact', target: 'resume' }}
+                    eventPayload={{ location: 'home_contact', target: 'resume_view' }}
                   >
-                    이력서 다운로드 <Download className="ml-2 h-4 w-4" />
+                    이력서 보기 <ArrowRight className="ml-2 h-4 w-4" />
                   </TrackedLink>
                 </Button>
                 <Button
@@ -624,6 +637,18 @@ export default async function PortfolioPage() {
                     대표 프로젝트 보기
                   </TrackedLink>
                 </Button>
+              </div>
+
+              <div className="mt-3">
+                <a
+                  href="/api/resume"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center text-sm font-medium text-brand-blue-700 transition-colors hover:text-brand-blue-900"
+                >
+                  PDF 다운로드
+                  <Download className="ml-1 h-4 w-4" />
+                </a>
               </div>
             </GlassmorphicCard>
 
