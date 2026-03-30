@@ -26,6 +26,7 @@ import {
 } from "@/lib/experience/utils"
 import { normalizeResumeStringArray } from "@/lib/portfolio/resume-content"
 import { RESUME_MAX_EXPERIENCE_HIGHLIGHTS } from "@/lib/resume/constants"
+import { dispatchResumePreviewRefresh } from "@/lib/resume/preview-events"
 import { CreateExperienceRequest, Experience, ExperienceType, Project } from "@/lib/types/api"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
@@ -128,6 +129,7 @@ export default function AdminExperience() {
       }
       resetForm()
       await Promise.all([load(), loadProjects()])
+      dispatchResumePreviewRefresh()
     } catch {
       toast({ title: "저장 실패", description: "경험 저장 중 오류가 발생했습니다.", variant: "destructive" })
     } finally {

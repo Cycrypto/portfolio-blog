@@ -23,6 +23,7 @@ import { ResumePreviewButton } from "@/components/admin/ResumePreviewButton"
 import { normalizeImageUrl } from "@/lib/utils/image"
 import { generateSlug } from "@/lib/utils/slug"
 import { formatExperiencePeriod } from "@/lib/experience/utils"
+import { dispatchResumePreviewRefresh } from "@/lib/resume/preview-events"
 
 export default function EditProject() {
   const router = useRouter()
@@ -245,6 +246,7 @@ export default function EditProject() {
         images: images.map((image) => normalizeImageUrl(image)).filter((image): image is string => Boolean(image)),
         linkedPostIds,
       })
+      dispatchResumePreviewRefresh()
       router.push('/admin/projects')
     } catch (err) {
       setError('프로젝트 수정에 실패했습니다.')
