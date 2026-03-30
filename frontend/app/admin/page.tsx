@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Panel } from '@/components/ui/panel';
 import { getStats, StatsData } from '@/lib/api';
 import { Post, Project } from '@/lib/types/api';
 import { AdminShell } from '@/components/admin/AdminShell';
@@ -138,11 +139,7 @@ export default function AdminDashboard() {
                 Umami에서 프로젝트 관심, 글 몰입, 문의 전환 퍼널을 확인합니다.
               </CardDescription>
             </div>
-            <Button
-              asChild
-              variant="outline"
-              className="border-brand-blue-200 text-brand-blue-700"
-            >
+            <Button asChild variant="brand-outline">
               <Link href="/admin/analytics">
                 열기
                 <ArrowUpRight className="ml-2 h-4 w-4" />
@@ -152,7 +149,7 @@ export default function AdminDashboard() {
         </CardHeader>
         <CardContent className="pt-5">
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+            <Panel className="p-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-brand-blue-50 p-2">
                   <BarChart3 className="h-4 w-4 text-brand-blue-700" />
@@ -166,8 +163,8 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-            </div>
-            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+            </Panel>
+            <Panel className="p-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-brand-blue-50 p-2">
                   <Eye className="h-4 w-4 text-brand-blue-700" />
@@ -181,8 +178,8 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-            </div>
-            <div className="rounded-xl border border-brand-blue-100 bg-white p-4">
+            </Panel>
+            <Panel className="p-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-brand-blue-50 p-2">
                   <MessageSquare className="h-4 w-4 text-brand-blue-700" />
@@ -196,7 +193,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-            </div>
+            </Panel>
           </div>
         </CardContent>
       </Card>
@@ -211,11 +208,7 @@ export default function AdminDashboard() {
                 </CardTitle>
                 <CardDescription>최근에 작성된 포스트</CardDescription>
               </div>
-              <Button
-                asChild
-                size="sm"
-                className="bg-brand-blue-600 text-white hover:bg-brand-blue-700"
-              >
+              <Button asChild size="sm" variant="brand">
                 <Link href="/admin/posts/new">
                   <PlusCircle className="mr-2 h-4 w-4" />새 포스트
                 </Link>
@@ -274,11 +267,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
             )}
-            <Button
-              variant="outline"
-              className="mt-5 w-full border-brand-blue-200 text-brand-blue-700"
-              asChild
-            >
+            <Button variant="brand-outline" className="mt-5 w-full" asChild>
               <Link href="/admin/posts">
                 모든 포스트 보기
                 <ArrowUpRight className="ml-2 h-4 w-4" />
@@ -296,11 +285,7 @@ export default function AdminDashboard() {
                 </CardTitle>
                 <CardDescription>최근 등록된 프로젝트</CardDescription>
               </div>
-              <Button
-                asChild
-                size="sm"
-                className="bg-brand-blue-600 text-white hover:bg-brand-blue-700"
-              >
+              <Button asChild size="sm" variant="brand">
                 <Link href="/admin/projects/new">
                   <PlusCircle className="mr-2 h-4 w-4" />새 프로젝트
                 </Link>
@@ -352,11 +337,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
             )}
-            <Button
-              variant="outline"
-              className="mt-5 w-full border-brand-blue-200 text-brand-blue-700"
-              asChild
-            >
+            <Button variant="brand-outline" className="mt-5 w-full" asChild>
               <Link href="/admin/projects">
                 모든 프로젝트 보기
                 <ArrowUpRight className="ml-2 h-4 w-4" />
