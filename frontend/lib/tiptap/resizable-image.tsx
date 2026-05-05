@@ -2,12 +2,30 @@ import Image from '@tiptap/extension-image'
 import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import { NodeViewProps } from '@tiptap/core'
 import { useRef, useState, useEffect } from 'react'
+import { normalizeImageAlignment } from './image-alignment'
 
-function ResizableImageComponent({ node, updateAttributes }: NodeViewProps) {
+function parseImageAlignment(element: HTMLElement) {
+  return normalizeImageAlignment(element.getAttribute('data-align') || element.style.textAlign || null)
+}
+
+function renderImageAlignment(textAlign: unknown) {
+  const alignment = normalizeImageAlignment(textAlign)
+
+  if (alignment === 'left') {
+    return {}
+  }
+
+  return {
+    'data-align': alignment,
+  }
+}
+
+function ResizableImageComponent({ editor, getPos, node, selected, updateAttributes }: NodeViewProps) {
   const [isResizing, setIsResizing] = useState(false)
   const [aspectRatio, setAspectRatio] = useState(1)
   const imgRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const alignment = normalizeImageAlignment(node.attrs.textAlign)
 
   useEffect(() => {
     if (imgRef.current && imgRef.current.naturalWidth && imgRef.current.naturalHeight) {
@@ -66,11 +84,26 @@ function ResizableImageComponent({ node, updateAttributes }: NodeViewProps) {
     document.addEventListener('mouseup', handleMouseUp)
   }
 
+  const selectImage = () => {
+    const pos = getPos()
+
+    if (typeof pos !== 'number') {
+      return
+    }
+
+    editor.chain().focus().setNodeSelection(pos).run()
+  }
+
   return (
-    <NodeViewWrapper className="resizable-image-wrapper">
+    <NodeViewWrapper
+      className="resizable-image-wrapper"
+      data-align={alignment === 'left' ? undefined : alignment}
+      data-selected={selected ? 'true' : undefined}
+    >
       <div
         ref={containerRef}
         className={`relative inline-block ${isResizing ? 'resizing' : ''}`}
+        onClick={selectImage}
         style={{
           width: node.attrs.width ? `${node.attrs.width}px` : 'auto',
           maxWidth: '100%',
@@ -132,6 +165,11 @@ export const ResizableImage = Image.extend({
           }
           return { height: attributes.height }
         },
+      },
+      textAlign: {
+        default: null,
+        parseHTML: parseImageAlignment,
+        renderHTML: (attributes) => renderImageAlignment(attributes.textAlign),
       },
     }
   },

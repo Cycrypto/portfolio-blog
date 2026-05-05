@@ -13,7 +13,7 @@ jest.mock('isomorphic-dompurify', () => {
     };
 });
 
-import { sanitizeContentHtml } from './content-renderer';
+import { renderTiptapContent, sanitizeContentHtml } from './content-renderer';
 import { normalizeRenderedHtml, sanitizeStyleAttribute } from './rendered-html-normalizer';
 
 describe('rendered-html-normalizer', () => {
@@ -48,6 +48,30 @@ describe('rendered-html-normalizer', () => {
             expect(style).toContain('min-width: 180px');
             expect(style).toContain('height: 72px');
             expect(style).not.toContain('position: absolute');
+        });
+    });
+
+    describe('renderTiptapContent', () => {
+        it('renders centered image alignment from tiptap JSON', () => {
+            const rendered = renderTiptapContent({
+                type: 'doc',
+                content: [
+                    {
+                        type: 'image',
+                        attrs: {
+                            src: 'https://example.com/image.png',
+                            alt: 'centered image',
+                            textAlign: 'center',
+                            width: 320,
+                        },
+                    },
+                ],
+            });
+
+            expect(rendered.html).toContain('src="https://example.com/image.png"');
+            expect(rendered.html).toContain('alt="centered image"');
+            expect(rendered.html).toContain('width="320"');
+            expect(rendered.html).toContain('data-align="center"');
         });
     });
 

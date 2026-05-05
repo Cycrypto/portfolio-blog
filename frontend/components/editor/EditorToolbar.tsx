@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button"
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { EditorAction, EditorActionContext } from "@/lib/tiptap/editor-actions"
+import { isBlockAlignmentActive, setBlockAlignment } from "@/lib/tiptap/image-alignment"
 import { cn } from "@/lib/utils"
 
 interface EditorToolbarProps {
@@ -336,29 +337,29 @@ export function EditorToolbar({
           <div className="notion-toolbar-divider" />
 
           <ToolbarButton
-            active={editor.isActive({ textAlign: "left" })}
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
+            active={isBlockAlignmentActive(editor, "left")}
+            onClick={() => setBlockAlignment(editor, "left")}
             title="왼쪽 정렬"
           >
             <AlignLeft className="h-4 w-4" />
           </ToolbarButton>
           <ToolbarButton
-            active={editor.isActive({ textAlign: "center" })}
-            onClick={() => editor.chain().focus().setTextAlign("center").run()}
+            active={isBlockAlignmentActive(editor, "center")}
+            onClick={() => setBlockAlignment(editor, "center")}
             title="가운데 정렬"
           >
             <AlignCenter className="h-4 w-4" />
           </ToolbarButton>
           <ToolbarButton
-            active={editor.isActive({ textAlign: "right" })}
-            onClick={() => editor.chain().focus().setTextAlign("right").run()}
+            active={isBlockAlignmentActive(editor, "right")}
+            onClick={() => setBlockAlignment(editor, "right")}
             title="오른쪽 정렬"
           >
             <AlignRight className="h-4 w-4" />
           </ToolbarButton>
           <ToolbarButton
-            active={editor.isActive({ textAlign: "justify" })}
-            onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+            active={isBlockAlignmentActive(editor, "justify")}
+            onClick={() => setBlockAlignment(editor, "justify")}
             title="양쪽 정렬"
           >
             <AlignJustify className="h-4 w-4" />

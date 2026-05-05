@@ -565,6 +565,18 @@
   @apply rounded-lg my-4;
 }
 
+.notion-content img[data-align='center'] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.notion-content img[data-align='right'] {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}
+
 /* Images without explicit width use max-width for responsiveness */
 .notion-content img:not([width]) {
   max-width: 100%;
@@ -677,6 +689,20 @@ textarea::placeholder {
 /* Resizable Image Styles */
 .resizable-image-wrapper {
   @apply my-4;
+}
+
+.resizable-image-wrapper[data-align='center'] {
+  text-align: center;
+}
+
+.resizable-image-wrapper[data-align='right'] {
+  text-align: right;
+}
+
+.resizable-image-wrapper[data-selected='true'] .relative {
+  outline: 2px solid rgb(var(--brand-blue-500));
+  outline-offset: 3px;
+  border-radius: 0.5rem;
 }
 
 .resizable-image-wrapper .relative:hover .resize-handle {
