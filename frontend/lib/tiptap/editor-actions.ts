@@ -27,6 +27,7 @@ import {
   duplicateTopLevelBlock,
   getTopLevelBlockFromSelection,
 } from "@/lib/tiptap/block-helpers"
+import { isBlockAlignmentActive, setBlockAlignment } from "@/lib/tiptap/image-alignment"
 
 export type InsertDialogMode = "image" | "link" | "math" | "youtube"
 export type EditorActionSurface =
@@ -240,9 +241,9 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     icon: AlignLeft,
     keywords: ["align", "left", "정렬", "왼쪽"],
     surfaces: ["slash", "palette", "block-actions", "mobile-overflow"],
-    isActive: (editor) => editor.isActive({ textAlign: "left" }),
+    isActive: (editor) => isBlockAlignmentActive(editor, "left"),
     run: ({ editor }) => {
-      editor.chain().focus().setTextAlign("left").run()
+      setBlockAlignment(editor, "left")
     },
   },
   {
@@ -253,9 +254,9 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     icon: AlignCenter,
     keywords: ["align", "center", "정렬", "가운데"],
     surfaces: ["slash", "palette", "block-actions", "mobile-overflow"],
-    isActive: (editor) => editor.isActive({ textAlign: "center" }),
+    isActive: (editor) => isBlockAlignmentActive(editor, "center"),
     run: ({ editor }) => {
-      editor.chain().focus().setTextAlign("center").run()
+      setBlockAlignment(editor, "center")
     },
   },
   {
@@ -266,9 +267,9 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     icon: AlignRight,
     keywords: ["align", "right", "정렬", "오른쪽"],
     surfaces: ["slash", "palette", "block-actions", "mobile-overflow"],
-    isActive: (editor) => editor.isActive({ textAlign: "right" }),
+    isActive: (editor) => isBlockAlignmentActive(editor, "right"),
     run: ({ editor }) => {
-      editor.chain().focus().setTextAlign("right").run()
+      setBlockAlignment(editor, "right")
     },
   },
   {
@@ -279,9 +280,9 @@ export const EDITOR_ACTIONS: EditorAction[] = [
     icon: AlignJustify,
     keywords: ["align", "justify", "정렬", "양쪽"],
     surfaces: ["slash", "palette", "block-actions", "mobile-overflow"],
-    isActive: (editor) => editor.isActive({ textAlign: "justify" }),
+    isActive: (editor) => isBlockAlignmentActive(editor, "justify"),
     run: ({ editor }) => {
-      editor.chain().focus().setTextAlign("justify").run()
+      setBlockAlignment(editor, "justify")
     },
   },
   {

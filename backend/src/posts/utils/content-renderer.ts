@@ -39,6 +39,26 @@ const ALLOWED_IFRAME_HOSTS = new Set([
     'www.youtube-nocookie.com',
 ]);
 
+function normalizeImageAlignment(value: unknown): 'left' | 'center' | 'right' {
+    return value === 'center' || value === 'right' ? value : 'left';
+}
+
+function parseImageAlignment(element: HTMLElement): 'left' | 'center' | 'right' {
+    return normalizeImageAlignment(element.getAttribute('data-align') || element.style.textAlign || null);
+}
+
+function renderImageAlignment(textAlign: unknown) {
+    const alignment = normalizeImageAlignment(textAlign);
+
+    if (alignment === 'left') {
+        return {};
+    }
+
+    return {
+        'data-align': alignment,
+    };
+}
+
 purify.addHook('uponSanitizeAttribute', (node, data) => {
     const attrName = data.attrName;
     const rawAttrValue = String(data.attrValue || '').trim();
@@ -145,6 +165,11 @@ const viewerExtensions = [
                         }
                         return { height: attributes.height };
                     },
+                },
+                textAlign: {
+                    default: null,
+                    parseHTML: parseImageAlignment,
+                    renderHTML: (attributes) => renderImageAlignment(attributes.textAlign),
                 },
             };
         },
