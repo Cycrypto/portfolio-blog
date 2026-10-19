@@ -18,7 +18,8 @@
   --color-danger-soft: var(--ds-danger-soft);
   --color-code: var(--ds-code-bg);
   --color-code-text: var(--ds-code-text);
-  --font-display: "Habibi", Georgia, serif;
+  /* Habibi has no Hangul; the Korean serif after it takes over for Korean text only. */
+  --font-display: "Habibi", "Nanum Myeongjo", Georgia, serif;
   --font-heading:
     "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", sans-serif;
   --font-sans:
