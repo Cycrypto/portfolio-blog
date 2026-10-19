@@ -11,3 +11,4 @@ playwright-report/
 *.tsbuildinfo
 .DS_Store
 .deployment-version
+next-env.d.ts
