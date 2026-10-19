@@ -1,0 +1,9 @@
+<footer class="site-footer shell">
+  <p>&copy; {{date format="YYYY"}} {{@site.title}}</p>
+  <nav class="footer-links" aria-label="외부 링크">
+    {{#if @custom.github_url}}
+      <a href="{{@custom.github_url}}" rel="me noopener">GitHub{{> "icons/arrow"}}</a>
+    {{/if}}
+    <a href="{{@site.url}}/rss/">RSS{{> "icons/arrow"}}</a>
+  </nav>
+</footer>

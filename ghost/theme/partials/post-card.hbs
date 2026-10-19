@@ -1,0 +1,18 @@
+<article class="post-card{{#if feature_image}} has-image{{/if}}">
+  <h2 class="post-card__title"><a class="post-card__link" href="{{url}}">{{title}}</a></h2>
+  {{#if excerpt}}
+    <p class="post-card__excerpt">{{excerpt}}</p>
+  {{/if}}
+  <p class="post-card__meta">
+    <time datetime="{{date published_at format="YYYY-MM-DD"}}">{{date published_at format="YYYY. MM. DD"}}</time>{{#unless hide_tag}}{{#primary_tag}} · {{name}}{{/primary_tag}}{{/unless}}
+  </p>
+  {{#if feature_image}}
+    <div class="post-card__thumb" aria-hidden="true">
+      <img
+        src="{{img_url feature_image size="s"}}"
+        srcset="{{img_url feature_image size="s"}} 320w, {{img_url feature_image size="m"}} 720w"
+        sizes="(max-width: 720px) 100px, 240px"
+        width="240" height="150" alt="" loading="lazy" decoding="async">
+    </div>
+  {{/if}}
+</article>

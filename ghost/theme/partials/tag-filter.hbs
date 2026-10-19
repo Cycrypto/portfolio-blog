@@ -1,0 +1,14 @@
+<nav class="tag-filter" aria-label="주제별 글">
+  <a class="tag-pill" href="{{@site.url}}/"{{#is "index"}} aria-current="page"{{/is}}>전체</a>
+  {{#if @site.secondary_navigation}}
+    {{navigation type="secondary"}}
+  {{else}}
+    {{#get "tags" limit="100" filter="visibility:public" include="count.posts" order="name asc"}}
+      {{#foreach tags}}
+        {{#if count.posts}}
+          <a class="tag-pill" href="{{url}}"{{#match slug ../../active}} aria-current="page"{{/match}}>{{name}}</a>
+        {{/if}}
+      {{/foreach}}
+    {{/get}}
+  {{/if}}
+</nav>

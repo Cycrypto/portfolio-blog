@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{statusCode}} · {{@site.title}}</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@600&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="{{asset "css/screen.css"}}">
+</head>
+<body class="error-template">
+  <header class="site-header shell">
+    <a class="site-brand" href="{{@site.url}}/">{{@site.title}}</a>
+  </header>
+  <main class="site-main">
+    <section class="error-page shell">
+      <p class="error-code">{{statusCode}}</p>
+      <h1 class="error-title">문제가 발생했습니다</h1>
+      <p class="error-text">잠시 후 다시 시도해 주세요.</p>
+      <div class="error-actions">
+        <a class="button button--primary" href="{{@site.url}}/">글 목록으로</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

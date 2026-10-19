@@ -1,0 +1,16 @@
+{{!< default}}
+<div class="shell">
+  <section class="list-heading list-heading--tag">
+    {{#tag}}
+      <h1 class="list-title">{{name}}</h1>
+    {{/tag}}
+    <p class="list-count">{{pagination.total}}개의 글</p>
+    {{> "tag-filter" active=tag.slug}}
+  </section>
+  <div class="post-feed">
+    {{#foreach posts}}
+      {{> "post-card" hide_tag=true}}
+    {{/foreach}}
+  </div>
+  {{pagination}}
+</div>

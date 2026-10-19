@@ -1,0 +1,10 @@
+<header class="site-header shell">
+  <a class="site-brand" href="{{@site.url}}/">{{@site.title}}</a>
+  <nav class="site-nav" aria-label="주요 메뉴">
+    <a class="site-nav__blog" href="{{@site.url}}/"{{#is "home"}} aria-current="page"{{/is}}>블로그</a>
+    {{#if @custom.cv_url}}
+      <a class="site-nav__cv" href="{{@custom.cv_url}}">CV{{> "icons/arrow"}}</a>
+    {{/if}}
+    <button class="icon-button" type="button" data-search-open aria-haspopup="dialog" aria-label="검색">{{> "icons/search"}}</button>
+  </nav>
+</header>

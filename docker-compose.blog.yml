@@ -1,0 +1,67 @@
+name: junha-blog
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  ghost:
+    image: junha-blog-ghost:${BLOG_VERSION:-local}
+    build:
+      context: ./ghost
+      args:
+        GHOST_IMAGE: ${GHOST_IMAGE:-ghost:6.71.0-alpine}
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      url: ${BLOG_URL:-https://blog.junha.space}
+      database__client: mysql
+      database__connection__host: mysql
+      database__connection__user: ghost
+      database__connection__password: ${GHOST_DB_PASSWORD:?Set GHOST_DB_PASSWORD}
+      database__connection__database: ghost
+      logging__transports: '["stdout"]'
+      security__staffDeviceVerification: ${GHOST_STAFF_DEVICE_VERIFICATION:-true}
+      mail__transport: SMTP
+      mail__from: ${GHOST_MAIL_FROM:-}
+      mail__options__host: ${GHOST_SMTP_HOST:-}
+      mail__options__port: ${GHOST_SMTP_PORT:-465}
+      mail__options__secure: ${GHOST_SMTP_SECURE:-true}
+      mail__options__auth__user: ${GHOST_SMTP_USER:-}
+      mail__options__auth__pass: ${GHOST_SMTP_PASSWORD:-}
+    ports:
+      - "127.0.0.1:${BLOG_PORT:-13001}:2368"
+    volumes:
+      - ghost-content:/var/lib/ghost/content
+    stop_grace_period: 30s
+    logging: *logging
+
+  mysql:
+    image: ${MYSQL_IMAGE:-mysql:8.0.44}
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ghost
+      MYSQL_USER: ghost
+      MYSQL_PASSWORD: ${GHOST_DB_PASSWORD:?Set GHOST_DB_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    stop_grace_period: 60s
+    logging: *logging
+
+volumes:
+  ghost-content:
+    name: junha-blog-content
+  mysql-data:
+    name: junha-blog-mysql

@@ -1,0 +1,48 @@
+{
+  "name": "junha",
+  "description": "CV 스타일을 이어받은 Junha 블로그 테마",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "ghost": ">=6.0.0"
+  },
+  "author": {
+    "name": "Junha",
+    "email": "jh01love00@gmail.com",
+    "url": "https://junha.space"
+  },
+  "keywords": [
+    "ghost-theme"
+  ],
+  "config": {
+    "posts_per_page": 10,
+    "image_sizes": {
+      "s": {
+        "width": 320
+      },
+      "m": {
+        "width": 720
+      },
+      "l": {
+        "width": 1080
+      },
+      "xl": {
+        "width": 1600
+      }
+    },
+    "card_assets": true,
+    "custom": {
+      "cv_url": {
+        "type": "text",
+        "default": "https://junha.space",
+        "group": "homepage"
+      },
+      "github_url": {
+        "type": "text",
+        "default": "",
+        "group": "homepage"
+      }
+    }
+  }
+}

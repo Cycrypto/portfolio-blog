@@ -1,0 +1,14 @@
+<dialog class="search-dialog" aria-label="글 검색" data-search-dialog data-api-url="{{content_api_url}}" data-api-key="{{content_api_key}}" data-timezone="{{@site.timezone}}">
+  <div class="search-panel">
+    <div class="search-bar">
+      <label class="search-field">
+        {{> "icons/search"}}
+        <span class="visually-hidden">검색어</span>
+        <input type="search" name="q" placeholder="제목이나 주제로 검색" autocomplete="off" spellcheck="false" enterkeyhint="search" data-search-input>
+        <button class="search-clear" type="button" aria-label="검색어 지우기" data-search-clear hidden>{{> "icons/clear"}}</button>
+      </label>
+      <button class="search-close" type="button" data-search-close>닫기</button>
+    </div>
+    <div class="search-results" aria-live="polite" data-search-results></div>
+  </div>
+</dialog>

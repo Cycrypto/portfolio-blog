@@ -1,0 +1,15 @@
+{{#match pages ">" 1}}
+<nav class="pagination" aria-label="페이지 이동">
+  {{#if prev}}
+    <a class="pagination__link" href="{{page_url prev}}" rel="prev">← 이전 페이지</a>
+  {{else}}
+    <span></span>
+  {{/if}}
+  <span class="pagination__status">{{page}} / {{pages}}</span>
+  {{#if next}}
+    <a class="pagination__link" href="{{page_url next}}" rel="next">다음 페이지 →</a>
+  {{else}}
+    <span></span>
+  {{/if}}
+</nav>
+{{/match}}

@@ -1,0 +1,15 @@
+{{!< default}}
+<div class="shell">
+  <section class="list-heading">
+    <h1 class="list-title">글</h1>
+    {{> "tag-filter"}}
+  </section>
+  <div class="post-feed">
+    {{#foreach posts}}
+      {{> "post-card"}}
+    {{else}}
+      <p class="feed-empty">아직 발행한 글이 없습니다.</p>
+    {{/foreach}}
+  </div>
+  {{pagination}}
+</div>

@@ -43,7 +43,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
   const avatar = profile.avatar ? await avatarPng(profile.avatar) : null;
   const doc = new PDFDocument({
     size: "A4",
-    margins: { top: 44, bottom: 40, left: 56, right: 56 },
+    margins: { top: 30, bottom: 26, left: 52, right: 52 },
     info: { Title: `${profile.name} — CV`, Author: profile.name },
   });
   doc.registerFont("body", join(fonts, "Pretendard-Regular.otf"));
@@ -65,21 +65,21 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
     if (doc.y + height > bottom()) doc.addPage();
   };
   const section = (title: string) => {
-    ensureSpace(64);
-    doc.y += 6;
+    ensureSpace(48);
+    doc.y += 0;
     doc
       .font(display(title))
-      .fontSize(15)
+      .fontSize(13.5)
       .fillColor(ink)
       .text(title, left, doc.y, { width });
-    const y = doc.y + 5;
+    const y = doc.y + 3;
     doc
       .moveTo(left, y)
       .lineTo(left + width, y)
       .lineWidth(0.6)
       .strokeColor(line)
       .stroke();
-    doc.y = y + 8;
+    doc.y = y + 5;
   };
   const bullets = (items: string[]) => {
     for (const item of items) {
@@ -87,12 +87,12 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
       const y = doc.y;
       doc
         .font("body")
-        .fontSize(9.5)
+        .fontSize(8.8)
         .fillColor(coral)
         .text("•", left, y, { width: 10, lineBreak: false });
       doc
         .fillColor(ink)
-        .text(item, left + 12, y, { width: width - 12, lineGap: 1.5 });
+        .text(item, left + 12, y, { width: width - 12, lineGap: 0.5 });
     }
   };
   const timeline = (data: HomeContent["experience"]) => {
@@ -111,33 +111,33 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
           });
         doc
           .font(display(role.title, true))
-          .fontSize(12.5)
+          .fontSize(11.5)
           .fillColor(ink)
           .text(role.title, left, top, { width: width - 120 });
         doc
           .font("body")
-          .fontSize(9.5)
+          .fontSize(8.8)
           .fillColor(muted)
           .text(
             [company.name, role.employmentType].filter(Boolean).join(" · "),
             { width: width - 120 },
           );
         if (role.description) {
-          doc.y += 3;
+          doc.y += 2;
           doc
-            .fontSize(9.5)
+            .fontSize(8.8)
             .fillColor(ink)
-            .text(role.description, left, doc.y, {
+            .text(role.description.replace(/\n\s*\n/g, "\n"), left, doc.y, {
               width,
-              lineGap: 1.5,
-              paragraphGap: 4,
+              lineGap: 0.8,
+              paragraphGap: 2,
             });
         }
         if (role.highlights.length) {
-          doc.y += 5;
+          doc.y += 3;
           bullets(role.highlights);
         }
-        doc.y += 14;
+        doc.y += 5;
       }
     }
   };
@@ -148,7 +148,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
   const headTop = top + 22;
   let textLeft = left;
   if (avatar) {
-    const size = 76;
+    const size = 64;
     doc.save();
     doc.circle(left + size / 2, headTop + size / 2, size / 2).clip();
     doc.image(avatar, left, headTop, { width: size, height: size });
@@ -174,9 +174,9 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
   const nameWidth = width - 180 - (textLeft - left);
   doc
     .font(display(profile.name, true))
-    .fontSize(30)
+    .fontSize(26)
     .fillColor(ink)
-    .text(profile.name, textLeft, headTop + 8, {
+    .text(profile.name, textLeft, headTop + 6, {
       width: nameWidth,
       lineBreak: false,
     });
@@ -185,11 +185,11 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
       .font("body")
       .fontSize(11.5)
       .fillColor(muted)
-      .text(profile.role, textLeft, headTop + 50, {
+      .text(profile.role, textLeft, headTop + 42, {
         width: nameWidth,
         lineBreak: false,
       });
-  doc.y = headTop + Math.max(avatar ? 76 : 0, 68) + 10;
+  doc.y = headTop + Math.max(avatar ? 64 : 0, 60) + 4;
   if (profile.facts.length)
     doc
       .font("body")
@@ -202,12 +202,12 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
   section(content.about.label || "About");
   doc
     .font("body")
-    .fontSize(10)
+    .fontSize(9.2)
     .fillColor(ink)
-    .text(content.about.description, left, doc.y, {
+    .text(content.about.description.replace(/\n\s*\n/g, "\n"), left, doc.y, {
       width,
-      lineGap: 2.5,
-      paragraphGap: 6,
+      lineGap: 1.2,
+      paragraphGap: 3,
     });
 
   if (content.experience.companies.length) {
@@ -219,31 +219,31 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
     timeline(content.activities);
   }
   if (content.skills.items.length || content.skills.technologies.length) {
-    ensureSpace(130);
+    ensureSpace(80);
     section(content.skills.label || "Skills");
     // Chips flow left to right and wrap, like the site's tag list.
-    doc.font("body").fontSize(9);
+    doc.font("body").fontSize(8.5);
     let x = left;
     let y = doc.y;
     for (const s of content.skills.items) {
       const label = skillLevels[s.level]
         ? `${s.name} · ${skillLevels[s.level]}`
         : s.name;
-      const w = doc.widthOfString(label) + 16;
+      const w = doc.widthOfString(label) + 14;
       if (x + w > left + width) {
         x = left;
-        y += 24;
+        y += 21;
       }
       if (y + 22 > bottom()) {
         doc.addPage();
         y = doc.y;
         x = left;
       }
-      doc.roundedRect(x, y, w, 20, 3).fill(soft);
-      doc.fillColor(ink).text(label, x + 8, y + 5, { lineBreak: false });
+      doc.roundedRect(x, y, w, 18, 3).fill(soft);
+      doc.fillColor(ink).text(label, x + 7, y + 4.5, { lineBreak: false });
       x += w + 6;
     }
-    doc.y = content.skills.items.length ? y + 26 : y;
+    doc.y = content.skills.items.length ? y + 22 : y;
     if (content.skills.technologies.length)
       doc
         .font("body")
@@ -255,6 +255,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
           doc.y,
           { width },
         );
+    doc.y += 6;
   }
   if (content.certifications.items.length) {
     section(content.certifications.label || "Certifications");
@@ -271,7 +272,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
         );
   }
   if (content.languages.items.length) {
-    ensureSpace(70);
+    ensureSpace(40);
     section(content.languages.label || "Languages");
     doc
       .font("body")
