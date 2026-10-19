@@ -354,7 +354,7 @@ export function PostEditor({
                   slug: slugTouched ? f.slug : slugify(e.target.value),
                 }))
               }
-              className="block w-full resize-none overflow-hidden rounded border-none bg-transparent font-heading text-[28px] leading-relaxed outline-none md:text-[32px]"
+              className="block w-full resize-none overflow-hidden rounded border-none bg-transparent font-heading text-[28px] leading-[1.3] font-bold tracking-tight outline-none md:text-[32px]"
             />
             <label className="sr-only" htmlFor="post-excerpt">
               게시글 요약

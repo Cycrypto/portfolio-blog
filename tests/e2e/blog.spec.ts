@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Post, Series } from "../../src/lib/types";
 const password = "test-portfolio-password";
-test("reference portfolio, journal and mobile navigation render without overflow", async ({
+test("portfolio, journal and mobile navigation render without overflow", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -12,16 +12,17 @@ test("reference portfolio, journal and mobile navigation render without overflow
   await page.goto("/");
   await expect(
     page.getByRole("heading", {
-      name: "Full Stack Developer",
-      exact: true,
+      name: /박준하/,
       level: 1,
     }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Oliver Rowland", exact: true }),
-  ).toBeVisible();
-  await expect(page.locator("#experience")).toContainText("Northstack");
-  await expect(page.locator("#contact")).toContainText("Let’s Connect");
+  await expect(page.getByRole("heading", { name: "커핑" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "산돌이" })).toBeVisible();
+  await expect(page.locator("#projects article").first()).toHaveAttribute(
+    "id",
+    "coffing",
+  );
+  await expect(page.locator("#contact")).toContainText("함께 일하기");
   await page.screenshot({
     path: "test-results/portfolio-desktop.png",
     fullPage: true,
@@ -141,7 +142,7 @@ test("owner writes Markdown, uploads an image, publishes, edits, manages series 
   const dialog = page.locator("dialog[open]");
   await dialog
     .locator("input[type=file]")
-    .setInputFiles("public/portfolio/illustration-intro.png");
+    .setInputFiles("tests/fixtures/orange-illustration.png");
   await dialog.getByLabel("대체 텍스트 · 필수").fill("검증용 주황색 일러스트");
   await dialog.getByLabel("캡션 · 선택").fill("원본 비율을 유지하는 사진");
   await dialog

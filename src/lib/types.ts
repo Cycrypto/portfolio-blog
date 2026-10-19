@@ -57,3 +57,9 @@ export type SeriesInput = Pick<Series, "name" | "slug" | "description"> & {
 };
 export const isPublic = (post: Post) =>
   post.status === "published" && post.visibility === "public";
+export interface Intro {
+  eyebrow: string;
+  name: string;
+  headline: string;
+  description: string;
+}

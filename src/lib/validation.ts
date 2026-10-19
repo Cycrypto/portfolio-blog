@@ -73,6 +73,27 @@ export const seriesSchema = z.object({
   revision: z.number().int().positive().optional(),
   postIds: z.array(z.string().max(64)).max(1000).optional(),
 });
+export const introSchema = z.object({
+  eyebrow: z
+    .string()
+    .trim()
+    .max(60, "상단 라벨은 60자까지 입력할 수 있습니다."),
+  name: z
+    .string()
+    .trim()
+    .min(1, "이름을 입력해 주세요.")
+    .max(40, "이름은 40자까지 입력할 수 있습니다."),
+  headline: z
+    .string()
+    .trim()
+    .min(1, "헤드라인을 입력해 주세요.")
+    .max(160, "헤드라인은 160자까지 입력할 수 있습니다.")
+    .transform((value) => value.replace(/\r\n?/g, "\n")),
+  description: z
+    .string()
+    .trim()
+    .max(400, "소개는 400자까지 입력할 수 있습니다."),
+});
 export function parseInput<T>(schema: z.ZodType<T>, input: unknown): T {
   const parsed = schema.safeParse(input);
   if (!parsed.success) throw new AppError(parsed.error.issues[0].message);

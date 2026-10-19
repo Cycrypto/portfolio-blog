@@ -17,7 +17,7 @@ export function PostMeta({ post }: { post: Post }) {
 export function Author() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-soft font-reference text-[13px] text-accent">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-soft font-mono text-[13px] text-accent">
         JP
       </div>
       <div>
@@ -41,7 +41,7 @@ export function PostCard({ post, index = 0 }: { post: Post; index?: number }) {
             {post.tags.includes("일상") ? "LIFE" : "DEVELOPMENT"} /{" "}
             {String(index + 1).padStart(2, "0")}
           </p>
-          <h2 className="mb-3 font-heading text-lg leading-relaxed group-hover:text-accent md:text-[22px]">
+          <h2 className="mb-3 font-heading text-lg leading-snug group-hover:text-accent md:text-[22px]">
             {post.title}
           </h2>
           <p className="mb-4 text-[13px] leading-relaxed text-muted md:text-sm">
@@ -79,7 +79,7 @@ export function SeriesCard({
         </span>
         <Layers size={20} className="text-coral" />
       </div>
-      <h2 className="mb-4 font-heading text-2xl leading-relaxed group-hover:text-accent">
+      <h2 className="mb-4 font-heading text-2xl leading-snug group-hover:text-accent">
         {series.name}
       </h2>
       <p className="mb-4 text-sm leading-relaxed text-muted">

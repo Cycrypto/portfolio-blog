@@ -1,41 +1,62 @@
-import { portfolioReference as ref } from "@/data/portfolio-reference";
-export const dynamic = "force-static";
+import type { Metadata } from "next";
+import { repository } from "@/lib/repository";
+import { contact, projects, skills } from "@/data/portfolio";
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "이력서" };
 export default function Page() {
+  const intro = repository().getIntro();
   return (
     <main
       id="main"
-      className="mx-auto max-w-3xl bg-white px-10 py-12 font-reference text-black"
+      className="mx-auto max-w-3xl bg-white px-8 py-12 text-black md:px-12 print:px-0 print:py-0"
     >
-      <h1 className="font-display text-3xl">{ref.intro.profile.name}</h1>
-      <p className="mt-2 text-lg">{ref.intro.profile.role}</p>
-      <p className="mt-2 text-sm">
-        {ref.intro.profile.facts[0].text} · {ref.contact.channels[0].value}
-      </p>
-      <h2 className="mt-8 border-b pb-2 text-xl">About</h2>
-      <p className="mt-3 text-sm leading-relaxed">{ref.about.description}</p>
-      <h2 className="mt-8 border-b pb-2 text-xl">Experience</h2>
-      {ref.experience.companies.map((c) =>
-        c.roles.map((r) => (
-          <article key={r.sourceNodeId} className="mt-5 break-inside-avoid">
-            <h3 className="font-medium">
-              {r.title} · {c.name}
-            </h3>
-            <p className="text-xs text-gray-600">{r.period}</p>
-            <p className="mt-2 text-sm">{r.description}</p>
-          </article>
-        )),
-      )}
-      <h2 className="mt-8 border-b pb-2 text-xl">Education</h2>
-      {ref.education.items.map((i) => (
-        <article key={i.degree} className="mt-4 break-inside-avoid">
-          <h3>{i.degree}</h3>
-          <p className="text-sm">
-            {i.institution} · {i.period}
-          </p>
+      <header className="border-b border-black/15 pb-6">
+        <h1 className="font-heading text-3xl font-bold tracking-tight">
+          {intro.name}
+        </h1>
+        <p className="mt-2 text-lg whitespace-pre-line">{intro.headline}</p>
+        <p className="mt-3 text-sm leading-relaxed text-black/70">
+          {intro.description}
+        </p>
+        <p className="mt-3 text-sm">
+          <a href={`mailto:${contact.email}`} className="underline">
+            {contact.email}
+          </a>
+        </p>
+      </header>
+      <h2 className="mt-8 border-b border-black/15 pb-2 text-xl font-semibold">
+        프로젝트
+      </h2>
+      {projects.map((project) => (
+        <article key={project.id} className="mt-6 break-inside-avoid">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="text-lg font-semibold">{project.name}</h3>
+            <p className="text-xs text-black/60">{project.period}</p>
+          </div>
+          <p className="text-sm text-black/70">{project.role}</p>
+          <p className="mt-3 text-sm leading-relaxed">{project.summary}</p>
+          {project.paragraphs.map((paragraph) => (
+            <p key={paragraph} className="mt-2 text-sm leading-relaxed">
+              {paragraph}
+            </p>
+          ))}
+          {project.sections.map((section) => (
+            <p key={section.title} className="mt-2 text-sm leading-relaxed">
+              <strong className="font-semibold">{section.title}.</strong>{" "}
+              {section.body}
+            </p>
+          ))}
+          {project.stack.length > 0 && (
+            <p className="mt-2 text-xs text-black/60">
+              {project.stack.join(" · ")}
+            </p>
+          )}
         </article>
       ))}
-      <h2 className="mt-8 border-b pb-2 text-xl">Skills</h2>
-      <p className="mt-3 text-sm">{ref.skills.items.join(" · ")}</p>
+      <h2 className="mt-8 border-b border-black/15 pb-2 text-xl font-semibold">
+        기술
+      </h2>
+      <p className="mt-3 text-sm">{skills.join(" · ")}</p>
     </main>
   );
 }

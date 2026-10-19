@@ -126,7 +126,7 @@ test("image picker reports library failures and rejects invalid files without up
   await dialog.getByRole("button", { name: "새 이미지", exact: true }).click();
   await dialog
     .locator("input[type=file]")
-    .setInputFiles("public/portfolio/illustration-intro.png");
+    .setInputFiles("tests/fixtures/orange-illustration.png");
   await dialog.getByLabel("대체 텍스트 · 필수").fill("테스트 이미지");
   await expect(
     dialog.getByRole("button", { name: "이미지 업로드", exact: true }),

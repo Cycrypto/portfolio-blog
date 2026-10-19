@@ -26,6 +26,7 @@ export default defineConfig({
       NEXT_DIST_DIR: ".next-e2e",
       DATA_DIR: "./data/e2e",
       ADMIN_PASSWORD: "test-portfolio-password",
+      SEED_DEMO_CONTENT: "1",
       NEXT_TELEMETRY_DISABLED: "1",
     },
   },

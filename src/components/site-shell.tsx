@@ -2,15 +2,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import {
-  Asterisk,
-  ArrowUpRight,
-  Menu,
-  X,
-  UserCircle,
-  Send,
-} from "lucide-react";
-export function SiteHeader({ reference = false }: { reference?: boolean }) {
+import { Asterisk, ArrowUpRight, Menu, X } from "lucide-react";
+const links = [
+  ["소개", "/"],
+  ["작업", "/#projects"],
+  ["블로그", "/blog"],
+  ["시리즈", "/series"],
+] as const;
+export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -44,28 +43,14 @@ export function SiteHeader({ reference = false }: { reference?: boolean }) {
       ? pathname === "/"
       : !href.includes("#") &&
         (pathname === href || pathname.startsWith(`${href}/`));
-  const links = reference
-    ? [
-        ["About", "/#about"],
-        ["Experience", "/#experience"],
-        ["Education", "/#education"],
-        ["Skills", "/#skills"],
-        ["Blog", "/blog"],
-      ]
-    : [
-        ["소개", "/"],
-        ["작업", "/#experience"],
-        ["블로그", "/blog"],
-        ["시리즈", "/series"],
-      ];
   return (
     <header
       ref={headerRef}
-      className={`sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur ${reference ? "font-reference" : ""}`}
+      className="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur"
     >
       <nav
         aria-label="주 내비게이션"
-        className={`mx-auto flex h-[72px] max-w-[1248px] items-center justify-between gap-5 px-6 ${reference ? "md:h-[68px] md:px-8 lg:px-16" : "md:px-16"}`}
+        className="mx-auto flex h-[72px] max-w-[1248px] items-center justify-between gap-5 px-6 md:px-16"
       >
         <Link
           href="/"
@@ -73,32 +58,15 @@ export function SiteHeader({ reference = false }: { reference?: boolean }) {
           onClick={() => setOpen(false)}
           className="flex shrink-0 items-center gap-2.5"
         >
-          {reference ? (
-            <UserCircle size={32} className="text-coral" />
-          ) : (
-            <>
-              <Asterisk size={28} className="text-coral" />
-              <span className="font-display text-2xl">junha.</span>
-            </>
-          )}
+          <Asterisk size={28} className="text-coral" />
+          <span className="font-display text-2xl">junha.</span>
         </Link>
-        <div
-          className={`hidden items-center ${reference ? "gap-4" : "gap-8"} md:flex`}
-        >
+        <div className="hidden items-center gap-8 md:flex">
           {links.map(([label, href]) => (
             <Link
               key={label}
               href={href}
-              aria-current={
-                (
-                  href === "/"
-                    ? pathname === "/"
-                    : !href.includes("#") &&
-                      (pathname === href || pathname.startsWith(`${href}/`))
-                )
-                  ? "page"
-                  : undefined
-              }
+              aria-current={isCurrent(href) ? "page" : undefined}
               className={`inline-flex min-h-11 items-center text-sm transition-colors hover:text-accent ${isCurrent(href) ? "text-accent underline underline-offset-8" : "text-muted"}`}
             >
               {label}
@@ -107,11 +75,10 @@ export function SiteHeader({ reference = false }: { reference?: boolean }) {
         </div>
         <Link
           href="/#contact"
-          className={`hidden shrink-0 items-center gap-2 md:inline-flex ${reference ? "bg-ink px-4 py-2 text-xs text-paper" : "text-[13px]"}`}
+          className="hidden shrink-0 items-center gap-2 text-[13px] md:inline-flex"
         >
-          {reference ? <Send size={14} /> : null}
-          {reference ? "Contact Me" : "연락하기"}
-          {reference ? null : <ArrowUpRight size={16} />}
+          연락하기
+          <ArrowUpRight size={16} />
         </Link>
         <button
           ref={menuButton}
@@ -147,32 +114,24 @@ export function SiteHeader({ reference = false }: { reference?: boolean }) {
             onClick={() => setOpen(false)}
             className="py-3"
           >
-            {reference ? "Contact Me" : "연락하기"}
+            연락하기
           </Link>
         </nav>
       )}
     </header>
   );
 }
-export function SiteFooter({ reference = false }: { reference?: boolean }) {
+export function SiteFooter() {
   return (
-    <footer
-      className={`mx-auto flex min-h-20 flex-wrap items-center justify-between gap-4 border-t border-line py-4 text-xs text-muted ${reference ? "font-reference" : "max-w-[1120px]"}`}
-    >
-      <span>© 2026 {reference ? "Rowland" : "Junha Park"}</span>
+    <footer className="mx-auto flex min-h-20 max-w-[1120px] flex-wrap items-center justify-between gap-4 border-t border-line py-4 text-xs text-muted">
+      <span>© 2026 Junha Park</span>
       <div className="flex items-center gap-5">
         <Link href="/admin" className="hover:text-accent">
           관리
         </Link>
-        {reference ? (
-          <a href="#top" className="flex items-center gap-1">
-            Back to top <ArrowUpRight size={14} />
-          </a>
-        ) : (
-          <Link href="/" className="flex items-center gap-1">
-            Portfolio <ArrowUpRight size={14} />
-          </Link>
-        )}
+        <Link href="/blog" className="flex items-center gap-1">
+          Blog <ArrowUpRight size={14} />
+        </Link>
       </div>
     </footer>
   );

@@ -63,6 +63,6 @@ jobs:
           test "$(docker inspect -f '{{.State.Health.Status}}' portfolio-ci)" = healthy
           curl --fail http://127.0.0.1:13000/api/health
           curl --fail --silent http://127.0.0.1:13000/ -o /tmp/home.html
-          grep -q 'Full Stack Developer' /tmp/home.html
+          grep -q '박준하' /tmp/home.html
           curl --fail --silent http://127.0.0.1:13000/blog -o /dev/null
-          curl --fail --silent http://127.0.0.1:13000/portfolio/illustration-intro.png -o /dev/null
+          curl --fail --silent http://127.0.0.1:13000/robots.txt -o /dev/null

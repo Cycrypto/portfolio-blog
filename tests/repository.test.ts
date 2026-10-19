@@ -206,3 +206,30 @@ test("table of contents ignores fenced headings and disambiguates duplicates", (
     ],
   );
 });
+test("intro falls back to defaults, persists edits and rejects empty headlines", () => {
+  const db = new Repository(":memory:", false);
+  try {
+    const fallback = db.getIntro();
+    assert.equal(fallback.name, "박준하");
+    const saved = db.saveIntro({
+      eyebrow: " BACKEND ",
+      name: "박준하",
+      headline: "첫 줄\r\n둘째 줄",
+      description: "소개",
+    });
+    assert.equal(saved.eyebrow, "BACKEND");
+    assert.equal(saved.headline, "첫 줄\n둘째 줄");
+    assert.deepEqual(db.getIntro(), saved);
+    assert.throws(
+      () => db.saveIntro({ ...saved, headline: "   " }),
+      fails(400),
+    );
+    assert.deepEqual(db.getIntro(), saved);
+    db.db
+      .prepare("UPDATE settings SET value = ? WHERE key = 'intro'")
+      .run("{broken");
+    assert.equal(db.getIntro().name, fallback.name);
+  } finally {
+    db.close();
+  }
+});

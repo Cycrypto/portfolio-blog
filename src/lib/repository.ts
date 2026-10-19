@@ -2,14 +2,28 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { Media, Post, PostInput, Series, SeriesInput } from "./types";
-import { AppError, parseInput, postSchema, seriesSchema } from "./validation";
+import type {
+  Intro,
+  Media,
+  Post,
+  PostInput,
+  Series,
+  SeriesInput,
+} from "./types";
+import {
+  AppError,
+  introSchema,
+  parseInput,
+  postSchema,
+  seriesSchema,
+} from "./validation";
 import { seedPosts, seedSeries } from "./seed";
+import { defaultIntro } from "@/data/portfolio";
 
 type Row = Record<string, string | number | null>;
 export class Repository {
   readonly db: DatabaseSync;
-  constructor(path: string, seed = true) {
+  constructor(path: string, seed = false) {
     if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path);
     this.db
@@ -415,13 +429,37 @@ export class Repository {
   close() {
     this.db.close();
   }
+  getIntro(): Intro {
+    const row = this.db
+      .prepare("SELECT value FROM settings WHERE key = ?")
+      .get("intro") as Row | undefined;
+    if (!row) return defaultIntro;
+    try {
+      const parsed = introSchema.safeParse(JSON.parse(String(row.value)));
+      return parsed.success ? parsed.data : defaultIntro;
+    } catch {
+      return defaultIntro;
+    }
+  }
+  saveIntro(raw: unknown): Intro {
+    const intro = parseInput(introSchema, raw);
+    this.db
+      .prepare(
+        "INSERT INTO settings VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      )
+      .run("intro", JSON.stringify(intro));
+    return intro;
+  }
 }
 // The database and uploads belong to runtime storage, outside the build bundle.
 export const dataDirectory = () =>
   resolve(/*turbopackIgnore: true*/ process.env.DATA_DIR || "./data");
 const globalDb = globalThis as unknown as { portfolioRepository?: Repository };
+// Demo posts are only inserted when explicitly requested (local previews, E2E).
+export const seedDemoContent = () => process.env.SEED_DEMO_CONTENT === "1";
 export function repository() {
   return (globalDb.portfolioRepository ??= new Repository(
     resolve(dataDirectory(), "portfolio.sqlite"),
+    seedDemoContent(),
   ));
 }

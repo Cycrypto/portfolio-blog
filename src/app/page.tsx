@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import { repository } from "@/lib/repository";
 import { Portfolio } from "@/components/portfolio";
-export const dynamic = "force-static";
-export const metadata: Metadata = {
-  title: "Oliver Rowland — Full Stack Developer",
-  description:
-    "Building scalable web applications with clean architecture, modern tools, and thoughtful user experience.",
-};
+export const dynamic = "force-dynamic";
+export async function generateMetadata(): Promise<Metadata> {
+  const intro = repository().getIntro();
+  return {
+    title: `${intro.name} — 포트폴리오`,
+    description: intro.description || intro.headline.replace(/\n/g, " "),
+  };
+}
 export default function Page() {
-  return <Portfolio />;
+  return <Portfolio intro={repository().getIntro()} />;
 }

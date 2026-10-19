@@ -34,7 +34,7 @@ export default async function SeriesDetail({ params }: Props) {
           <p className="font-mono text-xs tracking-wide text-accent">
             A SERIES OF NOTES
           </p>
-          <h1 className="font-heading text-3xl leading-relaxed md:text-[42px]">
+          <h1 className="font-heading text-3xl leading-[1.3] font-bold tracking-tight md:text-[42px]">
             {series.name}
           </h1>
           <p className="max-w-3xl text-base leading-relaxed text-muted">

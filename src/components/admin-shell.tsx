@@ -9,6 +9,7 @@ import {
   Image,
   Layers,
   LogOut,
+  UserRound,
 } from "lucide-react";
 import { Button, request, useToast } from "./ui";
 export function AdminShell({
@@ -61,6 +62,7 @@ export function AdminShell({
             ["/admin", "게시글", FileText],
             ["/admin/series", "시리즈", Layers],
             ["/admin/media", "이미지", Image],
+            ["/admin/intro", "소개", UserRound],
           ].map(([href, label, Icon]) => {
             const I = Icon as typeof FileText;
             const active =

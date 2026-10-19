@@ -19,8 +19,12 @@
   --color-code: var(--ds-code-bg);
   --color-code-text: var(--ds-code-text);
   --font-display: "Habibi", Georgia, serif;
-  --font-heading: "Noto Serif KR", Georgia, serif;
-  --font-sans: "Noto Sans KR", "Geist", sans-serif;
+  --font-heading:
+    "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", sans-serif;
+  --font-sans:
+    "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Geist",
+    sans-serif;
+  --font-prose: "Gowun Batang", "Nanum Myeongjo", Georgia, serif;
   --font-reference: "Geist", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 }
@@ -47,6 +51,13 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 100px;
+}
+@layer base {
+  /* Korean headings read as bold gothic; long-form prose uses a light serif. */
+  .font-heading {
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
 }
 body {
   background: var(--ds-bg);
@@ -94,23 +105,28 @@ dialog::backdrop {
   backdrop-filter: blur(3px);
 }
 .prose {
-  font-size: 18px;
-  line-height: 1.85;
+  font-family: var(--font-prose);
+  font-size: 20px;
+  line-height: 1.7;
   overflow-wrap: anywhere;
 }
 .prose > * + * {
-  margin-top: 24px;
+  margin-top: 28px;
 }
 .prose h1,
 .prose h2,
 .prose h3 {
   font-family: var(--font-heading);
-  line-height: 1.5;
-  font-weight: 400;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   scroll-margin-top: 100px;
 }
 .prose h1 {
-  font-size: 36px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
   margin-top: 40px;
 }
 .prose h2 {
@@ -119,7 +135,14 @@ dialog::backdrop {
 }
 .prose h3 {
   font-size: 22px;
+  line-height: 1.4;
   margin-top: 32px;
+}
+.prose h4,
+.prose h5,
+.prose h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
 }
 .prose h4 {
   font-size: 18px;
@@ -167,15 +190,14 @@ dialog::backdrop {
   padding: 16px 20px;
   border-left: 3px solid var(--ds-accent);
   background: var(--ds-accent-soft);
-  font-family: var(--font-heading);
-  font-size: 17px;
+  font-size: 1em;
 }
 .prose code:not(pre code) {
   background: var(--ds-soft);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: var(--font-mono);
-  font-size: 0.8em;
+  font-size: 0.78em;
 }
 .prose pre {
   margin: 0;
@@ -196,6 +218,7 @@ dialog::backdrop {
 .prose table {
   border-collapse: collapse;
   width: 100%;
+  font-family: var(--font-sans);
   font-size: 14px;
 }
 .prose th {
@@ -210,13 +233,14 @@ dialog::backdrop {
   min-width: 100px;
 }
 .prose figcaption {
-  font-size: 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
   color: var(--ds-muted);
   text-align: center;
   margin-top: 10px;
 }
 .prose .markdown-paragraph {
-  margin-top: 24px;
+  margin-top: 28px;
 }
 .prose > .markdown-paragraph:first-child {
   margin-top: 0;
@@ -238,16 +262,16 @@ dialog::backdrop {
 }
 @media (max-width: 767px) {
   .prose {
-    font-size: 16px;
+    font-size: 18px;
   }
   .prose h1 {
     font-size: 28px;
   }
   .prose h2 {
-    font-size: 22px;
+    font-size: 24px;
   }
   .prose h3 {
-    font-size: 19px;
+    font-size: 20px;
   }
   .prose pre {
     padding: 16px;

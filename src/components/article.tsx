@@ -56,10 +56,10 @@ export function Article({
               {series.name} / {String(index + 1).padStart(2, "0")}
             </Link>
           )}
-          <h1 className="font-heading text-[28px] leading-[1.5] md:text-[42px] md:leading-[1.4]">
+          <h1 className="font-heading text-[30px] leading-[1.3] font-bold tracking-tight md:text-[42px] md:leading-[1.25]">
             {post.title}
           </h1>
-          <p className="text-base leading-relaxed text-muted md:text-lg">
+          <p className="text-lg leading-relaxed text-muted md:text-xl">
             {post.excerpt}
           </p>
           <PostMeta post={post} />
@@ -70,7 +70,7 @@ export function Article({
             <ImageFigure src={post.coverUrl} alt={post.coverAlt} cover />
           </div>
         )}
-        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,720px)_240px] lg:gap-20">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,680px)_240px] lg:gap-20">
           <div className="min-w-0 space-y-7">
             <div className="lg:hidden">
               <TableOfContents content={post.bodyMarkdown} />
