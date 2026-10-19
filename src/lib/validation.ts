@@ -40,7 +40,7 @@ const list = (max = 20) => z.array(required(300)).max(max);
 export const sectionIds = [
   "about",
   "experience",
-  "education",
+  "activities",
   "certifications",
   "skills",
   "languages",
@@ -48,6 +48,31 @@ export const sectionIds = [
 ] as const;
 export type SectionId = (typeof sectionIds)[number];
 const section = z.enum(sectionIds);
+// Organisations with one or more roles each, shown as a logo-led timeline.
+const timeline = z.object({
+  ...label,
+  companies: z
+    .array(
+      z.object({
+        name: required(),
+        logo: asset,
+        roles: z
+          .array(
+            z.object({
+              title: required(160),
+              employmentType: text(100),
+              period: text(100),
+              description: text(2000),
+              highlights: list(12),
+            }),
+          )
+          .min(1, "직무를 하나 이상 추가해 주세요.")
+          .max(8),
+      }),
+    )
+    .max(12),
+});
+export type Timeline = z.infer<typeof timeline>;
 export const homeSchema = z.object({
   navigation: z.object({
     logo: asset,
@@ -80,42 +105,8 @@ export const homeSchema = z.object({
     keySkillsLabel: text(100),
     keySkills: list(),
   }),
-  experience: z.object({
-    ...label,
-    companies: z
-      .array(
-        z.object({
-          name: required(),
-          logo: asset,
-          roles: z
-            .array(
-              z.object({
-                title: required(160),
-                employmentType: text(100),
-                period: text(100),
-                description: text(2000),
-                highlights: list(12),
-              }),
-            )
-            .min(1, "직무를 하나 이상 추가해 주세요.")
-            .max(8),
-        }),
-      )
-      .max(12),
-  }),
-  education: z.object({
-    ...label,
-    items: z
-      .array(
-        z.object({
-          degree: required(160),
-          institution: text(160),
-          period: text(100),
-          description: text(2000),
-        }),
-      )
-      .max(12),
-  }),
+  experience: timeline,
+  activities: timeline,
   certifications: z.object({
     ...label,
     items: z

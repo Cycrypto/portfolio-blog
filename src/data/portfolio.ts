@@ -14,8 +14,8 @@ export const defaultHome: HomeContent = {
         section: "experience",
       },
       {
-        label: "Education",
-        section: "education",
+        label: "Activities",
+        section: "activities",
       },
       {
         label: "Skills",
@@ -142,22 +142,22 @@ export const defaultHome: HomeContent = {
       },
     ],
   },
-  education: {
-    label: "Education",
-    items: [
+  activities: {
+    label: "Activities",
+    companies: [
       {
-        degree: "Master of Software Engineering",
-        institution: "Texas State University",
-        period: "2018 – 2020",
-        description:
-          "Specialized in scalable systems, application architecture, and advanced modern software development.",
-      },
-      {
-        degree: "Bachelor of Computer Science",
-        institution: "University of Houston",
-        period: "2014 – 2018",
-        description:
-          "Focused on software engineering, web development, database systems, and application development.",
+        name: "Developer Community",
+        logo: "",
+        roles: [
+          {
+            title: "Organizer",
+            employmentType: "Volunteer",
+            period: "2023 – Present",
+            description:
+              "Organized meetups and study groups and supported technical collaboration among members.",
+            highlights: [],
+          },
+        ],
       },
     ],
   },

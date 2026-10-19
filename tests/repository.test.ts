@@ -18,7 +18,7 @@ test("Pencil default is stored in SQLite and edits survive reopening", () => {
     assert.deepEqual(initial.content, defaultHome);
     const content = structuredClone(initial.content);
     content.intro.title = "수정한 메인 화면";
-    content.education.items[0].degree = "수정한 학력";
+    content.activities.companies[0].roles[0].title = "수정한 활동";
     content.contact.channels[0].value = "admin@example.com";
     const saved = repo.saveHome(
       { content, revision: initial.revision },

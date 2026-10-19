@@ -4,7 +4,7 @@ import {
   Award,
   Briefcase,
   Contact,
-  GraduationCap,
+  Users,
   Languages,
   LayoutTemplate,
   Sparkles,
@@ -13,7 +13,7 @@ import {
   Wrench,
 } from "lucide-react";
 import type { HomeContent } from "@/lib/types";
-import { sectionIds, type SectionId } from "@/lib/validation";
+import { sectionIds, type SectionId, type Timeline } from "@/lib/validation";
 import {
   Group,
   ItemList,
@@ -311,207 +311,157 @@ function AboutForm({ value, update }: FormProps) {
     </Group>
   );
 }
-function ExperienceForm({ value, update }: FormProps) {
-  const e = value.experience;
-  const setCompanies = (
-    fn: (
-      list: HomeContent["experience"]["companies"],
-    ) => HomeContent["experience"]["companies"],
-  ) => update((d) => (d.experience.companies = fn(d.experience.companies)));
-  return (
-    <Group
-      title="경력·활동"
-      hint="회사나 단체(동아리, 프로그램, 커뮤니티) 하나에 직무·역할을 여러 개 넣을 수 있습니다. 같은 곳에서 역할이 바뀐 경우 직무를 추가하면 타임라인으로 이어집니다. 항목이 없으면 메인 화면과 메뉴에서 숨겨집니다."
-    >
-      <TitleField
-        path="experience.label"
-        value={e.label}
-        onChange={(v) => update((d) => (d.experience.label = v))}
-      />
-      <ItemList
-        path="experience.companies"
-        label="회사·단체"
-        items={e.companies}
-        onChange={setCompanies}
-        max={12}
-        create={() => ({
-          name: "",
-          logo: "",
-          roles: [
-            {
-              title: "",
-              employmentType: "",
-              period: "",
-              description: "",
-              highlights: [],
-            },
-          ],
-        })}
-        summary={(c) => [c.name, c.roles[0]?.title].filter(Boolean).join(" · ")}
-        emptyHint="아직 경력·활동이 없습니다. 회사나 단체를 먼저 추가한 뒤 직무를 채워 주세요."
-      >
-        {(company, patch, ci) => (
-          <>
-            <Row>
-              <TextField
-                path={`experience.companies.${ci}.name`}
-                label="회사·단체 이름"
-                value={company.name}
-                onChange={(name) => patch({ name })}
-                placeholder="예: 소프트웨어 마에스트로"
-              />
-              <ImagePicker
-                path={`experience.companies.${ci}.logo`}
-                label="로고"
-                value={company.logo}
-                onChange={(logo) => patch({ logo })}
-                shape="icon"
-                suggest="company"
-                hint="정사각형 로고. 비우면 로고 없이 표시됩니다."
-              />
-            </Row>
-            <ItemList
-              path={`experience.companies.${ci}.roles`}
-              label="직무·역할"
-              items={company.roles}
-              onChange={(fn) =>
-                setCompanies((list) =>
-                  list.map((c, i) =>
-                    i === ci ? { ...c, roles: fn(c.roles) } : c,
-                  ),
-                )
-              }
-              max={8}
-              create={() => ({
+function timelineForm(
+  key: "experience" | "activities",
+  copy: { title: string; hint: string; item: string; empty: string },
+) {
+  return function TimelineForm({ value, update }: FormProps) {
+    const e = value[key];
+    const setCompanies = (
+      fn: (list: Timeline["companies"]) => Timeline["companies"],
+    ) => update((d) => (d[key].companies = fn(d[key].companies)));
+    return (
+      <Group title={copy.title} hint={copy.hint}>
+        <TitleField
+          path={`${key}.label`}
+          value={e.label}
+          onChange={(v) => update((d) => (d[key].label = v))}
+        />
+        <ItemList
+          path={`${key}.companies`}
+          label={copy.item}
+          items={e.companies}
+          onChange={setCompanies}
+          max={12}
+          create={() => ({
+            name: "",
+            logo: "",
+            roles: [
+              {
                 title: "",
                 employmentType: "",
                 period: "",
                 description: "",
                 highlights: [],
-              })}
-              summary={(r) => [r.title, r.period].filter(Boolean).join(" · ")}
-            >
-              {(role, patchRole, ri) => (
-                <>
-                  <TextField
-                    path={`experience.companies.${ci}.roles.${ri}.title`}
-                    label="직무·역할"
-                    value={role.title}
-                    onChange={(title) => patchRole({ title })}
-                    placeholder="예: Backend Developer"
-                    maxLength={160}
-                  />
-                  <Row>
+              },
+            ],
+          })}
+          summary={(c) =>
+            [c.name, c.roles[0]?.title].filter(Boolean).join(" · ")
+          }
+          emptyHint={copy.empty}
+        >
+          {(company, patch, ci) => (
+            <>
+              <Row>
+                <TextField
+                  path={`${key}.companies.${ci}.name`}
+                  label="회사·단체 이름"
+                  value={company.name}
+                  onChange={(name) => patch({ name })}
+                  placeholder="예: 소프트웨어 마에스트로"
+                />
+                <ImagePicker
+                  path={`${key}.companies.${ci}.logo`}
+                  label="로고"
+                  value={company.logo}
+                  onChange={(logo) => patch({ logo })}
+                  shape="icon"
+                  suggest="company"
+                  hint="정사각형 로고. 비우면 로고 없이 표시됩니다."
+                />
+              </Row>
+              <ItemList
+                path={`${key}.companies.${ci}.roles`}
+                label="직무·역할"
+                items={company.roles}
+                onChange={(fn) =>
+                  setCompanies((list) =>
+                    list.map((c, i) =>
+                      i === ci ? { ...c, roles: fn(c.roles) } : c,
+                    ),
+                  )
+                }
+                max={8}
+                create={() => ({
+                  title: "",
+                  employmentType: "",
+                  period: "",
+                  description: "",
+                  highlights: [],
+                })}
+                summary={(r) => [r.title, r.period].filter(Boolean).join(" · ")}
+              >
+                {(role, patchRole, ri) => (
+                  <>
                     <TextField
-                      path={`experience.companies.${ci}.roles.${ri}.employmentType`}
-                      label="형태"
-                      value={role.employmentType}
-                      onChange={(employmentType) =>
-                        patchRole({ employmentType })
-                      }
-                      placeholder="예: 정규직, 인턴, 팀 프로젝트"
+                      path={`${key}.companies.${ci}.roles.${ri}.title`}
+                      label="직무·역할"
+                      value={role.title}
+                      onChange={(title) => patchRole({ title })}
+                      placeholder="예: Backend Developer"
+                      maxLength={160}
                     />
+                    <Row>
+                      <TextField
+                        path={`${key}.companies.${ci}.roles.${ri}.employmentType`}
+                        label="형태"
+                        value={role.employmentType}
+                        onChange={(employmentType) =>
+                          patchRole({ employmentType })
+                        }
+                        placeholder="예: 정규직, 인턴, 팀 프로젝트"
+                      />
+                      <TextField
+                        path={`${key}.companies.${ci}.roles.${ri}.period`}
+                        label="기간"
+                        value={role.period}
+                        onChange={(period) => patchRole({ period })}
+                        placeholder="예: 2025. 04 – 현재"
+                      />
+                    </Row>
                     <TextField
-                      path={`experience.companies.${ci}.roles.${ri}.period`}
-                      label="기간"
-                      value={role.period}
-                      onChange={(period) => patchRole({ period })}
-                      placeholder="예: 2025. 04 – 현재"
+                      path={`${key}.companies.${ci}.roles.${ri}.description`}
+                      label="한 문단 설명"
+                      value={role.description}
+                      onChange={(description) => patchRole({ description })}
+                      multiline
+                      maxLength={2000}
                     />
-                  </Row>
-                  <TextField
-                    path={`experience.companies.${ci}.roles.${ri}.description`}
-                    label="한 문단 설명"
-                    value={role.description}
-                    onChange={(description) => patchRole({ description })}
-                    multiline
-                    maxLength={2000}
-                  />
-                  <TagField
-                    path={`experience.companies.${ci}.roles.${ri}.highlights`}
-                    label="주요 성과"
-                    value={role.highlights}
-                    onChange={(highlights) => patchRole({ highlights })}
-                    max={12}
-                    hint="설명 아래에 글머리 목록으로 표시됩니다. 문장 하나를 쓰고 Enter로 추가합니다."
-                    placeholder="성과 한 줄 입력 후 Enter"
-                    splitOnComma={false}
-                  />
-                </>
-              )}
-            </ItemList>
-          </>
-        )}
-      </ItemList>
-    </Group>
-  );
+                    <TagField
+                      path={`${key}.companies.${ci}.roles.${ri}.highlights`}
+                      label="주요 성과"
+                      value={role.highlights}
+                      onChange={(highlights) => patchRole({ highlights })}
+                      max={12}
+                      hint="설명 아래에 글머리 목록으로 표시됩니다. 문장 하나를 쓰고 Enter로 추가합니다."
+                      placeholder="성과 한 줄 입력 후 Enter"
+                      splitOnComma={false}
+                    />
+                  </>
+                )}
+              </ItemList>
+            </>
+          )}
+        </ItemList>
+      </Group>
+    );
+  };
 }
-function EducationForm({ value, update }: FormProps) {
-  return (
-    <Group
-      title="학력"
-      hint="항목이 하나도 없으면 메인 화면과 메뉴에서 이 영역이 숨겨집니다."
-    >
-      <TitleField
-        path="education.label"
-        value={value.education.label}
-        onChange={(v) => update((d) => (d.education.label = v))}
-      />
-      <ItemList
-        path="education.items"
-        label="학력"
-        items={value.education.items}
-        onChange={(fn) =>
-          update((d) => (d.education.items = fn(d.education.items)))
-        }
-        max={12}
-        create={() => ({
-          degree: "",
-          institution: "",
-          period: "",
-          description: "",
-        })}
-        summary={(e) => [e.degree, e.institution].filter(Boolean).join(" · ")}
-        emptyHint="아직 학력이 없습니다. 위의 추가 버튼으로 시작하세요."
-      >
-        {(item, patch, index) => (
-          <>
-            <TextField
-              path={`education.items.${index}.degree`}
-              label="학위·과정"
-              value={item.degree}
-              onChange={(degree) => patch({ degree })}
-              maxLength={160}
-            />
-            <Row>
-              <TextField
-                path={`education.items.${index}.institution`}
-                label="학교·기관"
-                value={item.institution}
-                onChange={(institution) => patch({ institution })}
-              />
-              <TextField
-                path={`education.items.${index}.period`}
-                label="기간"
-                value={item.period}
-                onChange={(period) => patch({ period })}
-                placeholder="예: 2018 – 2020"
-              />
-            </Row>
-            <TextField
-              path={`education.items.${index}.description`}
-              label="설명"
-              value={item.description}
-              onChange={(description) => patch({ description })}
-              multiline
-              maxLength={2000}
-            />
-          </>
-        )}
-      </ItemList>
-    </Group>
-  );
-}
+const ExperienceForm = timelineForm("experience", {
+  title: "경력·활동",
+  hint: "회사나 단체 하나에 직무·역할을 여러 개 넣을 수 있습니다. 같은 곳에서 역할이 바뀐 경우 직무를 추가하면 타임라인으로 이어집니다. 항목이 없으면 메인 화면과 메뉴에서 숨겨집니다.",
+  item: "회사·단체",
+  empty:
+    "아직 경력이 없습니다. 회사나 단체를 먼저 추가한 뒤 직무를 채워 주세요.",
+});
+const ActivitiesForm = timelineForm("activities", {
+  title: "활동",
+  hint: "교육 프로그램, 동아리, 커뮤니티, 해커톤처럼 고용 이력이 아닌 활동입니다. 구조는 경력과 같습니다. 항목이 없으면 메인 화면과 메뉴에서 숨겨집니다.",
+  item: "프로그램·단체",
+  empty:
+    "아직 활동이 없습니다. 프로그램이나 단체를 먼저 추가한 뒤 역할을 채워 주세요.",
+});
 function CertificationsForm({ value, update }: FormProps) {
   return (
     <Group
@@ -1008,13 +958,13 @@ export const adminSections: AdminSection[] = [
     Form: ExperienceForm,
   },
   {
-    id: "education",
-    title: "학력",
-    hint: "학위·과정 목록",
-    icon: GraduationCap,
-    paths: ["education"],
-    anchor: "education",
-    Form: EducationForm,
+    id: "activities",
+    title: "활동",
+    hint: "프로그램·단체별 역할과 성과",
+    icon: Users,
+    paths: ["activities"],
+    anchor: "activities",
+    Form: ActivitiesForm,
   },
   {
     id: "certifications",

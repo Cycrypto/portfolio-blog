@@ -35,7 +35,7 @@ test("Pencil portfolio renders all sections and original artwork on desktop and 
   for (const title of [
     "About",
     "Experience",
-    "Education",
+    "Activities",
     "Certifications",
     "Skills",
     "Languages",
@@ -72,7 +72,7 @@ test("Pencil portfolio renders all sections and original artwork on desktop and 
   await page.getByRole("button", { name: "메뉴 열기" }).click();
   await page
     .getByRole("navigation", { name: "모바일 내비게이션" })
-    .getByRole("link", { name: "Education", exact: true })
+    .getByRole("link", { name: "Experience", exact: true })
     .click();
   await expect(page.getByRole("button", { name: "메뉴 열기" })).toBeVisible();
   expect(
@@ -117,7 +117,7 @@ test("a section with no items disappears from the page and the menu", async ({
     await request.get("/api/admin/home", { headers })
   ).json()) as HomeDocument;
   const content = structuredClone(before.content);
-  content.education.items = [];
+  content.activities.companies = [];
   try {
     expect(
       (
@@ -131,11 +131,11 @@ test("a section with no items disappears from the page and the menu", async ({
     await expect(
       page.getByRole("heading", { name: "About", exact: true }),
     ).toBeVisible();
-    await expect(page.locator("#education")).toHaveCount(0);
+    await expect(page.locator("#activities")).toHaveCount(0);
     await expect(
       page
         .getByRole("navigation", { name: "주 내비게이션" })
-        .getByRole("link", { name: "Education", exact: true }),
+        .getByRole("link", { name: "Activities", exact: true }),
     ).toHaveCount(0);
   } finally {
     const latest = (await (
@@ -189,6 +189,7 @@ test("authorized administrator edits SQLite content and public page reflects it 
     await expect(
       page.getByRole("heading", { name: "프로필 카드", level: 1 }),
     ).toBeVisible();
+    await page.waitForLoadState("networkidle");
     await page
       .locator("#home-intro-profile-avatar-file")
       .setInputFiles("public/portfolio/oliver-rowland.png");

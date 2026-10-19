@@ -38,8 +38,11 @@ export function upgradeHome(value: unknown): HomeContent | null {
           : node;
   const home = clear(structuredClone(value) as Json) as Record<string, Json>;
   delete home.recommendations;
+  delete home.education;
   if (!home.experience || typeof home.experience !== "object")
     home.experience = { label: "Experience", companies: [] };
+  if (!home.activities || typeof home.activities !== "object")
+    home.activities = { label: "Activities", companies: [] };
   const skills = home.skills as { items?: Json[] } | undefined;
   if (skills && Array.isArray(skills.items))
     skills.items = skills.items.map((item) =>
@@ -53,19 +56,17 @@ export function upgradeHome(value: unknown): HomeContent | null {
         typeof item === "object" &&
         isSection((item as never)["section"]),
     );
-    if (
-      !navigation.items.some(
-        (item) => (item as { section?: string }).section === "experience",
-      )
-    ) {
-      const about = navigation.items.findIndex(
-        (item) => (item as { section?: string }).section === "about",
+    const sectionOf = (item: Json) => (item as { section?: string }).section;
+    const ensure = (sectionId: string, label: string, after: string) => {
+      if (navigation.items!.some((item) => sectionOf(item) === sectionId))
+        return;
+      const anchor = navigation.items!.findIndex(
+        (item) => sectionOf(item) === after,
       );
-      navigation.items.splice(about + 1, 0, {
-        label: "Experience",
-        section: "experience",
-      });
-    }
+      navigation.items!.splice(anchor + 1, 0, { label, section: sectionId });
+    };
+    ensure("experience", "Experience", "about");
+    ensure("activities", "Activities", "experience");
   }
   const intro = home.intro as Record<string, Json> | undefined;
   if (intro && typeof intro === "object") {
@@ -132,7 +133,7 @@ function migrateHome(value: unknown, intro: unknown): HomeContent {
     home.about.keySkills = old.about.keySkills;
     home.skills.items = old.skills.map((name) => ({ name, level: "" }));
     home.skills.technologies = [];
-    home.education.items = [];
+    home.activities.companies = [];
     home.certifications.items = [];
     home.languages.items = [];
     home.contact.label = old.contact.heading;

@@ -5,7 +5,7 @@ import {
   type PortfolioAssetKey,
 } from "@/data/portfolio-assets";
 import type { HomeContent } from "@/lib/types";
-import type { SectionId } from "@/lib/validation";
+import type { SectionId, Timeline } from "@/lib/validation";
 import { SiteHeader } from "./site-shell";
 
 function Asset({
@@ -155,11 +155,67 @@ export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
     </section>
   );
 }
+// Organisations with their roles, drawn as a logo-led timeline (Experience, Activities).
+function Timeline({ data }: { data: Timeline }) {
+  return (
+    <div className="space-y-8">
+      {data.companies.map((company, companyIndex) => (
+        <div
+          key={companyIndex}
+          className={`relative ${company.logo ? "grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-4" : "min-w-0"}`}
+        >
+          <Asset
+            name={company.logo}
+            alt={company.name}
+            className="size-10 rounded"
+          />
+          <div className="min-w-0 space-y-8">
+            {company.roles.map((role, roleIndex) => (
+              <article key={roleIndex} className="relative">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 className="font-display text-lg font-bold leading-[1.28]">
+                      {role.title}
+                    </h3>
+                    <p className="mt-1 text-sm leading-[1.4]">
+                      {[company.name, role.employmentType]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted sm:text-sm">{role.period}</p>
+                </div>
+                {role.description && (
+                  <p className="mt-4 max-w-[460px] text-sm leading-relaxed text-muted">
+                    {role.description}
+                  </p>
+                )}
+                {role.highlights.length > 0 && (
+                  <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-relaxed">
+                    {role.highlights.map((h, index) => (
+                      <li key={index}>{h}</li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            ))}
+          </div>
+          {company.logo && company.roles.length > 1 && (
+            <span
+              aria-hidden
+              className="absolute top-14 bottom-2 left-5 border-l border-ink/10"
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 // Sections that only list items disappear from the page and the menu when empty.
 export function hiddenSections(content: HomeContent): SectionId[] {
   const hidden: SectionId[] = [];
   if (!content.experience.companies.length) hidden.push("experience");
-  if (!content.education.items.length) hidden.push("education");
+  if (!content.activities.companies.length) hidden.push("activities");
   if (!content.certifications.items.length) hidden.push("certifications");
   if (!content.skills.items.length && !content.skills.technologies.length)
     hidden.push("skills");
@@ -219,81 +275,12 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
           </Section>
           {shows("experience") && (
             <Section id="experience" title={ref.experience.label}>
-              <div className="space-y-8">
-                {ref.experience.companies.map((company, companyIndex) => (
-                  <div
-                    key={companyIndex}
-                    className={`relative ${company.logo ? "grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-4" : "min-w-0"}`}
-                  >
-                    <Asset
-                      name={company.logo}
-                      alt={company.name}
-                      className="size-10 rounded"
-                    />
-                    <div className="min-w-0 space-y-8">
-                      {company.roles.map((role, roleIndex) => (
-                        <article key={roleIndex} className="relative">
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                              <h3 className="font-display text-lg font-bold leading-[1.28]">
-                                {role.title}
-                              </h3>
-                              <p className="mt-1 text-sm leading-[1.4]">
-                                {[company.name, role.employmentType]
-                                  .filter(Boolean)
-                                  .join(" · ")}
-                              </p>
-                            </div>
-                            <p className="text-xs text-muted sm:text-sm">
-                              {role.period}
-                            </p>
-                          </div>
-                          {role.description && (
-                            <p className="mt-4 max-w-[460px] text-sm leading-relaxed text-muted">
-                              {role.description}
-                            </p>
-                          )}
-                          {role.highlights.length > 0 && (
-                            <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-relaxed">
-                              {role.highlights.map((h, index) => (
-                                <li key={index}>{h}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </article>
-                      ))}
-                    </div>
-                    {company.logo && company.roles.length > 1 && (
-                      <span
-                        aria-hidden
-                        className="absolute top-14 bottom-2 left-5 border-l border-ink/10"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
+              <Timeline data={ref.experience} />
             </Section>
           )}
-          {shows("education") && (
-            <Section id="education" title={ref.education.label}>
-              <div className="space-y-8">
-                {ref.education.items.map((item, index) => (
-                  <article key={index}>
-                    <div className="flex flex-wrap justify-between gap-2">
-                      <div>
-                        <h3 className="font-display text-lg leading-[1.28]">
-                          {item.degree}
-                        </h3>
-                        <p className="mt-1 text-sm">{item.institution}</p>
-                      </div>
-                      <p className="text-sm text-muted">{item.period}</p>
-                    </div>
-                    <p className="mt-4 max-w-[460px] text-sm leading-relaxed text-muted">
-                      {item.description}
-                    </p>
-                  </article>
-                ))}
-              </div>
+          {shows("activities") && (
+            <Section id="activities" title={ref.activities.label}>
+              <Timeline data={ref.activities} />
             </Section>
           )}
           {shows("certifications") && (
