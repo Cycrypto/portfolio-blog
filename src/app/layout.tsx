@@ -1,0 +1,37 @@
+import type { Metadata } from "next";
+import { ToastProvider } from "@/components/ui";
+import "./globals.css";
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.SITE_URL || "http://localhost:3000"),
+  title: { default: "Junha — Portfolio & Journal", template: "%s · Junha" },
+  description: "만드는 과정과 그 안에서 배운 것들을 기록합니다.",
+};
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="ko" data-scroll-behavior="smooth">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Habibi&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans antialiased">
+        <a
+          href="#main"
+          className="fixed top-2 left-2 z-50 -translate-y-20 rounded bg-ink px-4 py-3 text-paper focus:translate-y-0"
+        >
+          본문으로 이동
+        </a>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,41 @@
+name: portfolio-next
+
+services:
+  portfolio:
+    image: portfolio-blog:${DEPLOYMENT_VERSION:-local}
+    build:
+      context: .
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-node:24-bookworm-slim}
+    restart: unless-stopped
+    init: true
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env.portfolio}
+      SITE_URL: https://junha.space
+      DATA_DIR: /app/data
+    ports:
+      - "127.0.0.1:13000:3000"
+    volumes:
+      - portfolio-data:/app/data
+    networks:
+      - proxy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK:?Set the existing Traefik network}
+      traefik.http.routers.portfolio-next.rule: Host(`junha.space`)
+      traefik.http.routers.portfolio-next.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.portfolio-next.tls: "true"
+      traefik.http.routers.portfolio-next.tls.certresolver: ${TRAEFIK_CERTRESOLVER:?Set the existing certificate resolver}
+      traefik.http.routers.portfolio-next.priority: "200"
+      traefik.http.routers.portfolio-next.service: portfolio-next
+      traefik.http.services.portfolio-next.loadbalancer.server.port: "3000"
+    stop_grace_period: 30s
+
+networks:
+  proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK:?Set the existing Traefik network}
+
+volumes:
+  portfolio-data:
+    name: portfolio-blog-data-v2

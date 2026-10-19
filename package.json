@@ -1,18 +1,41 @@
 {
+  "name": "portfolio-blog",
+  "version": "1.0.0",
+  "private": true,
   "scripts": {
-    "start:frontend": "npm run dev --prefix frontend",
-    "start:backend": "npm run start:dev --prefix backend",
-    "start:worker": "npm run start --prefix worker",
-    "start:dev": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
-    "start:dev:ai": "concurrently \"npm run start:frontend\" \"npm run start:backend\" \"npm run start:worker\""
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src tests *.ts *.mjs *.json",
+    "format:check": "prettier --check src tests *.ts *.mjs *.json"
   },
-  "devDependencies": {
-    "concurrently": "^9.2.0"
+  "engines": {
+    "node": ">=22.13"
   },
   "dependencies": {
-    "@nestjs/jwt": "^11.0.0",
-    "bcryptjs": "^3.0.2",
-    "jsonwebtoken": "^9.0.2",
-    "next": "^15.4.5"
+    "lucide-react": "^0.468.0",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
+    "sharp": "^0.35.5",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.56.0",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
   }
 }

@@ -1,0 +1,2 @@
+export const buttonClass = (variant = "primary") =>
+  `inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded px-4 text-sm font-medium transition-colors disabled:opacity-40 ${variant === "primary" ? "bg-ink text-paper hover:bg-[#39271F]" : variant === "danger" ? "bg-danger text-paper hover:bg-[#8f2925]" : variant === "secondary" ? "border border-line bg-surface hover:bg-soft" : "text-ink hover:bg-soft"}`;

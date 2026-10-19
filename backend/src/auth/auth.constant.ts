@@ -1,1 +1,0 @@
-export let AUTH_FIXED_TOKEN = 'test-token'
