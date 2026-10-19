@@ -10,6 +10,7 @@ import { isHomeDraft } from "@/lib/draft";
 import { useSessionDraft } from "./use-session-draft";
 import { AdminShell } from "./admin-shell";
 import { Portfolio } from "./portfolio";
+import { ImageField } from "./image-field";
 import { Button, Field, Modal, inputClass, request, useToast } from "./ui";
 
 type Value = string | Value[] | { [key: string]: Value };
@@ -124,11 +125,13 @@ function ContentFields({
   sample,
   path,
   onChange,
+  onUploading,
 }: {
   value: Value;
   sample: Value;
   path: string[];
   onChange: (next: Value) => void;
+  onUploading: (delta: number) => void;
 }) {
   const key = path.at(-1) ?? "";
   const name = /^\d+$/.test(key)
@@ -143,16 +146,24 @@ function ContentFields({
           ? sectionOptions
           : null;
     const isImage = imageFields.has(key) || path.includes("imageKeys");
+    if (isImage)
+      return (
+        <ImageField
+          id={id}
+          label={name}
+          value={value}
+          onChange={onChange}
+          onUploading={onUploading}
+        />
+      );
     return (
       <Field
         id={id}
         label={name}
         help={
-          isImage
-            ? "기존 에셋 이름, /경로 또는 https:// 이미지 주소. 비우면 숨깁니다."
-            : key === "href"
-              ? "사이트 내부 경로 또는 https:// 주소. 비우면 링크를 비활성화합니다."
-              : undefined
+          key === "href"
+            ? "사이트 내부 경로 또는 https:// 주소. 비우면 링크를 비활성화합니다."
+            : undefined
         }
       >
         {options ? (
@@ -181,7 +192,6 @@ function ContentFields({
             id={id}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            list={isImage ? "portfolio-assets" : undefined}
             className={inputClass}
           />
         )}
@@ -246,6 +256,7 @@ function ContentFields({
               value={item}
               sample={template}
               path={[...path, String(index)]}
+              onUploading={onUploading}
               onChange={(next) =>
                 onChange(value.map((old, i) => (i === index ? next : old)))
               }
@@ -280,6 +291,7 @@ function ContentFields({
                   value={v}
                   sample={(sample as Record<string, Value>)[k]}
                   path={[...path, k]}
+                  onUploading={onUploading}
                   onChange={(next) => onChange({ ...value, [k]: next })}
                 />
               </div>
@@ -289,6 +301,7 @@ function ContentFields({
               value={v}
               sample={(sample as Record<string, Value>)[k]}
               path={[...path, k]}
+              onUploading={onUploading}
               onChange={(next) => onChange({ ...value, [k]: next })}
             />
           )}
@@ -309,6 +322,8 @@ export function HomeEditor({
   const [form, setForm] = useState(initial.content);
   const [saved, setSaved] = useState(initial);
   const [busy, setBusy] = useState(false);
+  const [uploads, setUploads] = useState(0);
+  const onUploading = (delta: number) => setUploads((count) => count + delta);
   const inFlight = useRef(false);
   const [error, setError] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -323,16 +338,16 @@ export function HomeEditor({
   );
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
-      if (dirty) {
+      if (dirty || uploads > 0) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  }, [dirty, uploads]);
   const leave = (action: () => void) => {
-    if (busy) return;
+    if (busy || uploads > 0) return;
     if (!dirty) {
       action();
       return;
@@ -341,7 +356,7 @@ export function HomeEditor({
     setLeaveOpen(true);
   };
   const save = async (thenLeave = false) => {
-    if (inFlight.current) return;
+    if (inFlight.current || uploads > 0) return;
     const parsed = homeSchema.safeParse(form);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
@@ -398,18 +413,24 @@ export function HomeEditor({
             <Eye size={16} />
             미리보기
           </Button>
-          <Button onClick={() => void save()} loading={busy} disabled={!dirty}>
+          <Button
+            onClick={() => void save()}
+            loading={busy}
+            disabled={!dirty || uploads > 0}
+          >
             <Save size={16} />
             변경사항 저장
           </Button>
         </div>
       </div>
       <p role="status" className="mb-5 text-xs text-muted">
-        {busy
-          ? "저장 중…"
-          : dirty
-            ? "저장하지 않은 변경사항이 있습니다."
-            : `저장 완료 · 버전 ${saved.revision}`}
+        {uploads > 0
+          ? "이미지 업로드 중…"
+          : busy
+            ? "저장 중…"
+            : dirty
+              ? "저장하지 않은 변경사항이 있습니다."
+              : `저장 완료 · 버전 ${saved.revision}`}
       </p>
       {error && (
         <p role="alert" className="mb-6 rounded bg-danger-soft p-4 text-danger">
@@ -463,7 +484,7 @@ export function HomeEditor({
           <option key={asset} value={asset} />
         ))}
       </datalist>
-      <fieldset disabled={busy} className="max-w-4xl space-y-5">
+      <fieldset disabled={busy || uploads > 0} className="max-w-4xl space-y-5">
         {Object.entries(form).map(([section, value]) => (
           <details
             key={section}
@@ -478,6 +499,7 @@ export function HomeEditor({
                 value={value as Value}
                 sample={defaultHome[section as keyof HomeContent] as Value}
                 path={[section]}
+                onUploading={onUploading}
                 onChange={(next) =>
                   setForm((current) => ({ ...current, [section]: next }))
                 }
@@ -492,7 +514,11 @@ export function HomeEditor({
             ? "변경사항을 저장해 주세요."
             : "모든 변경사항이 저장됐습니다."}
         </span>
-        <Button onClick={() => void save()} loading={busy} disabled={!dirty}>
+        <Button
+          onClick={() => void save()}
+          loading={busy}
+          disabled={!dirty || uploads > 0}
+        >
           변경사항 저장
         </Button>
       </div>

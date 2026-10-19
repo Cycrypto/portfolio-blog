@@ -124,6 +124,9 @@ test("anonymous, forged, and wrong-application tokens cannot read or write admin
       401,
     );
     expect(
+      (await request.post("/api/admin/images", { headers, data: {} })).status(),
+    ).toBe(401);
+    expect(
       (await request.put("/api/admin/home", { headers, data: {} })).status(),
     ).toBe(401);
   }
@@ -144,6 +147,41 @@ test("authorized administrator edits SQLite content and public page reflects it 
     await expect(
       page.getByRole("heading", { name: "홈 화면 편집" }),
     ).toBeVisible();
+    await page
+      .locator("#home-intro-profile-avatar-file")
+      .setInputFiles("public/portfolio/oliver-rowland.png");
+    const avatarField = page.locator("#home-intro-profile-avatar");
+    await expect(avatarField).toHaveValue(
+      /^\/portfolio-images\/[a-f0-9]{64}\.webp$/,
+    );
+    const avatar = await avatarField.inputValue();
+    expect(
+      (await context.request.get(`${origin}${avatar}`)).headers()[
+        "content-type"
+      ],
+    ).toBe("image/webp");
+    expect(
+      (
+        await context.request.post(`${origin}/api/admin/images`, {
+          headers: { origin: "https://evil.example" },
+          data: {},
+        })
+      ).status(),
+    ).toBe(403);
+    expect(
+      (
+        await context.request.post(`${origin}/api/admin/images`, {
+          headers: { origin },
+          multipart: {
+            file: {
+              name: "fake.png",
+              mimeType: "image/png",
+              buffer: Buffer.from("<svg/>"),
+            },
+          },
+        })
+      ).status(),
+    ).toBe(400);
     await page.locator("#home-intro-title").fill("편집한 포트폴리오");
     await page.getByRole("button", { name: "미리보기", exact: true }).click();
     await expect(
@@ -164,6 +202,7 @@ test("authorized administrator edits SQLite content and public page reflects it 
     );
     const publicPage = await browser.newPage();
     await publicPage.goto(origin);
+    await expect(publicPage.locator(`img[src="${avatar}"]`)).toBeVisible();
     await expect(
       publicPage.getByRole("heading", {
         name: "편집한 포트폴리오",
