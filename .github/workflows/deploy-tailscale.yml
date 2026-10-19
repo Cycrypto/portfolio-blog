@@ -77,6 +77,11 @@ jobs:
             mkdir -p "$release_dir"
             git archive "$DEPLOYMENT_VERSION" | tar -x -C "$release_dir"
             bash "$release_dir/scripts/deploy.sh" "$PWD"
+            if [ -f "$PWD/.env.blog" ]; then
+              bash "$release_dir/scripts/deploy-blog.sh" "$PWD"
+            else
+              echo "Skipping blog deployment because $PWD/.env.blog is not configured"
+            fi
       - name: Verify public website
         run: |
           curl --fail --retry 5 --retry-delay 3 https://junha.space/api/health

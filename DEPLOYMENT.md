@@ -2,7 +2,8 @@
 
 Next.js 16 + Node 24 + SQLite로 메인 화면과 관리자 편집만 제공합니다.
 공개 화면은 `/`, 관리자는 `/admin`, 보호된 읽기·저장 API는 `/api/admin/home`입니다.
-블로그·시리즈·미디어 관리·별도 이력서 페이지와 비밀번호 로그인은 제거했습니다.
+블로그·시리즈·미디어 관리·별도 이력서 페이지와 비밀번호 로그인은 이 앱에서 제거했습니다.
+블로그는 아래 「blog.junha.space 블로그 (Ghost)」의 별도 Ghost 서비스로 운영합니다.
 `/api/health`는 컨테이너 상태 확인용입니다.
 
 ## Cloudflare Access 설정
@@ -114,3 +115,82 @@ Cloudflare 공개 키 응답을 대체하며, 앱의 JWT 검증은 그대로 실
 CI는 Node 24에서 테스트·빌드·타입 검사·Chromium E2E와 컨테이너 검증을 실행합니다.
 기존 Tailscale 배포 워크플로는 통과한 main 커밋 SHA를 배포합니다.
 서버의 `.env.portfolio`에 CF 환경변수가 없으면 Compose는 배포를 중단합니다.
+
+## blog.junha.space 블로그 (Ghost)
+
+블로그는 CV와 같은 서버·저장소에서 별도 Compose 프로젝트 `junha-blog`로 운영합니다.
+`docker-compose.blog.yml`은 Ghost 6.71(`ghost/Dockerfile`로 테마를 넣은 이미지)과
+MySQL 8.0.44를 띄우고, Ghost를 서버의 `127.0.0.1:13001`에만 연결합니다.
+데이터는 `junha-blog-content`(이미지·테마·설정), `junha-blog-mysql`(글·계정) 볼륨에 보관합니다.
+CV 컨테이너·볼륨·포트와 공유하는 것은 없습니다.
+
+테마 원본은 `ghost/theme`이며 승인한 Pencil 시안(글 목록·태그별 목록·글 상세·검색·404)을 따릅니다.
+컨테이너가 시작될 때마다 이미지에 든 테마로 `content/themes/junha`를 교체하므로
+관리자 화면에서 테마 ZIP을 올릴 필요가 없습니다. Ghost 기본 검색과 Portal은 끄고,
+테마의 검색 대화상자가 Content API로 제목·요약·태그를 검색합니다.
+
+### 서버 최초 설정
+
+1. `.env.blog.example`을 `/home/ubuntu/apps/portfolio-blog/.env.blog`로 복사하고 `chmod 600`합니다.
+   DB 비밀번호 두 개는 `openssl rand -base64 32`처럼 긴 임의 값을 넣습니다.
+2. SMTP를 입력합니다. Ghost 6은 새 기기에서 관리자 로그인할 때 이메일 인증 코드를 보내므로
+   메일 없이는 로그인이 막힙니다. Gmail이면 앱 비밀번호와 `smtp.gmail.com:465`를 씁니다.
+   SMTP를 아직 준비하지 못했다면 `GHOST_STAFF_DEVICE_VERIFICATION=false`로 두고
+   아래 Cloudflare Access 보호를 반드시 먼저 켭니다. 배포 스크립트는 둘 다 없으면 중단합니다.
+3. Cloudflare Zero Trust → Networks → Tunnels의 기존 `junha-portfolio` 터널에 Public hostname
+   `blog.junha.space` → `http://127.0.0.1:13001`을 추가합니다. DNS CNAME은 자동으로 생깁니다.
+4. Access → Applications에 Self-hosted 앱 `Blog Admin`을 만들고 hostname
+   `blog.junha.space/ghost`에 기존 `Portfolio Administrators` Allow 정책을 연결합니다.
+   이 경로는 `/ghost/api/content`도 덮으므로, 검색을 위해 `blog.junha.space/ghost/api/content`에
+   Bypass(Everyone) 정책만 있는 앱 `Blog Content API`를 하나 더 만듭니다.
+   첫 배포 전에 설정해야 다른 사람이 최초 관리자 계정을 먼저 만들 수 없습니다.
+5. 배포 후 `https://blog.junha.space/ghost`에서 소유자 계정을 만들고 한 번만 설정합니다.
+   - Settings → Design → Change theme → Installed에서 `junha` 활성화
+   - General: 사이트 제목 `Junha`, Publication language `ko`, Timezone `Asia/Seoul`
+   - Brand accent color `#AD3B25`
+   - Navigation → Secondary: 목록 상단 필터(예: 개발 `/tag/dev/`, 인프라 `/tag/infra/`, 회고 `/tag/retrospective/`).
+     비워 두면 글이 있는 공개 태그를 이름순으로 모두 보여줍니다.
+   - Design → Site-wide: CV URL(기본 `https://junha.space`), GitHub URL(비우면 푸터에서 숨김)
+   - Membership → Subscription access: Nobody (테마에 가입 화면이 없습니다)
+
+### 배포와 롤백
+
+배포 워크플로는 CV 배포가 끝난 뒤 서버에 `.env.blog`가 있으면 `scripts/deploy-blog.sh`를 실행합니다.
+수동 배포는 릴리스 디렉터리에서 `bash scripts/deploy-blog.sh /home/ubuntu/apps/portfolio-blog`입니다.
+
+- 이미지 태그는 `ghost/`의 테마·이미지 정의와 Compose 파일의 해시입니다. CV만 바뀐 릴리스는
+  블로그 컨테이너를 그대로 둡니다.
+- 테마나 Ghost 버전이 바뀌면 먼저 DB와 콘텐츠를 백업하고 Ghost를 교체한 뒤
+  `/ghost/api/admin/site/`와 홈 응답을 확인합니다. 실패하면 이전 이미지로 되돌립니다.
+  Ghost가 이미 DB를 마이그레이션했다면 방금 만든 백업을 복원합니다.
+- 서버 전용 설정(메모리 제한, 고정 서브넷 등)은 `docker-compose.blog.override.yml`을 기본 경로에 두면 함께 적용됩니다.
+- Ghost 업그레이드는 `ghost/Dockerfile`과 `docker-compose.blog.yml`의 `ghost:6.71.0-alpine`을 함께 올리고
+  CI의 gscan·부팅 검사를 통과시킨 뒤 배포합니다.
+
+### 백업과 복원
+
+기본 경로에서 `bash current/scripts/backup-blog.sh "$PWD"`를 실행하면
+`backups/blog/<UTC 시각>/`에 `ghost.sql.gz`(mysqldump)와 `content.tar.gz`를 만들고
+최근 10개(`BLOG_BACKUP_KEEP`)만 남깁니다. 정기 백업은 서버 crontab에 등록합니다.
+
+```cron
+30 3 * * * cd /home/ubuntu/apps/portfolio-blog && mkdir -p backups && bash current/scripts/backup-blog.sh "$PWD" >> backups/blog.log 2>&1
+```
+
+복원은 기본 경로에서 `bash current/scripts/restore-blog.sh backups/blog/<시각>`입니다. Ghost를 멈추고 DB와 콘텐츠 볼륨을
+백업 시점으로 바꾼 뒤 다시 시작합니다. 서버 밖으로 옮겨 둘 백업은 `backups/blog`를 복사합니다.
+
+### 로컬 확인
+
+```bash
+npm ci --prefix ghost
+npm run validate --prefix ghost          # gscan, Ghost 6 기준
+export BLOG_URL=http://127.0.0.1:13001 GHOST_DB_PASSWORD=local-db MYSQL_ROOT_PASSWORD=local-root \
+  GHOST_STAFF_DEVICE_VERIFICATION=false
+docker compose -f docker-compose.blog.yml up -d --build --wait
+npm run smoke --prefix ghost              # 새 스택 전용: 관리자 생성, 테마 활성화, 예시 글 4개, 화면 확인
+docker compose -f docker-compose.blog.yml down -v
+```
+
+스모크 스크립트는 예시 글을 만들고 기존 글을 지울 수 있으므로 운영 사이트에 실행하지 않습니다.
+CI의 `blog` 작업도 같은 순서로 테마 검사와 Ghost 부팅·화면 확인을 실행합니다.

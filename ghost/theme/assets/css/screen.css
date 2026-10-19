@@ -11,10 +11,19 @@
   --code-bg: #251b16;
   --code-ink: #f6e9df;
   --code-label: #c5aea1;
-  --font-sans: var(--gh-font-body, "IBM Plex Sans KR", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif);
+  --font-sans: var(
+    --gh-font-body,
+    "IBM Plex Sans KR",
+    "Apple SD Gothic Neo",
+    "Noto Sans KR",
+    "Malgun Gothic",
+    system-ui,
+    sans-serif
+  );
   --font-heading: var(--gh-font-heading, var(--font-sans));
   --font-brand: "Geist", var(--font-sans);
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --gutter: 24px;
   --shell: 960px;
   --header-height: 88px;
@@ -127,9 +136,9 @@ button {
 }
 
 .icon--arrow {
-  width: 0.8em;
-  height: 0.8em;
-  stroke-width: 2;
+  width: 0.95em;
+  height: 0.95em;
+  stroke-width: 1.9;
 }
 
 /* Header and footer */
@@ -256,7 +265,9 @@ button {
   color: var(--subtle);
   font-size: 15px;
   line-height: 1.6;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .tag-pill:hover {
@@ -831,7 +842,9 @@ button {
   font-size: 16px;
   line-height: 1.6;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .button--primary {

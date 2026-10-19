@@ -6,6 +6,10 @@ node_modules/
 .env*
 !.env.example
 !.env.portfolio.example
+!.env.blog.example
+/.blog-release
+/backups/
+/docker-compose.blog.override.yml
 test-results/
 playwright-report/
 *.tsbuildinfo

@@ -65,3 +65,28 @@ jobs:
           grep -q 'Oliver Rowland' /tmp/home.html
           test "$(curl --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:13000/blog)" = 404
           test "$(curl --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:13000/api/admin/home)" = 503
+
+  blog:
+    runs-on: ubuntu-latest
+    env:
+      BLOG_URL: http://127.0.0.1:13001
+      GHOST_DB_PASSWORD: ci-ghost-db-password
+      MYSQL_ROOT_PASSWORD: ci-mysql-root-password
+      GHOST_STAFF_DEVICE_VERIFICATION: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ghost/package-lock.json
+      - run: npm ci --prefix ghost
+      - run: npm run validate --prefix ghost
+      - run: docker compose -f docker-compose.blog.yml up -d --build --wait --wait-timeout 300
+      - run: npm run smoke --prefix ghost
+      - name: Show Ghost logs
+        if: failure()
+        run: docker compose -f docker-compose.blog.yml logs --tail 200
+      - name: Remove the test stack
+        if: always()
+        run: docker compose -f docker-compose.blog.yml down -v

@@ -6,6 +6,8 @@ release_dir=$(cd "$(dirname "$0")/.." && pwd)
 env_file="$base_dir/.env.blog"
 state_file="$base_dir/.blog-release"
 compose_file="$release_dir/docker-compose.blog.yml"
+# Optional host-specific settings, such as resource limits or a fixed subnet.
+override_file="$base_dir/docker-compose.blog.override.yml"
 [[ -f "$env_file" ]] || { echo "Configure $env_file first" >&2; exit 1; }
 
 env_value() {
@@ -36,6 +38,7 @@ image="junha-blog-ghost:$BLOG_VERSION"
 port=$(env_value BLOG_PORT)
 port=${port:-13001}
 compose=(docker compose --env-file "$env_file" -f "$compose_file")
+[[ -f "$override_file" ]] && compose+=(-f "$override_file")
 "${compose[@]}" config --quiet
 
 if ! docker image inspect "$image" >/dev/null 2>&1; then
@@ -49,9 +52,14 @@ if [[ -f "$state_file" ]]; then
 fi
 
 running_image=$(docker inspect --format '{{.Config.Image}}' junha-blog-ghost-1 2>/dev/null || true)
+database_running=$(docker inspect --format '{{.State.Running}}' junha-blog-mysql-1 2>/dev/null || true)
 if [[ -n "$running_image" && "$running_image" != "$image" ]]; then
   # Ghost upgrades can migrate the database, so keep a restorable copy first.
-  bash "$release_dir/scripts/backup-blog.sh" "$base_dir"
+  if [[ "$database_running" == true ]]; then
+    bash "$release_dir/scripts/backup-blog.sh" "$base_dir"
+  else
+    echo "Skipping pre-deploy backup because junha-blog-mysql-1 is not running" >&2
+  fi
 fi
 
 verify() {
@@ -62,8 +70,9 @@ verify() {
 rollback() {
   if [[ -n "$previous_version" && "$previous_version" != "$BLOG_VERSION" && -f "$previous_compose" ]]; then
     echo "Restoring blog image $previous_version" >&2
-    BLOG_VERSION="$previous_version" docker compose --env-file "$env_file" -f "$previous_compose" \
-      up -d --wait --wait-timeout 240 ghost || true
+    local previous=(docker compose --env-file "$env_file" -f "$previous_compose")
+    [[ -f "$override_file" ]] && previous+=(-f "$override_file")
+    BLOG_VERSION="$previous_version" "${previous[@]}" up -d --wait --wait-timeout 240 ghost || true
     echo "If Ghost migrated the database, restore the newest backup in $base_dir/backups/blog" >&2
   fi
 }
