@@ -352,9 +352,7 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
                   <div key={index} className="flex items-center gap-4">
                     <Asset name={item.flag} alt="" className="size-10" />
                     <div>
-                      <h3 className="font-display text-lg">
-                        {item.name}
-                      </h3>
+                      <h3 className="font-display text-lg">{item.name}</h3>
                       <p className="mt-1 text-sm">{item.proficiency}</p>
                     </div>
                   </div>
