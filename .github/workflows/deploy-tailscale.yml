@@ -1,19 +1,7 @@
 name: Deploy (Tailscale)
 
 on:
-  workflow_run:
-    workflows:
-      - CI
-    types:
-      - completed
-    branches:
-      - main
   workflow_dispatch:
-    inputs:
-      ref:
-        description: "Branch or tag to deploy"
-        required: true
-        default: "main"
 
 permissions:
   contents: read
@@ -33,19 +21,8 @@ jobs:
   deploy:
     name: Deploy to production
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push') }}
     environment: production
     steps:
-      - name: Resolve deploy ref
-        id: vars
-        shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "ref=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Resolve Tailscale auth mode
         id: ts_auth
         shell: bash
@@ -88,21 +65,19 @@ jobs:
           port: ${{ env.DEPLOY_PORT }}
           command_timeout: 45m
           script: |
-            set -euo pipefail
-
-            cd "${{ env.DEPLOY_PATH }}"
-            git fetch --all --prune
-            git checkout "${{ steps.vars.outputs.ref }}"
-            git pull origin "${{ steps.vars.outputs.ref }}"
-
-            if docker compose version >/dev/null 2>&1; then
-              DC="docker compose"
-            else
-              DC="docker-compose"
-            fi
-
-            $DC -f "${{ env.COMPOSE_FILE }}" build backend frontend
-            $DC -f "${{ env.COMPOSE_FILE }}" up -d db minio
-            $DC -f "${{ env.COMPOSE_FILE }}" run --rm backend npm run migration:run:prod
-            $DC -f "${{ env.COMPOSE_FILE }}" up -d backend frontend minio minio-init
-            $DC -f "${{ env.COMPOSE_FILE }}" ps
+            set -eu
+            hostname
+            uname -m
+            docker ps --format 'table {{.Names}}	{{.Image}}	{{.Status}}	{{.Ports}}'
+            python3 - <<'PYINSPECT'
+            import json, subprocess
+            ids = subprocess.check_output(['docker','ps','-q'], text=True).split()
+            for cid in ids:
+                c=json.loads(subprocess.check_output(['docker','inspect',cid],text=True))[0]
+                labels=c['Config'].get('Labels') or {}
+                safe={k:v for k,v in labels.items() if k in ('com.docker.compose.project','com.docker.compose.project.config_files','com.docker.compose.project.working_dir','com.docker.compose.service','traefik.enable','traefik.docker.network') or (k.startswith('traefik.http.') and any(k.endswith(suffix) for suffix in ('.rule','.entrypoints','.certresolver','.port','.service','.tls')))}
+                print(json.dumps({'name':c['Name'],'labels':safe,'networks':list(c['NetworkSettings']['Networks']),'mounts':[{'source':m['Source'],'destination':m['Destination']} for m in c['Mounts']]}))
+            PYINSPECT
+            cd /home/ubuntu/apps/portfolio-blog
+            git status --short
+            ls -la docker-compose* .env* 2>/dev/null || true
