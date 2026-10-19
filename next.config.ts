@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 const config: NextConfig = {
   output: "standalone",
   distDir: process.env.NEXT_DIST_DIR || ".next",
-  serverExternalPackages: ["node:sqlite"],
+  serverExternalPackages: ["node:sqlite", "pdfkit"],
   poweredByHeader: false,
   async headers() {
     const common = [

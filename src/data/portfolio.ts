@@ -61,7 +61,7 @@ export const defaultHome: HomeContent = {
       ],
       downloadCv: {
         label: "Download CV",
-        href: "/portfolio/oliver-rowland-cv.pdf",
+        href: "",
       },
     },
   },

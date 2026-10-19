@@ -99,7 +99,7 @@ export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
           <div className="min-w-0 flex-1 basis-40">
             <h2 className="font-display text-2xl">{ref.intro.profile.name}</h2>
             <p className="mt-2 text-sm">{ref.intro.profile.role}</p>
-            <p className="mt-4 text-sm leading-relaxed text-muted">
+            <p className="mt-4 text-sm leading-relaxed whitespace-pre-line text-muted">
               {ref.intro.profile.description}
             </p>
           </div>
@@ -131,9 +131,10 @@ export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
           ))}
         </div>
         <div className="mt-6 flex gap-2">
+          {/* With no custom link the button serves the CV generated from this content. */}
           <a
-            href={ref.intro.profile.downloadCv.href || undefined}
-            aria-disabled={!ref.intro.profile.downloadCv.href}
+            href={ref.intro.profile.downloadCv.href || "/cv.pdf"}
+            download={ref.intro.profile.downloadCv.href ? undefined : ""}
             className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded bg-ink px-4 text-sm text-paper transition-colors hover:bg-[#39271F]"
           >
             <Download size={14} />
@@ -193,7 +194,7 @@ function Timeline({ data }: { data: Timeline }) {
                   <p className="text-xs text-muted sm:text-sm">{role.period}</p>
                 </div>
                 {role.description && (
-                  <p className="mt-4 max-w-[460px] text-sm leading-relaxed text-muted">
+                  <p className="mt-4 max-w-[460px] text-sm leading-relaxed whitespace-pre-line text-muted">
                     {role.description}
                   </p>
                 )}
@@ -249,7 +250,7 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
             <h1 className="font-display text-[32px] leading-[1.2] md:text-[40px]">
               {ref.intro.title}
             </h1>
-            <p className="mt-4 max-w-[480px] text-base leading-relaxed text-muted md:text-lg">
+            <p className="mt-4 max-w-[480px] text-base leading-relaxed whitespace-pre-line text-muted md:text-lg">
               {ref.intro.description}
             </p>
             {ref.intro.cta.label && (
@@ -270,7 +271,9 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
         </section>
         <div className="min-w-0">
           <Section id="about" title={ref.about.label}>
-            <p className="text-base leading-relaxed">{ref.about.description}</p>
+            <p className="text-base leading-relaxed whitespace-pre-line">
+              {ref.about.description}
+            </p>
             {ref.about.keySkills.length > 0 && (
               <>
                 <p className="mt-8 mb-4 text-base">
@@ -364,7 +367,7 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
               <h2 className="font-display text-[32px] leading-[1.2]">
                 {ref.contact.label}
               </h2>
-              <p className="mx-auto mt-2.5 max-w-80 text-base leading-[1.4]">
+              <p className="mx-auto mt-2.5 max-w-80 text-base leading-[1.4] whitespace-pre-line">
                 {ref.contact.description}
               </p>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">

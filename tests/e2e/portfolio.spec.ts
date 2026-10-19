@@ -322,3 +322,19 @@ test("authorized administrator edits SQLite content and public page reflects it 
     await context.close();
   }
 });
+test("the CV button serves a generated PDF built from the saved content", async ({
+  request,
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Download CV" })).toHaveAttribute(
+    "href",
+    "/cv.pdf",
+  );
+  const response = await request.get("/cv.pdf");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toBe("application/pdf");
+  const body = await response.body();
+  expect(body.subarray(0, 5).toString()).toBe("%PDF-");
+  expect(body.length).toBeGreaterThan(20000);
+});

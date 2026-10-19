@@ -160,7 +160,7 @@ function ProfileForm({ value, update }: FormProps) {
       </Group>
       <Group
         title="이력서 버튼"
-        hint="프로필 카드 하단의 큰 버튼입니다. 링크를 비우면 버튼이 눌리지 않습니다."
+        hint="프로필 카드 하단의 큰 버튼입니다. 링크를 비우면 이 사이트 내용으로 자동 생성한 PDF(/cv.pdf)를 내려받습니다. 직접 만든 이력서를 쓰려면 파일 주소를 넣어 주세요."
       >
         <Row>
           <TextField
@@ -178,7 +178,7 @@ function ProfileForm({ value, update }: FormProps) {
             onChange={(href) =>
               update((d) => (d.intro.profile.downloadCv.href = href))
             }
-            placeholder="https://… 또는 /파일경로.pdf"
+            placeholder="비우면 자동 생성 PDF 사용"
             type="url"
           />
         </Row>
