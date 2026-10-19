@@ -235,7 +235,7 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
                         <article key={roleIndex} className="relative">
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
-                              <h3 className="font-display text-lg leading-[1.28]">
+                              <h3 className="font-display text-lg font-bold leading-[1.28]">
                                 {role.title}
                               </h3>
                               <p className="mt-1 text-sm leading-[1.4]">
@@ -352,7 +352,9 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
                   <div key={index} className="flex items-center gap-4">
                     <Asset name={item.flag} alt="" className="size-10" />
                     <div>
-                      <h3 className="font-display text-lg">{item.name}</h3>
+                      <h3 className="font-display text-lg">
+                        {item.name}
+                      </h3>
                       <p className="mt-1 text-sm">{item.proficiency}</p>
                     </div>
                   </div>
