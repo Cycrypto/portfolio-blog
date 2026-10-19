@@ -43,7 +43,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
   const avatar = profile.avatar ? await avatarPng(profile.avatar) : null;
   const doc = new PDFDocument({
     size: "A4",
-    margins: { top: 30, bottom: 26, left: 52, right: 52 },
+    margins: { top: 26, bottom: 24, left: 44, right: 44 },
     info: { Title: `${profile.name} — CV`, Author: profile.name },
   });
   doc.registerFont("body", join(fonts, "Pretendard-Regular.otf"));
@@ -65,21 +65,21 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
     if (doc.y + height > bottom()) doc.addPage();
   };
   const section = (title: string) => {
-    ensureSpace(48);
+    ensureSpace(32);
     doc.y += 0;
     doc
       .font(display(title))
-      .fontSize(13.5)
+      .fontSize(12.5)
       .fillColor(ink)
       .text(title, left, doc.y, { width });
-    const y = doc.y + 3;
+    const y = doc.y + 2;
     doc
       .moveTo(left, y)
       .lineTo(left + width, y)
       .lineWidth(0.6)
       .strokeColor(line)
       .stroke();
-    doc.y = y + 5;
+    doc.y = y + 4;
   };
   const bullets = (items: string[]) => {
     for (const item of items) {
@@ -87,7 +87,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
       const y = doc.y;
       doc
         .font("body")
-        .fontSize(8.8)
+        .fontSize(8.1)
         .fillColor(coral)
         .text("•", left, y, { width: 10, lineBreak: false });
       doc
@@ -102,7 +102,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
         const top = doc.y;
         doc
           .font("body")
-          .fontSize(9)
+          .fontSize(8.3)
           .fillColor(muted)
           .text(role.period, left, top + 2, {
             width,
@@ -111,12 +111,12 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
           });
         doc
           .font(display(role.title, true))
-          .fontSize(11.5)
+          .fontSize(10.5)
           .fillColor(ink)
           .text(role.title, left, top, { width: width - 120 });
         doc
           .font("body")
-          .fontSize(8.8)
+          .fontSize(8.1)
           .fillColor(muted)
           .text(
             [company.name, role.employmentType].filter(Boolean).join(" · "),
@@ -125,7 +125,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
         if (role.description) {
           doc.y += 2;
           doc
-            .fontSize(8.8)
+            .fontSize(8.1)
             .fillColor(ink)
             .text(role.description.replace(/\n\s*\n/g, "\n"), left, doc.y, {
               width,
@@ -137,7 +137,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
           doc.y += 3;
           bullets(role.highlights);
         }
-        doc.y += 5;
+        doc.y += 4;
       }
     }
   };
@@ -145,10 +145,10 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
   // Header: accent bar, avatar and name on the left, contact lines on the right.
   const top = doc.page.margins.top;
   doc.rect(left, top, 48, 3).fill(coral);
-  const headTop = top + 22;
+  const headTop = top + 16;
   let textLeft = left;
   if (avatar) {
-    const size = 64;
+    const size = 56;
     doc.save();
     doc.circle(left + size / 2, headTop + size / 2, size / 2).clip();
     doc.image(avatar, left, headTop, { width: size, height: size });
@@ -189,7 +189,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
         width: nameWidth,
         lineBreak: false,
       });
-  doc.y = headTop + Math.max(avatar ? 64 : 0, 60) + 4;
+  doc.y = headTop + 60 + 4;
   if (profile.facts.length)
     doc
       .font("body")
@@ -202,7 +202,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
   section(content.about.label || "About");
   doc
     .font("body")
-    .fontSize(9.2)
+    .fontSize(8.6)
     .fillColor(ink)
     .text(content.about.description.replace(/\n\s*\n/g, "\n"), left, doc.y, {
       width,
@@ -222,7 +222,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
     ensureSpace(80);
     section(content.skills.label || "Skills");
     // Chips flow left to right and wrap, like the site's tag list.
-    doc.font("body").fontSize(8.5);
+    doc.font("body").fontSize(8);
     let x = left;
     let y = doc.y;
     for (const s of content.skills.items) {
@@ -232,22 +232,22 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
       const w = doc.widthOfString(label) + 14;
       if (x + w > left + width) {
         x = left;
-        y += 21;
+        y += 19;
       }
       if (y + 22 > bottom()) {
         doc.addPage();
         y = doc.y;
         x = left;
       }
-      doc.roundedRect(x, y, w, 18, 3).fill(soft);
-      doc.fillColor(ink).text(label, x + 7, y + 4.5, { lineBreak: false });
+      doc.roundedRect(x, y, w, 16, 3).fill(soft);
+      doc.fillColor(ink).text(label, x + 7, y + 3.5, { lineBreak: false });
       x += w + 6;
     }
-    doc.y = content.skills.items.length ? y + 22 : y;
+    doc.y = content.skills.items.length ? y + 20 : y;
     if (content.skills.technologies.length)
       doc
         .font("body")
-        .fontSize(9.5)
+        .fontSize(8.5)
         .fillColor(muted)
         .text(
           `${content.skills.technologiesLabel || "Tools"}  ${content.skills.technologies.map((t) => t.name).join(" · ")}`,
@@ -276,7 +276,7 @@ export async function renderCv(content: HomeContent): Promise<Buffer> {
     section(content.languages.label || "Languages");
     doc
       .font("body")
-      .fontSize(10)
+      .fontSize(9)
       .fillColor(ink)
       .text(
         content.languages.items
