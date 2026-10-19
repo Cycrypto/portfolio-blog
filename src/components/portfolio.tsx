@@ -193,14 +193,14 @@ export function Portfolio({
               {ref.experience.companies.map((company, companyIndex) => (
                 <div
                   key={companyIndex}
-                  className="relative grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-4"
+                  className={`relative ${company.logo ? "grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-4" : "min-w-0"}`}
                 >
                   <Asset
                     name={company.logo}
                     alt={company.name}
                     className="size-10 rounded"
                   />
-                  <div className="space-y-8">
+                  <div className="min-w-0 space-y-8">
                     {company.roles.map((role, roleIndex) => (
                       <article key={roleIndex} className="relative">
                         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -229,7 +229,7 @@ export function Portfolio({
                       </article>
                     ))}
                   </div>
-                  {company.roles.length > 1 && (
+                  {company.logo && company.roles.length > 1 && (
                     <span
                       aria-hidden
                       className="absolute top-14 bottom-2 left-5 border-l border-ink/10"

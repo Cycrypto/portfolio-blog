@@ -105,6 +105,52 @@ test("retired public pages, admin pages, and APIs are really removed", async ({
     expect((await request.get(path)).status(), path).toBe(404);
   }
 });
+test("projects without logos keep readable text widths on desktop and mobile", async ({
+  request,
+  page,
+}) => {
+  const headers = { "cf-access-jwt-assertion": await token(), origin };
+  const before = (await (
+    await request.get("/api/admin/home", { headers })
+  ).json()) as HomeDocument;
+  const content = structuredClone(before.content);
+  content.experience.companies[0].logo = "";
+  content.experience.companies[0].roles[0].title =
+    "백엔드·인프라: 서비스가 동작하는 구조를 다룹니다";
+  try {
+    expect(
+      (
+        await request.put("/api/admin/home", {
+          headers,
+          data: { content, revision: before.revision },
+        })
+      ).status(),
+    ).toBe(200);
+    await page.goto("/");
+    for (const width of [1081, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      const section = await page.locator("#experience").boundingBox();
+      const article = await page
+        .locator("#experience article")
+        .first()
+        .boundingBox();
+      expect(article!.width).toBeGreaterThan(section!.width * 0.8);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+    }
+  } finally {
+    const latest = (await (
+      await request.get("/api/admin/home", { headers })
+    ).json()) as HomeDocument;
+    await request.put("/api/admin/home", {
+      headers,
+      data: { content: before.content, revision: latest.revision },
+    });
+  }
+});
 test("anonymous, forged, and wrong-application tokens cannot read or write administrator content", async ({
   request,
   page,
