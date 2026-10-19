@@ -79,7 +79,7 @@ test("invalid nested content and unsafe URLs are rejected atomically", () => {
       );
     }
     const content = structuredClone(initial.content);
-    content.experience.companies[0].roles = [];
+    content.contact.channels[0].value = "not-an-email";
     assert.throws(
       () => repo.saveHome({ ...initial, content }, "admin"),
       fails(400),
@@ -139,6 +139,59 @@ test("an existing full home document migrates without losing content", () => {
   const repo = new Repository(path);
   try {
     assert.deepEqual(repo.getHome(), content);
+  } finally {
+    repo.close();
+    rmSync(folder, { recursive: true, force: true });
+  }
+});
+test("a saved document with retired sections upgrades and keeps every other edit", () => {
+  const folder = mkdtempSync(join(tmpdir(), "portfolio-upgrade-"));
+  const path = join(folder, "home.sqlite");
+  let repo = new Repository(path);
+  const edited = structuredClone(repo.getHomeDocument().content);
+  edited.about.description = "유지되는 소개";
+  const legacy = {
+    ...edited,
+    navigation: {
+      ...edited.navigation,
+      items: [
+        { label: "Experience", section: "experience" },
+        ...edited.navigation.items,
+      ],
+    },
+    intro: {
+      ...edited.intro,
+      cta: undefined,
+      experienceLink: {
+        label: "View Experience",
+        imageKeys: ["heroMark1", "companyNorthstack"],
+        arrow: "iconArrowRight",
+      },
+    },
+    experience: { label: "Experience", companies: [] },
+    recommendations: { label: "Recommendations", items: [] },
+  };
+  repo.db
+    .prepare("UPDATE home_content SET content=?, revision=7 WHERE id=1")
+    .run(JSON.stringify(legacy));
+  repo.close();
+  repo = new Repository(path);
+  try {
+    const document = repo.getHomeDocument();
+    assert.equal(document.revision, 8);
+    assert.equal(document.content.about.description, "유지되는 소개");
+    assert.deepEqual(
+      document.content.navigation.items,
+      edited.navigation.items,
+    );
+    assert.deepEqual(document.content.intro.cta, {
+      label: "View Experience",
+      section: "about",
+      imageKeys: ["heroMark1", ""],
+      arrow: "iconArrowRight",
+    });
+    assert.ok(!("experience" in document.content));
+    assert.ok(!("recommendations" in document.content));
   } finally {
     repo.close();
     rmSync(folder, { recursive: true, force: true });

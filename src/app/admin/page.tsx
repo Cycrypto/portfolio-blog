@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { repository } from "@/lib/repository";
 import { isAppError } from "@/lib/validation";
-import { HomeEditor } from "@/components/home-editor";
+import { HomeEditor } from "@/components/admin/home-editor";
 export const dynamic = "force-dynamic";
 export default async function AdminPage() {
   let admin;

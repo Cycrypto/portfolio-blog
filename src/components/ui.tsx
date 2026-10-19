@@ -189,14 +189,18 @@ export function Modal({
     </dialog>
   );
 }
-const ToastContext = createContext<(message: string, error?: boolean) => void>(
-  () => {},
-);
+export type ToastOptions =
+  | boolean
+  | { error?: boolean; action?: { label: string; onClick: () => void } };
+const ToastContext = createContext<
+  (message: string, options?: ToastOptions) => void
+>(() => {});
 export const useToast = () => useContext(ToastContext);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<{
     message: string;
     error: boolean;
+    action?: { label: string; onClick: () => void };
   } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
@@ -205,10 +209,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
-  const show = (message: string, error = false) => {
+  const show = (message: string, options: ToastOptions = false) => {
+    const { error = false, action } =
+      typeof options === "boolean" ? { error: options } : options;
     if (timer.current) clearTimeout(timer.current);
-    setToast({ message, error });
-    timer.current = setTimeout(() => setToast(null), 5000);
+    setToast({ message, error, action });
+    timer.current = setTimeout(() => setToast(null), action ? 8000 : 5000);
   };
   return (
     <ToastContext.Provider value={show}>
@@ -224,6 +230,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <Check size={20} className="shrink-0 text-success" />
           )}
           <p className="text-sm">{toast.message}</p>
+          {toast.action && (
+            <button
+              onClick={() => {
+                toast.action?.onClick();
+                setToast(null);
+              }}
+              className="min-h-11 shrink-0 rounded px-3 text-sm font-medium text-accent hover:bg-soft"
+            >
+              {toast.action.label}
+            </button>
+          )}
           <button
             onClick={() => setToast(null)}
             aria-label="알림 닫기"

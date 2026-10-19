@@ -1,69 +1,66 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Asterisk, ExternalLink, LayoutTemplate, LogOut } from "lucide-react";
+import { Asterisk, ExternalLink, LogOut } from "lucide-react";
 import { Button } from "./ui";
 export function AdminShell({
   children,
   onLeave,
   email,
+  nav,
 }: {
   children: React.ReactNode;
   onLeave: (action: () => void) => void;
   email: string;
+  nav: React.ReactNode;
 }) {
   const router = useRouter();
   return (
-    <div className="min-h-screen md:grid md:grid-cols-[232px_minmax(0,1fr)]">
-      <aside className="border-b border-line bg-soft px-5 py-4 md:sticky md:top-0 md:h-screen md:border-r md:border-b-0 md:px-7 md:py-6">
-        <Link
-          href="/"
-          onNavigate={(e) => {
-            e.preventDefault();
-            onLeave(() => router.push("/"));
-          }}
-          className="mb-5 flex items-center gap-2 font-display text-2xl"
-        >
-          <Asterisk size={24} className="text-coral" />
-          Portfolio
-        </Link>
-        <nav aria-label="관리 메뉴">
-          <span
-            aria-current="page"
-            className="flex min-h-11 items-center gap-2 rounded bg-surface px-3 text-sm text-accent"
-          >
-            <LayoutTemplate size={18} />홈 화면 편집
-          </span>
-        </nav>
-        <p className="mt-6 text-xs break-all text-muted">{email}</p>
-        <p className="mt-2 font-mono text-[10px] text-accent">
-          ADMIN · CLOUDFLARE ACCESS
-        </p>
-        <div className="mt-6 flex flex-wrap gap-2 md:flex-col">
+    <div className="min-h-screen md:grid md:grid-cols-[240px_minmax(0,1fr)]">
+      <aside className="flex flex-col gap-4 border-b border-line bg-soft px-4 py-4 md:sticky md:top-0 md:h-screen md:overflow-y-auto md:border-r md:border-b-0 md:px-5 md:py-6">
+        <div className="flex items-center justify-between gap-3">
           <Link
             href="/"
             onNavigate={(e) => {
               e.preventDefault();
               onLeave(() => router.push("/"));
             }}
-            className="inline-flex min-h-11 items-center gap-2 px-3 text-xs text-muted"
+            className="flex items-center gap-2 font-display text-2xl"
           >
-            <ExternalLink size={16} />
+            <Asterisk size={24} className="text-coral" />
+            Portfolio
+          </Link>
+          <Link
+            href="/"
+            onNavigate={(e) => {
+              e.preventDefault();
+              onLeave(() => router.push("/"));
+            }}
+            className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded px-2 text-xs whitespace-nowrap text-muted hover:bg-surface"
+          >
+            <ExternalLink size={14} />
             사이트 보기
           </Link>
+        </div>
+        {nav}
+        <div className="mt-auto hidden md:block">
+          <p className="text-xs break-all text-muted">{email}</p>
+          <p className="mt-1 font-mono text-[10px] text-accent">
+            ADMIN · CLOUDFLARE ACCESS
+          </p>
           <Button
             variant="ghost"
             onClick={() =>
               onLeave(() => window.location.assign("/cdn-cgi/access/logout"))
             }
-            className="justify-start text-xs text-muted"
+            className="mt-3 -ml-3 text-xs text-muted"
           >
-            <LogOut size={16} />
+            <LogOut size={14} />
             로그아웃
           </Button>
         </div>
       </aside>
-      <main id="main" className="min-w-0 px-6 py-8 md:p-12">
+      <main id="main" className="min-w-0">
         {children}
       </main>
     </div>

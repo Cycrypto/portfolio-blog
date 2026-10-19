@@ -2,18 +2,75 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { defaultHome } from "@/data/portfolio";
+import { portfolioAssets } from "@/data/portfolio-assets";
 import {
   AppError,
   homeSchema,
   homeUpdateSchema,
   parseInput,
+  sectionIds,
 } from "./validation";
 import type { HomeContent, HomeDocument } from "./types";
 
-// Carry over content saved by the former home/intro editor into the Pencil layout.
-function migrateHome(value: unknown, intro: unknown): HomeContent {
+type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
+const retiredAssets = new Set([
+  "companyNorthstack",
+  "companyPixelbase",
+  "companyCloudCore",
+  "avatarMaya",
+  "avatarDaniel",
+]);
+const isSection = (v: unknown): v is (typeof sectionIds)[number] =>
+  typeof v === "string" && (sectionIds as readonly string[]).includes(v);
+// Bring a previously saved home document up to the current schema: retired
+// sections disappear, links that pointed at them move to a live section, and
+// image names that no longer ship with the site are cleared.
+export function upgradeHome(value: unknown): HomeContent | null {
   const current = homeSchema.safeParse(value);
   if (current.success) return current.data;
+  if (!value || typeof value !== "object" || !("intro" in value)) return null;
+  const clear = (node: Json): Json =>
+    typeof node === "string"
+      ? retiredAssets.has(node) && !Object.hasOwn(portfolioAssets, node)
+        ? ""
+        : node
+      : Array.isArray(node)
+        ? node.map(clear)
+        : node && typeof node === "object"
+          ? Object.fromEntries(
+              Object.entries(node).map(([k, v]) => [k, clear(v)]),
+            )
+          : node;
+  const home = clear(structuredClone(value) as Json) as Record<string, Json>;
+  delete home.experience;
+  delete home.recommendations;
+  const navigation = home.navigation as { items?: Json[] } | undefined;
+  if (navigation && Array.isArray(navigation.items))
+    navigation.items = navigation.items.filter(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        isSection((item as never)["section"]),
+    );
+  const intro = home.intro as Record<string, Json> | undefined;
+  if (intro && typeof intro === "object") {
+    const link = (intro.cta ?? intro.experienceLink) as
+      Record<string, Json> | undefined;
+    if (link && typeof link === "object") {
+      intro.cta = {
+        ...link,
+        section: isSection(link.section) ? link.section : "about",
+      };
+      delete intro.experienceLink;
+    }
+  }
+  const upgraded = homeSchema.safeParse(home);
+  return upgraded.success ? upgraded.data : null;
+}
+// Carry over content saved by the former home/intro editor into the Pencil layout.
+function migrateHome(value: unknown, intro: unknown): HomeContent {
+  const current = upgradeHome(value);
+  if (current) return current;
   const home = structuredClone(defaultHome);
   if (value && typeof value === "object" && "intro" in value) {
     const old = value as {
@@ -58,27 +115,11 @@ function migrateHome(value: unknown, intro: unknown): HomeContent {
       old.contact.resumeHref === "/resume" ? "" : old.contact.resumeHref;
     home.about.description = old.about.description;
     home.about.keySkills = old.about.keySkills;
-    home.experience.companies = old.projects.map((p) => ({
-      name: p.name,
-      logo: "",
-      roles: [
-        {
-          title: p.role || p.name,
-          employmentType: "",
-          period: p.period,
-          description: [p.summary, ...p.paragraphs].join("\n\n"),
-          highlights: p.sections.map((s) =>
-            [s.title, s.body].filter(Boolean).join(" — "),
-          ),
-        },
-      ],
-    }));
     home.skills.items = old.skills;
     home.skills.technologies = [];
     home.education.items = [];
     home.certifications.items = [];
     home.languages.items = [];
-    home.recommendations.items = [];
     home.contact.label = old.contact.heading;
     home.contact.description = old.contact.description;
     home.contact.channels = [
@@ -145,6 +186,20 @@ export class Repository {
               new Date().toISOString(),
               "migration",
             );
+        } else {
+          const row = this.db
+            .prepare("SELECT content FROM home_content WHERE id=1")
+            .get()!;
+          const stored: unknown = JSON.parse(String(row.content));
+          if (!homeSchema.safeParse(stored).success) {
+            const upgraded =
+              upgradeHome(stored) ?? structuredClone(defaultHome);
+            this.db
+              .prepare(
+                "UPDATE home_content SET content=?, revision=revision+1, updated_at=?, updated_by='migration' WHERE id=1",
+              )
+              .run(JSON.stringify(upgraded), new Date().toISOString());
+          }
         }
         // Retired features and password sessions are removed, not hidden.
         this.db.exec(`DROP TABLE IF EXISTS posts; DROP TABLE IF EXISTS series;

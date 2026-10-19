@@ -34,18 +34,20 @@ test("Pencil portfolio renders all sections and original artwork on desktop and 
   ).toBeVisible();
   for (const title of [
     "About",
-    "Experience",
     "Education",
     "Certifications",
     "Skills",
     "Languages",
-    "Recommendations",
     "Let’s Connect",
   ]) {
     await expect(
       page.getByRole("heading", { name: title, exact: true }),
     ).toBeVisible();
   }
+  for (const retired of ["Experience", "Recommendations"])
+    await expect(
+      page.getByRole("heading", { name: retired, exact: true }),
+    ).toHaveCount(0);
   expect(
     await page
       .locator("img")
@@ -69,7 +71,7 @@ test("Pencil portfolio renders all sections and original artwork on desktop and 
   await page.getByRole("button", { name: "메뉴 열기" }).click();
   await page
     .getByRole("navigation", { name: "모바일 내비게이션" })
-    .getByRole("link", { name: "Experience", exact: true })
+    .getByRole("link", { name: "Education", exact: true })
     .click();
   await expect(page.getByRole("button", { name: "메뉴 열기" })).toBeVisible();
   expect(
@@ -105,7 +107,7 @@ test("retired public pages, admin pages, and APIs are really removed", async ({
     expect((await request.get(path)).status(), path).toBe(404);
   }
 });
-test("projects without logos keep readable text widths on desktop and mobile", async ({
+test("a section with no items disappears from the page and the menu", async ({
   request,
   page,
 }) => {
@@ -114,9 +116,7 @@ test("projects without logos keep readable text widths on desktop and mobile", a
     await request.get("/api/admin/home", { headers })
   ).json()) as HomeDocument;
   const content = structuredClone(before.content);
-  content.experience.companies[0].logo = "";
-  content.experience.companies[0].roles[0].title =
-    "백엔드·인프라: 서비스가 동작하는 구조를 다룹니다";
+  content.education.items = [];
   try {
     expect(
       (
@@ -127,20 +127,15 @@ test("projects without logos keep readable text widths on desktop and mobile", a
       ).status(),
     ).toBe(200);
     await page.goto("/");
-    for (const width of [1081, 390]) {
-      await page.setViewportSize({ width, height: 844 });
-      const section = await page.locator("#experience").boundingBox();
-      const article = await page
-        .locator("#experience article")
-        .first()
-        .boundingBox();
-      expect(article!.width).toBeGreaterThan(section!.width * 0.8);
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= innerWidth,
-        ),
-      ).toBe(true);
-    }
+    await expect(
+      page.getByRole("heading", { name: "About", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator("#education")).toHaveCount(0);
+    await expect(
+      page
+        .getByRole("navigation", { name: "주 내비게이션" })
+        .getByRole("link", { name: "Education", exact: true }),
+    ).toHaveCount(0);
   } finally {
     const latest = (await (
       await request.get("/api/admin/home", { headers })
@@ -157,9 +152,9 @@ test("anonymous, forged, and wrong-application tokens cannot read or write admin
 }) => {
   await page.goto("/admin");
   await expect(page.getByText("관리자 인증을 확인해 주세요.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "변경사항 저장" })).toHaveCount(
-    0,
-  );
+  await expect(
+    page.getByRole("button", { name: "저장", exact: true }),
+  ).toHaveCount(0);
   for (const assertion of ["", "forged", await token("public-application")]) {
     const headers = {
       "cf-access-jwt-assertion": assertion,
@@ -191,16 +186,17 @@ test("authorized administrator edits SQLite content and public page reflects it 
   try {
     await page.goto(`${origin}/admin`);
     await expect(
-      page.getByRole("heading", { name: "홈 화면 편집" }),
+      page.getByRole("heading", { name: "프로필 카드", level: 1 }),
     ).toBeVisible();
     await page
       .locator("#home-intro-profile-avatar-file")
       .setInputFiles("public/portfolio/oliver-rowland.png");
-    const avatarField = page.locator("#home-intro-profile-avatar");
-    await expect(avatarField).toHaveValue(
+    const avatarPreview = page.locator("#home-intro-profile-avatar-preview");
+    await expect(avatarPreview).toHaveAttribute(
+      "src",
       /^\/portfolio-images\/[a-f0-9]{64}\.webp$/,
     );
-    const avatar = await avatarField.inputValue();
+    const avatar = (await avatarPreview.getAttribute("src"))!;
     expect(
       (await context.request.get(`${origin}${avatar}`)).headers()[
         "content-type"
@@ -228,21 +224,45 @@ test("authorized administrator edits SQLite content and public page reflects it 
         })
       ).status(),
     ).toBe(400);
-    await page.locator("#home-intro-title").fill("편집한 포트폴리오");
-    await page.getByRole("button", { name: "미리보기", exact: true }).click();
+    const editorNav = page.getByRole("navigation", { name: "편집 영역" });
     await expect(
-      page
-        .getByRole("region", { name: "메인 화면 미리보기" })
-        .getByRole("heading", { name: "편집한 포트폴리오", exact: true }),
+      editorNav.getByRole("button", { name: /^프로필 카드/ }).getByRole("img", {
+        name: "저장되지 않은 변경",
+      }),
     ).toBeVisible();
-    await page
-      .getByRole("button", { name: "변경사항 저장", exact: true })
-      .first()
-      .click();
+    await editorNav.getByRole("button", { name: /^첫 화면/ }).click();
+    await page.locator("#home-intro-title").fill("편집한 포트폴리오");
+    await page.locator("#home-intro-title").fill("");
+    await page.getByRole("button", { name: "저장", exact: true }).click();
+    await expect(page.locator("#home-intro-title")).toBeFocused();
     await expect(
-      page.getByRole("status").filter({ hasText: "저장 완료" }),
+      page.getByRole("alert").filter({ hasText: "입력 오류 1개가 있어" }),
+    ).toBeVisible();
+    await expect(
+      editorNav.getByRole("button", { name: /^첫 화면/ }).getByRole("img", {
+        name: "오류 1개",
+      }),
+    ).toBeVisible();
+    await page.locator("#home-intro-title").fill("편집한 포트폴리오");
+    await expect(
+      page.getByRole("alert").filter({ hasText: "입력 오류 1개가 있어" }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: "미리보기", exact: true }).click();
+    const frame = page.frameLocator('iframe[title="메인 화면 미리보기"]');
+    await expect(
+      frame.getByRole("heading", { name: "편집한 포트폴리오", exact: true }),
+    ).toBeVisible();
+    await expect(frame.locator(`img[src="${avatar}"]`)).toBeVisible();
+    await page.getByRole("button", { name: "닫기", exact: true }).click();
+    await page.keyboard.press("ControlOrMeta+s");
+    await expect(
+      page.getByRole("status").filter({ hasText: "모두 저장됨" }),
     ).toBeVisible();
     await page.reload();
+    await page
+      .getByRole("navigation", { name: "편집 영역" })
+      .getByRole("button", { name: /^첫 화면/ })
+      .click();
     await expect(page.locator("#home-intro-title")).toHaveValue(
       "편집한 포트폴리오",
     );

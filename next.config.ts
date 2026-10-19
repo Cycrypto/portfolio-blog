@@ -5,14 +5,23 @@ const config: NextConfig = {
   serverExternalPackages: ["node:sqlite"],
   poweredByHeader: false,
   async headers() {
+    const common = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+    ];
     return [
+      // The editor's live preview embeds this page from the same origin only.
       {
-        source: "/(.*)",
+        source: "/admin/preview",
         headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          ...common,
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
         ],
+      },
+      {
+        source: "/((?!admin/preview$).*)",
+        headers: [...common, { key: "X-Frame-Options", value: "DENY" }],
       },
     ];
   },

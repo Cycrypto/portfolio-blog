@@ -8,16 +8,22 @@ import {
   type PortfolioAssetKey,
 } from "@/data/portfolio-assets";
 import type { HomeContent } from "@/lib/types";
+import type { SectionId } from "@/lib/validation";
 const src = (name: string) =>
   portfolioAssets[name as PortfolioAssetKey]?.[0] ?? name;
 export function SiteHeader({
   navigation = defaultHome.navigation,
+  hidden = [],
 }: {
   navigation?: HomeContent["navigation"];
+  hidden?: SectionId[];
 }) {
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const header = useRef<HTMLElement>(null);
+  const items = navigation.items.filter(
+    (item) => !hidden.includes(item.section),
+  );
   useEffect(() => {
     if (!open) return;
     const key = (e: KeyboardEvent) => {
@@ -62,7 +68,7 @@ export function SiteHeader({
           )}
         </Link>
         <div className="hidden items-center gap-6 md:flex">
-          {navigation.items.map((item, index) => (
+          {items.map((item, index) => (
             <a
               key={index}
               href={`/#${item.section}`}
@@ -106,7 +112,7 @@ export function SiteHeader({
           className="flex flex-col border-t border-line px-6 py-4 md:hidden"
         >
           {[
-            ...navigation.items,
+            ...items,
             { label: navigation.contact.label, section: "contact" },
           ].map((item, index) => (
             <a

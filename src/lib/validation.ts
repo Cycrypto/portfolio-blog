@@ -37,34 +37,29 @@ const asset = text(2000).refine(
 const image = { icon: asset };
 const label = { label: required() };
 const list = (max = 20) => z.array(required(300)).max(max);
+export const sectionIds = [
+  "about",
+  "education",
+  "certifications",
+  "skills",
+  "languages",
+  "contact",
+] as const;
+export type SectionId = (typeof sectionIds)[number];
+const section = z.enum(sectionIds);
 export const homeSchema = z.object({
   navigation: z.object({
     logo: asset,
-    items: z
-      .array(
-        z.object({
-          ...label,
-          section: z.enum([
-            "about",
-            "experience",
-            "education",
-            "certifications",
-            "skills",
-            "languages",
-            "recommendations",
-            "contact",
-          ]),
-        }),
-      )
-      .max(8),
+    items: z.array(z.object({ ...label, section })).max(8),
     contact: z.object({ ...label, ...image }),
   }),
   intro: z.object({
     title: required(160),
     description: text(600),
     illustration: asset,
-    experienceLink: z.object({
+    cta: z.object({
       ...label,
+      section,
       imageKeys: z.array(asset).max(4),
       arrow: asset,
     }),
@@ -83,29 +78,6 @@ export const homeSchema = z.object({
     description: text(2000),
     keySkillsLabel: text(100),
     keySkills: list(),
-  }),
-  experience: z.object({
-    ...label,
-    companies: z
-      .array(
-        z.object({
-          name: required(),
-          logo: asset,
-          roles: z
-            .array(
-              z.object({
-                title: required(160),
-                employmentType: text(100),
-                period: text(100),
-                description: text(2000),
-                highlights: list(12),
-              }),
-            )
-            .min(1)
-            .max(8),
-        }),
-      )
-      .max(12),
   }),
   education: z.object({
     ...label,
@@ -144,19 +116,6 @@ export const homeSchema = z.object({
     items: z
       .array(
         z.object({ name: required(), proficiency: text(200), flag: asset }),
-      )
-      .max(12),
-  }),
-  recommendations: z.object({
-    ...label,
-    items: z
-      .array(
-        z.object({
-          name: required(),
-          role: text(160),
-          quote: required(2000),
-          avatar: asset,
-        }),
       )
       .max(12),
   }),

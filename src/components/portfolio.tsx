@@ -5,6 +5,7 @@ import {
   type PortfolioAssetKey,
 } from "@/data/portfolio-assets";
 import type { HomeContent } from "@/lib/types";
+import type { SectionId } from "@/lib/validation";
 import { SiteHeader } from "./site-shell";
 
 function Asset({
@@ -138,22 +139,28 @@ export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
     </section>
   );
 }
-export function Portfolio({
-  content: ref,
-  preview = false,
-}: {
-  content: HomeContent;
-  preview?: boolean;
-}) {
+// Sections that only list items disappear from the page and the menu when empty.
+export function hiddenSections(content: HomeContent): SectionId[] {
+  const hidden: SectionId[] = [];
+  if (!content.education.items.length) hidden.push("education");
+  if (!content.certifications.items.length) hidden.push("certifications");
+  if (!content.skills.items.length && !content.skills.technologies.length)
+    hidden.push("skills");
+  if (!content.languages.items.length) hidden.push("languages");
+  return hidden;
+}
+export function Portfolio({ content: ref }: { content: HomeContent }) {
+  const hidden = hiddenSections(ref);
+  const shows = (id: SectionId) => !hidden.includes(id);
   return (
-    <div id={preview ? undefined : "top"} className="font-reference">
-      {!preview && <SiteHeader navigation={ref.navigation} />}
+    <div id="top" className="font-reference">
+      <SiteHeader navigation={ref.navigation} hidden={hidden} />
       <PortfolioProfile content={ref} />
-      <main
-        id={preview ? undefined : "main"}
-        className="mx-auto max-w-[768px] px-6 md:px-16"
-      >
-        <section className="flex min-w-0 flex-col items-center gap-10 pt-20 pb-16 text-center md:pt-40 md:pb-[104px]">
+      <main id="main" className="mx-auto max-w-[768px] px-6 md:px-16">
+        <section
+          id="intro"
+          className="flex min-w-0 flex-col items-center gap-10 pt-20 pb-16 text-center md:pt-40 md:pb-[104px]"
+        >
           <Asset
             name={ref.intro.illustration}
             className="h-24 w-30 md:h-32 md:w-40"
@@ -165,176 +172,120 @@ export function Portfolio({
             <p className="mt-4 max-w-[480px] text-base leading-relaxed text-muted md:text-lg">
               {ref.intro.description}
             </p>
-            <a
-              href="#experience"
-              className="mt-6 flex min-h-12 w-full max-w-80 items-center gap-3 rounded bg-ink/5 px-4 py-3.5 text-sm transition-colors hover:bg-ink/10"
-            >
-              <span className="flex -space-x-2">
-                {ref.intro.experienceLink.imageKeys.map((key) => (
-                  <Asset key={key} name={key} className="size-6" />
-                ))}
-              </span>
-              <span>{ref.intro.experienceLink.label}</span>
-              <Asset
-                name={ref.intro.experienceLink.arrow}
-                className="ml-auto size-4"
-              />
-            </a>
+            {ref.intro.cta.label && (
+              <a
+                href={`#${ref.intro.cta.section}`}
+                className="mt-6 flex min-h-12 w-full max-w-80 items-center gap-3 rounded bg-ink/5 px-4 py-3.5 text-sm transition-colors hover:bg-ink/10"
+              >
+                <span className="flex -space-x-2">
+                  {ref.intro.cta.imageKeys.map((key, index) => (
+                    <Asset key={index} name={key} className="size-6" />
+                  ))}
+                </span>
+                <span>{ref.intro.cta.label}</span>
+                <Asset name={ref.intro.cta.arrow} className="ml-auto size-4" />
+              </a>
+            )}
           </div>
         </section>
         <div className="min-w-0">
           <Section id="about" title={ref.about.label}>
             <p className="text-base leading-relaxed">{ref.about.description}</p>
-            <p className="mt-8 mb-4 text-base">{ref.about.keySkillsLabel}</p>
-            <SkillChips items={ref.about.keySkills} />
+            {ref.about.keySkills.length > 0 && (
+              <>
+                <p className="mt-8 mb-4 text-base">
+                  {ref.about.keySkillsLabel}
+                </p>
+                <SkillChips items={ref.about.keySkills} />
+              </>
+            )}
           </Section>
-          <Section id="experience" title={ref.experience.label}>
-            <div className="space-y-8">
-              {ref.experience.companies.map((company, companyIndex) => (
-                <div
-                  key={companyIndex}
-                  className={`relative ${company.logo ? "grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-4" : "min-w-0"}`}
-                >
-                  <Asset
-                    name={company.logo}
-                    alt={company.name}
-                    className="size-10 rounded"
-                  />
-                  <div className="min-w-0 space-y-8">
-                    {company.roles.map((role, roleIndex) => (
-                      <article key={roleIndex} className="relative">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <div>
-                            <h3 className="font-display text-lg leading-[1.28]">
-                              {role.title}
-                            </h3>
-                            <p className="mt-1 text-sm leading-[1.4]">
-                              {company.name} · {role.employmentType}
-                            </p>
-                          </div>
-                          <p className="text-xs text-muted sm:text-sm">
-                            {role.period}
-                          </p>
-                        </div>
-                        <p className="mt-4 max-w-[460px] text-sm leading-relaxed text-muted">
-                          {role.description}
-                        </p>
-                        {role.highlights.length > 0 && (
-                          <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-relaxed">
-                            {role.highlights.map((h) => (
-                              <li key={h}>{h}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </article>
-                    ))}
-                  </div>
-                  {company.logo && company.roles.length > 1 && (
-                    <span
-                      aria-hidden
-                      className="absolute top-14 bottom-2 left-5 border-l border-ink/10"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </Section>
-          <Section id="education" title={ref.education.label}>
-            <div className="space-y-8">
-              {ref.education.items.map((item, index) => (
-                <article key={index}>
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <div>
-                      <h3 className="font-display text-lg leading-[1.28]">
-                        {item.degree}
-                      </h3>
-                      <p className="mt-1 text-sm">{item.institution}</p>
+          {shows("education") && (
+            <Section id="education" title={ref.education.label}>
+              <div className="space-y-8">
+                {ref.education.items.map((item, index) => (
+                  <article key={index}>
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <div>
+                        <h3 className="font-display text-lg leading-[1.28]">
+                          {item.degree}
+                        </h3>
+                        <p className="mt-1 text-sm">{item.institution}</p>
+                      </div>
+                      <p className="text-sm text-muted">{item.period}</p>
                     </div>
-                    <p className="text-sm text-muted">{item.period}</p>
-                  </div>
-                  <p className="mt-4 max-w-[460px] text-sm leading-relaxed text-muted">
-                    {item.description}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </Section>
-          <Section id="certifications" title={ref.certifications.label}>
-            <div className="space-y-6">
-              {ref.certifications.items.map((item, index) => (
-                <article
-                  key={index}
-                  className="flex flex-wrap items-start gap-4"
-                >
-                  <Asset
-                    name={item.logo}
-                    alt={item.issuer}
-                    className="size-10 rounded"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-display text-lg leading-[1.28]">
-                      {item.title}
-                    </h3>
-                    <p className="mt-1 text-sm">{item.issuer}</p>
-                  </div>
-                  <p className="ml-14 text-sm text-muted sm:ml-0">
-                    {item.issued}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </Section>
-          <Section id="skills" title={ref.skills.label}>
-            <SkillChips items={ref.skills.items} />
-            <p className="mt-8 mb-4 text-base">
-              {ref.skills.technologiesLabel}
-            </p>
-            <div className="flex flex-wrap gap-4">
-              {ref.skills.technologies.map((tech) => (
-                <Asset
-                  key={tech.name}
-                  name={tech.icon}
-                  alt={tech.name}
-                  className="size-8"
-                />
-              ))}
-            </div>
-          </Section>
-          <Section id="languages" title={ref.languages.label}>
-            <div className="space-y-6">
-              {ref.languages.items.map((item, index) => (
-                <div key={index} className="flex items-center gap-4">
-                  <Asset name={item.flag} alt="" className="size-10" />
-                  <div>
-                    <h3 className="font-display text-lg">{item.name}</h3>
-                    <p className="mt-1 text-sm">{item.proficiency}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
-          <Section id="recommendations" title={ref.recommendations.label}>
-            <div className="space-y-8">
-              {ref.recommendations.items.map((person, index) => (
-                <figure key={index}>
-                  <blockquote className="text-base leading-relaxed">
-                    {person.quote}
-                  </blockquote>
-                  <figcaption className="mt-5 flex items-center gap-3">
+                    <p className="mt-4 max-w-[460px] text-sm leading-relaxed text-muted">
+                      {item.description}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </Section>
+          )}
+          {shows("certifications") && (
+            <Section id="certifications" title={ref.certifications.label}>
+              <div className="space-y-6">
+                {ref.certifications.items.map((item, index) => (
+                  <article
+                    key={index}
+                    className="flex flex-wrap items-start gap-4"
+                  >
                     <Asset
-                      name={person.avatar}
-                      alt={person.name}
+                      name={item.logo}
+                      alt={item.issuer}
                       className="size-10 rounded"
                     />
-                    <div>
-                      <p className="font-display text-base">{person.name}</p>
-                      <p className="mt-1 text-xs text-muted">{person.role}</p>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-display text-lg leading-[1.28]">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 text-sm">{item.issuer}</p>
                     </div>
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
-          </Section>
+                    <p className="ml-14 text-sm text-muted sm:ml-0">
+                      {item.issued}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </Section>
+          )}
+          {shows("skills") && (
+            <Section id="skills" title={ref.skills.label}>
+              <SkillChips items={ref.skills.items} />
+              {ref.skills.technologies.length > 0 && (
+                <>
+                  <p className="mt-8 mb-4 text-base">
+                    {ref.skills.technologiesLabel}
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    {ref.skills.technologies.map((tech, index) => (
+                      <Asset
+                        key={index}
+                        name={tech.icon}
+                        alt={tech.name}
+                        className="size-8"
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </Section>
+          )}
+          {shows("languages") && (
+            <Section id="languages" title={ref.languages.label}>
+              <div className="space-y-6">
+                {ref.languages.items.map((item, index) => (
+                  <div key={index} className="flex items-center gap-4">
+                    <Asset name={item.flag} alt="" className="size-10" />
+                    <div>
+                      <h3 className="font-display text-lg">{item.name}</h3>
+                      <p className="mt-1 text-sm">{item.proficiency}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
           <section
             id="contact"
             className="flex flex-col items-center gap-12 border-t border-ink/10 py-16 text-center"
