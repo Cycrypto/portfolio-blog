@@ -1,299 +1,415 @@
+import Link from "next/link";
+import { ArrowUp, Download, Mail } from "lucide-react";
 import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUpRight,
-  FileText,
-  Mail,
-} from "lucide-react";
-import type { Intro } from "@/lib/types";
-import { contact, projects, skills, type Project } from "@/data/portfolio";
-import { buttonClass } from "./ui-styles";
-import { IntroHero } from "./intro-hero";
-import { SiteFooter, SiteHeader } from "./site-shell";
+  portfolioAssets as assets,
+  type PortfolioAssetKey,
+} from "@/data/portfolio-assets";
+import type { HomeContent } from "@/lib/types";
+import { SiteHeader } from "./site-shell";
 
-function Chips({ items }: { items: readonly string[] }) {
+function Asset({
+  name,
+  alt = "",
+  className = "",
+}: {
+  name: string;
+  alt?: string;
+  className?: string;
+}) {
+  if (!name) return null;
+  const asset = assets[name as PortfolioAssetKey];
   return (
-    <ul className="flex flex-wrap gap-2">
-      {items.map((item) => (
-        <li
-          key={item}
-          className="rounded border border-line bg-surface px-2.5 py-1 text-[13px] leading-[1.4]"
+    <img
+      src={asset?.[0] ?? name}
+      alt={alt}
+      width={asset?.[1] ?? 120}
+      height={asset?.[2] ?? 120}
+      decoding="async"
+      className={className}
+    />
+  );
+}
+function SkillChips({ items }: { items: readonly string[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item, index) => (
+        <span
+          key={`${item}-${index}`}
+          className="rounded bg-ink/5 px-2.5 py-1 text-sm leading-[1.4]"
         >
           {item}
-        </li>
+        </span>
       ))}
-    </ul>
+    </div>
   );
 }
-
-function FlowVisual({
-  visual,
+function Section({
+  id,
+  title,
+  children,
+  className = "",
 }: {
-  visual: Extract<Project["visual"], { kind: "flow" }>;
+  id: string;
+  title: string;
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <figure className="rounded-lg border border-line bg-surface p-5 md:p-7">
-      <ol className="grid gap-5 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-stretch">
-        {visual.columns.map((column, index) => (
-          <li key={column.label} className="contents">
-            <div
-              className={`flex min-w-0 flex-col rounded-md p-5 ${index === visual.columns.length - 1 ? "bg-accent-soft/60" : "bg-paper"}`}
-            >
-              <p className="mb-2 font-mono text-[10px] tracking-widest text-accent">
-                {column.label}
-              </p>
-              <h4 className="mb-4 font-heading text-[17px]">{column.title}</h4>
-              <ul className="space-y-2.5 text-sm leading-relaxed">
-                {column.items.map((item) => (
-                  <li key={item} className="flex gap-2">
-                    <span
-                      aria-hidden
-                      className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-coral"
-                    />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {index < visual.columns.length - 1 && (
-              <div
-                aria-hidden
-                className="flex items-center justify-center text-muted"
-              >
-                <ArrowDown size={18} className="lg:hidden" />
-                <ArrowRight size={18} className="hidden lg:block" />
-              </div>
-            )}
-          </li>
-        ))}
-      </ol>
-      <figcaption className="mt-5 text-xs leading-relaxed text-muted">
-        {visual.note}
-      </figcaption>
-    </figure>
+    <section
+      id={id}
+      className={`border-t border-ink/10 py-12 md:py-16 ${className}`}
+    >
+      <h2 className="mb-8 font-display text-[28px] leading-[1.3] md:text-[32px]">
+        {title}
+      </h2>
+      {children}
+    </section>
   );
 }
-
-function PipelineVisual({
-  visual,
-}: {
-  visual: Extract<Project["visual"], { kind: "pipeline" }>;
-}) {
+export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
   return (
-    <figure className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
-      <div className="rounded-lg border border-line bg-surface p-5 md:p-7">
-        <p className="mb-5 font-mono text-[10px] tracking-widest text-accent">
-          DEPLOY PIPELINE
-        </p>
-        <ol className="grid gap-3 sm:grid-cols-5 sm:gap-2">
-          {visual.steps.map((step, index) => (
-            <li
-              key={step.label}
-              className="relative rounded-md bg-paper p-4 sm:pr-5"
-            >
-              <span className="mb-2 block font-mono text-[10px] text-muted">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <span className="block font-heading text-[15px]">
-                {step.label}
-              </span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted">
-                {step.detail}
-              </span>
-              {index < visual.steps.length - 1 && (
-                <ArrowRight
-                  aria-hidden
-                  size={14}
-                  className="absolute top-1/2 -right-2 hidden -translate-y-1/2 text-muted sm:block"
-                />
-              )}
+    <section
+      aria-label={`${ref.intro.profile.name} 프로필`}
+      className="bg-ink/5 px-6 pt-16 pb-12 md:px-16 md:pt-[60px] md:pb-16"
+    >
+      <div className="mx-auto max-w-[640px]">
+        <div className="flex flex-wrap items-start gap-5 border-b border-ink/10 pb-6 sm:flex-nowrap">
+          <Asset
+            name={ref.intro.profile.avatar}
+            alt={ref.intro.profile.name}
+            className="size-20 shrink-0 rounded object-cover sm:size-[113px]"
+          />
+          <div className="min-w-0 flex-1 basis-40">
+            <h2 className="font-display text-2xl">{ref.intro.profile.name}</h2>
+            <p className="mt-2 text-sm">{ref.intro.profile.role}</p>
+            <p className="mt-4 text-sm leading-relaxed text-muted">
+              {ref.intro.profile.description}
+            </p>
+          </div>
+          <Asset
+            name={ref.intro.profile.signature}
+            className="hidden h-auto w-20 sm:block"
+          />
+        </div>
+        <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-xs leading-relaxed">
+          {ref.intro.profile.facts.map((f) => (
+            <li key={f.text} className="flex items-center gap-2">
+              <Asset name={f.icon} className="size-3" />
+              {f.text}
             </li>
           ))}
-        </ol>
-        <ul className="mt-5 space-y-1.5 text-xs leading-relaxed text-muted">
-          {visual.notes.map((note) => (
-            <li key={note}>— {note}</li>
-          ))}
         </ul>
-      </div>
-      <div className="flex flex-col justify-between rounded-lg bg-ink p-6 text-paper md:p-7">
-        <p className="font-mono text-[10px] tracking-widest text-coral">
-          RESULT · {visual.metric.label.toUpperCase()}
-        </p>
-        <p className="my-6 flex items-end gap-3 font-heading">
-          <span className="text-3xl text-paper/55 line-through decoration-coral/70 md:text-4xl">
-            {visual.metric.before}
-            <span className="ml-0.5 text-lg">{visual.metric.unit}</span>
-          </span>
-          <ArrowRight aria-hidden size={20} className="mb-3 text-coral" />
-          <span className="text-[56px] leading-none font-bold tracking-tight md:text-[64px]">
-            {visual.metric.after}
-            <span className="ml-1 text-2xl font-semibold">
-              {visual.metric.unit}
-            </span>
-          </span>
-        </p>
-        <p className="text-sm leading-relaxed text-paper/80">
-          {visual.metric.label} 약 {visual.metric.before}
-          {visual.metric.unit}에서 {visual.metric.after}
-          {visual.metric.unit}으로. 배포 체계 전환과 자동화의 결과입니다.
-        </p>
-      </div>
-    </figure>
-  );
-}
-
-function ProjectCase({ project, index }: { project: Project; index: number }) {
-  const flagship = index === 0;
-  return (
-    <article
-      id={project.id}
-      aria-labelledby={`${project.id}-title`}
-      className={`border-t border-line ${flagship ? "py-14 md:py-20" : "py-12 md:py-16"}`}
-    >
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:gap-16">
-        <header>
-          <p className="mb-4 font-mono text-[10px] tracking-widest text-accent md:text-xs">
-            {String(index + 1).padStart(2, "0")} ·{" "}
-            {flagship ? "FEATURED" : "PROJECT"}
-          </p>
-          <h3
-            id={`${project.id}-title`}
-            className={`font-heading font-bold tracking-tight break-keep ${flagship ? "text-[40px] leading-[1.15] md:text-[52px]" : "text-[32px] leading-[1.2] md:text-[40px]"}`}
-          >
-            {project.name}
-          </h3>
-          <dl className="mt-5 space-y-1 text-sm text-muted">
-            <div>
-              <dt className="sr-only">역할</dt>
-              <dd>{project.role}</dd>
-            </div>
-            <div>
-              <dt className="sr-only">기간</dt>
-              <dd>{project.period}</dd>
-            </div>
-          </dl>
-          {project.stack.length > 0 && (
-            <div className="mt-6">
-              <Chips items={project.stack} />
-            </div>
-          )}
-        </header>
-        <div className="min-w-0 space-y-6">
-          <p
-            className={`leading-relaxed ${flagship ? "text-lg md:text-xl" : "text-base md:text-lg"}`}
-          >
-            {project.summary}
-          </p>
-          {project.paragraphs.map((paragraph) => (
-            <p key={paragraph} className="text-base leading-relaxed text-muted">
-              {paragraph}
-            </p>
+        <div className="mt-10 flex flex-wrap gap-3">
+          {ref.contact.networks.map((network, index) => (
+            <a
+              key={index}
+              href={network.href || undefined}
+              role="link"
+              aria-label={network.name}
+              aria-disabled={!network.href}
+              className="flex size-8 items-center justify-center"
+            >
+              <Asset name={network.icon} className="size-5" />
+            </a>
           ))}
-          {project.sections.length > 0 && (
-            <div className="grid gap-6 pt-2 sm:grid-cols-2">
-              {project.sections.map((section) => (
-                <section key={section.title}>
-                  <h4 className="mb-2 font-heading text-[17px]">
-                    {section.title}
-                  </h4>
-                  <p className="text-[15px] leading-relaxed text-muted">
-                    {section.body}
-                  </p>
-                </section>
-              ))}
-            </div>
-          )}
+        </div>
+        <div className="mt-6 flex gap-2">
+          <a
+            href={ref.intro.profile.downloadCv.href || undefined}
+            aria-disabled={!ref.intro.profile.downloadCv.href}
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded bg-ink px-4 text-sm text-paper transition-colors hover:bg-[#39271F]"
+          >
+            <Download size={14} />
+            {ref.intro.profile.downloadCv.label}
+          </a>
+          <a
+            href={
+              ref.contact.channels.find((c) => c.kind === "email")
+                ? `mailto:${ref.contact.channels.find((c) => c.kind === "email")!.value}`
+                : undefined
+            }
+            aria-label={`${ref.intro.profile.name}에게 이메일 보내기`}
+            className="flex min-h-11 w-11 items-center justify-center rounded border border-ink/10 transition-colors hover:bg-surface"
+          >
+            <Mail size={16} />
+          </a>
         </div>
       </div>
-      <div className="mt-10 md:mt-12">
-        {project.visual.kind === "flow" ? (
-          <FlowVisual visual={project.visual} />
-        ) : (
-          <PipelineVisual visual={project.visual} />
-        )}
-      </div>
-    </article>
+    </section>
   );
 }
-
-export function Portfolio({ intro }: { intro: Intro }) {
+export function Portfolio({
+  content: ref,
+  preview = false,
+}: {
+  content: HomeContent;
+  preview?: boolean;
+}) {
   return (
-    <>
-      <SiteHeader />
-      <main id="main" className="mx-auto max-w-[1248px] px-6 md:px-16">
-        <IntroHero intro={intro} />
-        <section id="projects" aria-labelledby="projects-heading">
-          <header className="flex flex-wrap items-end justify-between gap-6 border-t border-line pt-14 pb-10 md:pt-20">
-            <div>
-              <p className="mb-4 font-mono text-[10px] tracking-widest text-accent md:text-xs">
-                SELECTED WORK
-              </p>
-              <h2
-                id="projects-heading"
-                className="font-display text-5xl md:text-[64px]"
-              >
-                Work.
-              </h2>
-            </div>
-            <p className="max-w-[420px] text-sm leading-relaxed text-muted md:text-base">
-              제품의 방향을 정리한 사례와 직접 구현·운영한 사례를 중심으로
-              소개합니다.
-            </p>
-          </header>
-          {projects.map((project, index) => (
-            <ProjectCase key={project.id} project={project} index={index} />
-          ))}
-        </section>
-        <section
-          id="skills"
-          aria-labelledby="skills-heading"
-          className="grid gap-6 border-t border-line py-10 md:grid-cols-[200px_minmax(0,1fr)] md:py-12"
-        >
-          <h2
-            id="skills-heading"
-            className="font-mono text-[10px] tracking-widest text-accent md:text-xs"
-          >
-            TOOLS &amp; SKILLS
-          </h2>
-          <Chips items={skills} />
-        </section>
-        <section
-          id="contact"
-          aria-labelledby="contact-heading"
-          className="border-t border-line py-16 md:py-24"
-        >
-          <div className="mx-auto max-w-[640px] text-center">
-            <h2
-              id="contact-heading"
-              className="font-heading text-[32px] leading-[1.2] font-bold tracking-tight md:text-[44px]"
-            >
-              {contact.heading}
-            </h2>
-            <p className="mt-5 text-base leading-relaxed text-muted md:text-lg">
-              {contact.description}
+    <div id={preview ? undefined : "top"} className="font-reference">
+      {!preview && <SiteHeader navigation={ref.navigation} />}
+      <PortfolioProfile content={ref} />
+      <main
+        id={preview ? undefined : "main"}
+        className="mx-auto max-w-[768px] px-6 md:px-16"
+      >
+        <section className="flex min-w-0 flex-col items-center gap-10 pt-20 pb-16 text-center md:pt-40 md:pb-[104px]">
+          <Asset
+            name={ref.intro.illustration}
+            className="h-24 w-30 md:h-32 md:w-40"
+          />
+          <div className="flex flex-col items-center">
+            <h1 className="font-display text-[32px] leading-[1.2] md:text-[40px]">
+              {ref.intro.title}
+            </h1>
+            <p className="mt-4 max-w-[480px] text-base leading-relaxed text-muted md:text-lg">
+              {ref.intro.description}
             </p>
             <a
-              href={`mailto:${contact.email}`}
-              className="mt-8 inline-flex items-center gap-2 font-mono text-sm text-accent underline underline-offset-8"
+              href="#experience"
+              className="mt-6 flex min-h-12 w-full max-w-80 items-center gap-3 rounded bg-ink/5 px-4 py-3.5 text-sm transition-colors hover:bg-ink/10"
             >
-              {contact.email}
-              <ArrowUpRight size={16} />
+              <span className="flex -space-x-2">
+                {ref.intro.experienceLink.imageKeys.map((key) => (
+                  <Asset key={key} name={key} className="size-6" />
+                ))}
+              </span>
+              <span>{ref.intro.experienceLink.label}</span>
+              <Asset
+                name={ref.intro.experienceLink.arrow}
+                className="ml-auto size-4"
+              />
             </a>
-            <div className="mt-9 flex flex-wrap justify-center gap-3">
-              <a href={`mailto:${contact.email}`} className={buttonClass()}>
-                <Mail size={16} />
-                이메일 보내기
-              </a>
-              <a href={contact.resumeHref} className={buttonClass("secondary")}>
-                <FileText size={16} />
-                이력서 보기
-              </a>
-            </div>
           </div>
         </section>
-        <SiteFooter />
+        <div className="min-w-0">
+          <Section id="about" title={ref.about.label}>
+            <p className="text-base leading-relaxed">{ref.about.description}</p>
+            <p className="mt-8 mb-4 text-base">{ref.about.keySkillsLabel}</p>
+            <SkillChips items={ref.about.keySkills} />
+          </Section>
+          <Section id="experience" title={ref.experience.label}>
+            <div className="space-y-8">
+              {ref.experience.companies.map((company, companyIndex) => (
+                <div
+                  key={companyIndex}
+                  className="relative grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-4"
+                >
+                  <Asset
+                    name={company.logo}
+                    alt={company.name}
+                    className="size-10 rounded"
+                  />
+                  <div className="space-y-8">
+                    {company.roles.map((role, roleIndex) => (
+                      <article key={roleIndex} className="relative">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <h3 className="font-display text-lg leading-[1.28]">
+                              {role.title}
+                            </h3>
+                            <p className="mt-1 text-sm leading-[1.4]">
+                              {company.name} · {role.employmentType}
+                            </p>
+                          </div>
+                          <p className="text-xs text-muted sm:text-sm">
+                            {role.period}
+                          </p>
+                        </div>
+                        <p className="mt-4 max-w-[460px] text-sm leading-relaxed text-muted">
+                          {role.description}
+                        </p>
+                        {role.highlights.length > 0 && (
+                          <ul className="mt-3 list-disc space-y-2 pl-4 text-sm leading-relaxed">
+                            {role.highlights.map((h) => (
+                              <li key={h}>{h}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                  {company.roles.length > 1 && (
+                    <span
+                      aria-hidden
+                      className="absolute top-14 bottom-2 left-5 border-l border-ink/10"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </Section>
+          <Section id="education" title={ref.education.label}>
+            <div className="space-y-8">
+              {ref.education.items.map((item, index) => (
+                <article key={index}>
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <div>
+                      <h3 className="font-display text-lg leading-[1.28]">
+                        {item.degree}
+                      </h3>
+                      <p className="mt-1 text-sm">{item.institution}</p>
+                    </div>
+                    <p className="text-sm text-muted">{item.period}</p>
+                  </div>
+                  <p className="mt-4 max-w-[460px] text-sm leading-relaxed text-muted">
+                    {item.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </Section>
+          <Section id="certifications" title={ref.certifications.label}>
+            <div className="space-y-6">
+              {ref.certifications.items.map((item, index) => (
+                <article
+                  key={index}
+                  className="flex flex-wrap items-start gap-4"
+                >
+                  <Asset
+                    name={item.logo}
+                    alt={item.issuer}
+                    className="size-10 rounded"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display text-lg leading-[1.28]">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 text-sm">{item.issuer}</p>
+                  </div>
+                  <p className="ml-14 text-sm text-muted sm:ml-0">
+                    {item.issued}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </Section>
+          <Section id="skills" title={ref.skills.label}>
+            <SkillChips items={ref.skills.items} />
+            <p className="mt-8 mb-4 text-base">
+              {ref.skills.technologiesLabel}
+            </p>
+            <div className="flex flex-wrap gap-4">
+              {ref.skills.technologies.map((tech) => (
+                <Asset
+                  key={tech.name}
+                  name={tech.icon}
+                  alt={tech.name}
+                  className="size-8"
+                />
+              ))}
+            </div>
+          </Section>
+          <Section id="languages" title={ref.languages.label}>
+            <div className="space-y-6">
+              {ref.languages.items.map((item, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <Asset name={item.flag} alt="" className="size-10" />
+                  <div>
+                    <h3 className="font-display text-lg">{item.name}</h3>
+                    <p className="mt-1 text-sm">{item.proficiency}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+          <Section id="recommendations" title={ref.recommendations.label}>
+            <div className="space-y-8">
+              {ref.recommendations.items.map((person, index) => (
+                <figure key={index}>
+                  <blockquote className="text-base leading-relaxed">
+                    {person.quote}
+                  </blockquote>
+                  <figcaption className="mt-5 flex items-center gap-3">
+                    <Asset
+                      name={person.avatar}
+                      alt={person.name}
+                      className="size-10 rounded"
+                    />
+                    <div>
+                      <p className="font-display text-base">{person.name}</p>
+                      <p className="mt-1 text-xs text-muted">{person.role}</p>
+                    </div>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </Section>
+          <section
+            id="contact"
+            className="flex flex-col items-center gap-12 border-t border-ink/10 py-16 text-center"
+          >
+            <div className="w-full">
+              <h2 className="font-display text-[32px] leading-[1.2]">
+                {ref.contact.label}
+              </h2>
+              <p className="mx-auto mt-2.5 max-w-80 text-base leading-[1.4]">
+                {ref.contact.description}
+              </p>
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                {ref.contact.channels.map((channel, index) => (
+                  <a
+                    key={index}
+                    href={
+                      channel.kind === "email"
+                        ? `mailto:${channel.value}`
+                        : `tel:${channel.value.replace(/[^+0-9]/g, "")}`
+                    }
+                    className="flex min-w-0 items-center gap-3 rounded bg-ink/5 p-3 text-left transition-colors hover:bg-ink/10"
+                  >
+                    <span className="bg-coral p-2">
+                      <Asset name={channel.icon} className="size-6" />
+                    </span>
+                    <span className="min-w-0 break-words">
+                      <span className="block font-display text-base">
+                        {channel.label}
+                      </span>
+                      <span className="mt-1 block text-xs">
+                        {channel.value}
+                      </span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+            {ref.contact.networks.length > 0 && (
+              <div>
+                <p className="mb-4 text-sm">{ref.contact.networkLabel}</p>
+                <div className="flex justify-center gap-4">
+                  {ref.contact.networks.map((network, index) => (
+                    <a
+                      key={index}
+                      href={network.href || undefined}
+                      role="link"
+                      aria-label={network.name}
+                      aria-disabled={!network.href}
+                      className="flex size-10 items-center justify-center"
+                    >
+                      <Asset name={network.icon} className="size-8" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            <Asset
+              name={ref.contact.illustration}
+              className="size-52 max-w-full md:size-64"
+            />
+          </section>
+          <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-ink/10 py-4 text-xs">
+            <span>{ref.footer.copyright}</span>
+            <div className="flex items-center gap-5">
+              <Link href="/admin" className="text-muted">
+                관리
+              </Link>
+              <a href="#top" className="flex items-center gap-1">
+                {ref.footer.backToTop.label}
+                <ArrowUp size={12} />
+              </a>
+            </div>
+          </footer>
+        </div>
       </main>
-    </>
+    </div>
   );
 }

@@ -11,15 +11,7 @@ import {
   type ButtonHTMLAttributes,
   type ReactNode,
 } from "react";
-import {
-  Check,
-  CircleAlert,
-  LoaderCircle,
-  X,
-  FilePenLine,
-  LockKeyhole,
-  NotebookPen,
-} from "lucide-react";
+import { Check, CircleAlert, LoaderCircle, X } from "lucide-react";
 
 import { buttonClass } from "./ui-styles";
 export { buttonClass } from "./ui-styles";
@@ -93,59 +85,6 @@ export function Field({
           {error || help}
         </p>
       )}
-    </div>
-  );
-}
-export function Badge({
-  status,
-  visibility,
-}: {
-  status: string;
-  visibility?: string;
-}) {
-  const type =
-    status === "draft"
-      ? "draft"
-      : visibility === "private"
-        ? "private"
-        : "published";
-  const Icon =
-    type === "draft" ? FilePenLine : type === "private" ? LockKeyhole : Check;
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded px-2 py-1 text-xs ${type === "draft" ? "bg-warning-soft text-warning" : type === "private" ? "bg-soft text-muted" : "bg-success-soft text-success"}`}
-    >
-      <Icon size={13} />
-      {type === "draft"
-        ? "임시 저장"
-        : type === "private"
-          ? "비공개"
-          : "발행됨"}
-    </span>
-  );
-}
-export function Tag({ children }: { children: ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded bg-soft px-2.5 py-1.5 text-xs text-muted">
-      {children}
-    </span>
-  );
-}
-export function EmptyState({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children?: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-4 border border-line bg-surface px-6 py-14 text-center">
-      <NotebookPen size={32} className="text-coral" />
-      <h2 className="font-heading text-xl">{title}</h2>
-      <p className="text-sm text-muted">{description}</p>
-      {children}
     </div>
   );
 }

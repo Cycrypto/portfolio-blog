@@ -38,7 +38,8 @@ if [[ "$healthy" != true ]]; then
 fi
 check_port=$(docker port "$check_name" 3000/tcp | awk -F: '{print $NF}')
 curl --fail --silent --show-error "http://127.0.0.1:$check_port/" -o /dev/null
-curl --fail --silent --show-error "http://127.0.0.1:$check_port/blog" -o /dev/null
+test "$(curl --silent --show-error -o /dev/null -w '%{http_code}' "http://127.0.0.1:$check_port/blog")" = 404
+test "$(curl --silent --show-error -o /dev/null -w '%{http_code}' "http://127.0.0.1:$check_port/api/admin/home")" = 401
 cleanup
 trap - EXIT
 

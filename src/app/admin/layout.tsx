@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "글 관리",
+  title: "홈 화면 편집",
   robots: { index: false, follow: false },
 };
 export default function AdminLayout({

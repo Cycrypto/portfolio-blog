@@ -3,233 +3,144 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { Repository } from "../src/lib/repository";
 import { AppError } from "../src/lib/validation";
-import { headingsFromMarkdown } from "../src/lib/format";
-import type { PostInput } from "../src/lib/types";
-const input = (
-  slug: string,
-  overrides: Partial<PostInput> = {},
-): PostInput => ({
-  title: slug,
-  slug,
-  excerpt: "요약",
-  bodyMarkdown: "## 제목\n\n내용",
-  coverUrl: "",
-  coverAlt: "",
-  tags: [],
-  status: "draft",
-  visibility: "public",
-  seriesId: null,
-  ...overrides,
-});
+import { defaultHome } from "../src/data/portfolio";
 const fails = (status: number) => (error: unknown) =>
   error instanceof AppError && error.status === status;
-test("posts survive closing and reopening the database", () => {
-  const folder = mkdtempSync(join(tmpdir(), "portfolio-repo-"));
-  let db = new Repository(join(folder, "db.sqlite"), false);
+test("Pencil default is stored in SQLite and edits survive reopening", () => {
+  const folder = mkdtempSync(join(tmpdir(), "portfolio-home-"));
+  const path = join(folder, "home.sqlite");
+  let repo = new Repository(path);
   try {
-    const p = db.savePost(input("persistent"));
-    db.close();
-    db = new Repository(join(folder, "db.sqlite"), false);
-    assert.equal(db.getPost(p.id)?.bodyMarkdown, p.bodyMarkdown);
-    db.deletePost(p.id, p.revision);
-    assert.equal(db.getPost(p.id), null);
+    const initial = repo.getHomeDocument();
+    assert.deepEqual(initial.content, defaultHome);
+    const content = structuredClone(initial.content);
+    content.intro.title = "수정한 메인 화면";
+    content.education.items[0].degree = "수정한 학력";
+    content.contact.channels[0].value = "admin@example.com";
+    const saved = repo.saveHome(
+      { content, revision: initial.revision },
+      "admin@example.com",
+    );
+    assert.equal(saved.revision, 2);
+    repo.close();
+    repo = new Repository(path);
+    assert.deepEqual(repo.getHomeDocument(), saved);
+    assert.equal(
+      repo.db.prepare("SELECT updated_by FROM home_content").get()?.updated_by,
+      "admin@example.com",
+    );
   } finally {
-    db.close();
+    repo.close();
     rmSync(folder, { recursive: true, force: true });
   }
 });
-test("only published public posts appear in public queries", () => {
-  const db = new Repository(":memory:", false);
+test("stale and missing revisions never overwrite newer content", () => {
+  const repo = new Repository(":memory:");
   try {
-    db.savePost(input("draft"));
-    db.savePost(
-      input("private", { status: "published", visibility: "private" }),
+    const initial = repo.getHomeDocument();
+    const saved = repo.saveHome(
+      {
+        ...initial,
+        content: {
+          ...initial.content,
+          footer: { ...initial.content.footer, copyright: "new" },
+        },
+      },
+      "admin",
     );
-    const p = db.savePost(input("visible", { status: "published" }));
-    assert.deepEqual(
-      db.listPosts(true).map((p) => p.id),
-      [p.id],
-    );
-    assert.equal(db.getPostBySlug("private"), null);
-    assert.equal(db.getPostBySlug("draft"), null);
-  } finally {
-    db.close();
-  }
-});
-test("stale edits and deletes cannot overwrite the latest revision", () => {
-  const db = new Repository(":memory:", false);
-  try {
-    const p = db.savePost(input("versioned"));
-    const updated = db.savePost({ ...p, title: "최신 제목" }, p.id);
+    assert.throws(() => repo.saveHome(initial, "admin"), fails(409));
     assert.throws(
-      () => db.savePost({ ...p, title: "오래된 제목" }, p.id),
-      fails(409),
-    );
-    assert.throws(() => db.deletePost(p.id, p.revision), fails(409));
-    assert.equal(db.getPost(p.id)?.title, updated.title);
-  } finally {
-    db.close();
-  }
-});
-test("duplicate slugs and invalid publication input roll back safely", () => {
-  const db = new Repository(":memory:", false);
-  try {
-    db.savePost(input("same"));
-    assert.throws(() => db.savePost(input("same")), fails(400));
-    assert.throws(
-      () =>
-        db.savePost(input("empty", { status: "published", bodyMarkdown: "" })),
+      () => repo.saveHome({ content: initial.content }, "admin"),
       fails(400),
     );
-    assert.throws(
-      () =>
-        db.savePost(
-          input("bad-image", {
-            coverUrl: "javascript:alert(1)",
-            coverAlt: "test",
-          }),
-        ),
-      fails(400),
-    );
-    assert.throws(
-      () =>
-        db.savePost(input("no-alt", { coverUrl: "https://example.com/a.png" })),
-      fails(400),
-    );
-    assert.equal(db.listPosts().length, 1);
+    assert.deepEqual(repo.getHomeDocument(), saved);
   } finally {
-    db.close();
+    repo.close();
   }
 });
-test("series ordering, removal and deletion preserve posts", () => {
-  const db = new Repository(":memory:", false);
+test("invalid nested content and unsafe URLs are rejected atomically", () => {
+  const repo = new Repository(":memory:");
   try {
-    const s = db.saveSeries({ name: "순서", slug: "ordered", description: "" });
-    const a = db.savePost(
-      input("first", { seriesId: s.id, status: "published" }),
-    );
-    const hidden = db.savePost(input("hidden", { seriesId: s.id }));
-    const b = db.savePost(
-      input("last", { seriesId: s.id, status: "published" }),
-    );
-    const reordered = db.saveSeries(
-      { ...db.getSeries(s.id)!, postIds: [b.id, hidden.id, a.id] },
-      s.id,
-    );
-    assert.deepEqual(
-      db.seriesPosts(s.id, true).map((p) => p.id),
-      [b.id, a.id],
-    );
-    const removed = db.saveSeries(
-      { ...reordered, postIds: [b.id, a.id] },
-      s.id,
-    );
-    assert.equal(db.getPost(hidden.id)?.seriesId, null);
-    assert.deepEqual(
-      db.seriesPosts(s.id).map((p) => p.seriesOrder),
-      [0, 1],
-    );
-    db.deleteSeries(s.id, removed.revision);
-    assert.equal(db.listPosts().length, 3);
-    assert.ok(
-      db
-        .listPosts()
-        .every((p) => p.seriesId === null && p.seriesOrder === null),
-    );
-  } finally {
-    db.close();
-  }
-});
-test("invalid series membership leaves metadata and order unchanged", () => {
-  const db = new Repository(":memory:", false);
-  try {
-    const a = db.saveSeries({ name: "A", slug: "a", description: "" });
-    const b = db.saveSeries({ name: "B", slug: "b", description: "" });
-    const post = db.savePost(input("attached", { seriesId: b.id }));
+    const initial = repo.getHomeDocument();
+    for (const href of [
+      "javascript:alert(1)",
+      "//evil.example/a",
+      "/\\evil.example/a",
+      "data:text/html,evil",
+    ]) {
+      const content = structuredClone(initial.content);
+      content.intro.profile.downloadCv.href = href;
+      assert.throws(
+        () => repo.saveHome({ ...initial, content }, "admin"),
+        fails(400),
+      );
+    }
+    const content = structuredClone(initial.content);
+    content.experience.companies[0].roles = [];
     assert.throws(
-      () => db.saveSeries({ ...a, name: "changed", postIds: [post.id] }, a.id),
+      () => repo.saveHome({ ...initial, content }, "admin"),
       fails(400),
     );
-    assert.equal(db.getSeries(a.id)?.name, "A");
-    assert.equal(db.getPost(post.id)?.seriesId, b.id);
-    assert.throws(
-      () =>
-        db.saveSeries(
-          { ...db.getSeries(b.id)!, postIds: [post.id, post.id] },
-          b.id,
-        ),
-      fails(400),
-    );
+    assert.deepEqual(repo.getHomeDocument(), initial);
   } finally {
-    db.close();
+    repo.close();
   }
 });
-test("used images cannot be removed and become public only through public posts", () => {
-  const db = new Repository(":memory:", false);
-  try {
-    const m = {
-      id: "photo",
-      filename: "photo.webp",
-      originalName: "photo.png",
-      alt: "사진",
-      caption: "",
-      width: 10,
-      height: 10,
-      byteSize: 100,
-      createdAt: new Date().toISOString(),
-    };
-    db.addMedia(m);
-    const p = db.savePost(
-      input("photo-post", { bodyMarkdown: "![사진](/api/media/photo)" }),
-    );
-    assert.equal(db.mediaIsPublic(m.id), false);
-    assert.throws(() => db.deleteMedia(m.id), fails(409));
-    const published = db.savePost({ ...p, status: "published" }, p.id);
-    assert.equal(db.mediaIsPublic(m.id), true);
-    db.deletePost(p.id, published.revision);
-    assert.equal(db.deleteMedia(m.id).id, m.id);
-  } finally {
-    db.close();
-  }
-});
-test("table of contents ignores fenced headings and disambiguates duplicates", () => {
-  assert.deepEqual(
-    headingsFromMarkdown(
-      "## 같은 제목\n```md\n# 코드 속 제목\n```\n## 같은 제목\n### **중요** [링크](https://example.com)",
-    ),
-    [
-      { id: "같은-제목", text: "같은 제목", level: 2, line: 1 },
-      { id: "같은-제목-1", text: "같은 제목", level: 2, line: 5 },
-      { id: "중요-링크", text: "중요 링크", level: 3, line: 6 },
-    ],
+test("migration removes retired tables and sessions, keeps saved intro, and is repeatable", () => {
+  const folder = mkdtempSync(join(tmpdir(), "portfolio-migrate-"));
+  const path = join(folder, "home.sqlite");
+  const old = new DatabaseSync(path);
+  old.exec(
+    "CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE series(id TEXT PRIMARY KEY); CREATE TABLE posts(id TEXT,series_id TEXT REFERENCES series(id)); CREATE TABLE media(id TEXT); CREATE TABLE sessions(token_hash TEXT); CREATE TABLE login_attempts(key TEXT);",
   );
-});
-test("intro falls back to defaults, persists edits and rejects empty headlines", () => {
-  const db = new Repository(":memory:", false);
-  try {
-    const fallback = db.getIntro();
-    assert.equal(fallback.name, "박준하");
-    const saved = db.saveIntro({
-      eyebrow: " BACKEND ",
+  old.prepare("INSERT INTO settings VALUES('intro',?)").run(
+    JSON.stringify({
       name: "박준하",
-      headline: "첫 줄\r\n둘째 줄",
-      description: "소개",
-    });
-    assert.equal(saved.eyebrow, "BACKEND");
-    assert.equal(saved.headline, "첫 줄\n둘째 줄");
-    assert.deepEqual(db.getIntro(), saved);
-    assert.throws(
-      () => db.saveIntro({ ...saved, headline: "   " }),
-      fails(400),
+      eyebrow: "개발자",
+      headline: "이전 소개",
+      description: "이전 설명",
+    }),
+  );
+  old.close();
+  let repo = new Repository(path);
+  try {
+    assert.equal(repo.getHome().intro.title, "이전 소개");
+    assert.equal(repo.getHome().intro.profile.name, "박준하");
+    assert.deepEqual(
+      repo.db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+        .all()
+        .map((row) => row.name),
+      ["home_content"],
     );
-    assert.deepEqual(db.getIntro(), saved);
-    db.db
-      .prepare("UPDATE settings SET value = ? WHERE key = 'intro'")
-      .run("{broken");
-    assert.equal(db.getIntro().name, fallback.name);
+    const initial = repo.getHomeDocument();
+    repo.close();
+    repo = new Repository(path);
+    assert.deepEqual(repo.getHomeDocument(), initial);
   } finally {
-    db.close();
+    repo.close();
+    rmSync(folder, { recursive: true, force: true });
+  }
+});
+test("an existing full home document migrates without losing content", () => {
+  const folder = mkdtempSync(join(tmpdir(), "portfolio-full-migrate-"));
+  const path = join(folder, "home.sqlite");
+  const old = new DatabaseSync(path);
+  old.exec("CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL)");
+  const content = structuredClone(defaultHome);
+  content.about.description = "저장된 소개";
+  old
+    .prepare("INSERT INTO settings VALUES('home',?)")
+    .run(JSON.stringify(content));
+  old.close();
+  const repo = new Repository(path);
+  try {
+    assert.deepEqual(repo.getHome(), content);
+  } finally {
+    repo.close();
+    rmSync(folder, { recursive: true, force: true });
   }
 });

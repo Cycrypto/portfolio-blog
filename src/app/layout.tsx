@@ -3,8 +3,8 @@ import { ToastProvider } from "@/components/ui";
 import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL || "http://localhost:3000"),
-  title: { default: "Junha — Portfolio & Journal", template: "%s · Junha" },
-  description: "만드는 과정과 그 안에서 배운 것들을 기록합니다.",
+  title: { default: "Portfolio", template: "%s · Junha" },
+  description: "경험과 역량을 소개하는 포트폴리오입니다.",
 };
 export default function RootLayout({
   children,

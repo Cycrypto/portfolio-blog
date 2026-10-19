@@ -1,92 +1,51 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import {
-  Asterisk,
-  ExternalLink,
-  FileText,
-  Image,
-  Layers,
-  LogOut,
-  UserRound,
-} from "lucide-react";
-import { Button, request, useToast } from "./ui";
+import { useRouter } from "next/navigation";
+import { Asterisk, ExternalLink, LayoutTemplate, LogOut } from "lucide-react";
+import { Button } from "./ui";
 export function AdminShell({
   children,
   onLeave,
+  email,
 }: {
   children: React.ReactNode;
-  onLeave?: (action: () => void) => void;
+  onLeave: (action: () => void) => void;
+  email: string;
 }) {
-  const path = usePathname();
   const router = useRouter();
-  const toast = useToast();
-  const [loggingOut, setLoggingOut] = useState(false);
-  const navigate = (href: string, event: { preventDefault: () => void }) => {
-    if (!onLeave) return;
-    event.preventDefault();
-    onLeave(() => router.push(href));
-  };
-  const logout = async () => {
-    if (loggingOut) return;
-    setLoggingOut(true);
-    try {
-      await request("/api/auth", { method: "DELETE" });
-      router.push("/admin/login");
-      router.refresh();
-    } catch (e) {
-      toast((e as Error).message, true);
-      setLoggingOut(false);
-    }
-  };
   return (
     <div className="min-h-screen md:grid md:grid-cols-[232px_minmax(0,1fr)]">
       <aside className="border-b border-line bg-soft px-5 py-4 md:sticky md:top-0 md:h-screen md:border-r md:border-b-0 md:px-7 md:py-6">
         <Link
           href="/"
-          onNavigate={(event) => navigate("/", event)}
-          className="mb-4 flex items-center gap-2 font-display text-2xl md:mb-8"
+          onNavigate={(e) => {
+            e.preventDefault();
+            onLeave(() => router.push("/"));
+          }}
+          className="mb-5 flex items-center gap-2 font-display text-2xl"
         >
           <Asterisk size={24} className="text-coral" />
-          junha.
+          Portfolio
         </Link>
-        <p className="mb-4 hidden font-mono text-[10px] text-muted md:block">
-          WORKSPACE
-        </p>
-        <nav
-          aria-label="관리 메뉴"
-          className="flex flex-wrap gap-2 md:flex-col"
-        >
-          {[
-            ["/admin", "게시글", FileText],
-            ["/admin/series", "시리즈", Layers],
-            ["/admin/media", "이미지", Image],
-            ["/admin/intro", "소개", UserRound],
-          ].map(([href, label, Icon]) => {
-            const I = Icon as typeof FileText;
-            const active =
-              href === "/admin"
-                ? path === "/admin" || path.startsWith("/admin/posts/")
-                : path.startsWith(String(href));
-            return (
-              <Link
-                key={String(href)}
-                href={String(href)}
-                onNavigate={(event) => navigate(String(href), event)}
-                aria-current={active ? "page" : undefined}
-                className={`flex min-h-11 items-center gap-2.5 rounded px-3 text-sm ${active ? "bg-surface text-accent" : "text-muted hover:bg-surface"}`}
-              >
-                <I size={18} />
-                {String(label)}
-              </Link>
-            );
-          })}
+        <nav aria-label="관리 메뉴">
+          <span
+            aria-current="page"
+            className="flex min-h-11 items-center gap-2 rounded bg-surface px-3 text-sm text-accent"
+          >
+            <LayoutTemplate size={18} />홈 화면 편집
+          </span>
         </nav>
-        <div className="mt-2 flex gap-2 md:mt-12 md:flex-col">
+        <p className="mt-6 text-xs break-all text-muted">{email}</p>
+        <p className="mt-2 font-mono text-[10px] text-accent">
+          ADMIN · CLOUDFLARE ACCESS
+        </p>
+        <div className="mt-6 flex flex-wrap gap-2 md:flex-col">
           <Link
-            href="/blog"
-            onNavigate={(event) => navigate("/blog", event)}
+            href="/"
+            onNavigate={(e) => {
+              e.preventDefault();
+              onLeave(() => router.push("/"));
+            }}
             className="inline-flex min-h-11 items-center gap-2 px-3 text-xs text-muted"
           >
             <ExternalLink size={16} />
@@ -94,9 +53,8 @@ export function AdminShell({
           </Link>
           <Button
             variant="ghost"
-            loading={loggingOut}
             onClick={() =>
-              onLeave ? onLeave(() => void logout()) : void logout()
+              onLeave(() => window.location.assign("/cdn-cgi/access/logout"))
             }
             className="justify-start text-xs text-muted"
           >

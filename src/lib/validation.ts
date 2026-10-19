@@ -1,5 +1,6 @@
 import { z } from "zod";
-const appErrorMarker = Symbol.for("portfolio-blog/app-error");
+import { portfolioAssets } from "@/data/portfolio-assets";
+const appErrorMarker = Symbol.for("portfolio/app-error");
 export class AppError extends Error {
   readonly [appErrorMarker] = true;
   constructor(
@@ -12,90 +13,196 @@ export class AppError extends Error {
 export function isAppError(error: unknown): error is AppError {
   return error instanceof Error && (error as AppError)[appErrorMarker] === true;
 }
-const slug = z
-  .string()
-  .trim()
-  .min(1, "URL 슬러그를 입력해 주세요.")
-  .max(100)
-  .regex(
-    /^[a-z0-9가-힣]+(?:-[a-z0-9가-힣]+)*$/,
-    "슬러그는 영문 소문자, 한글, 숫자와 하이픈을 사용할 수 있습니다.",
-  );
-const imageUrl = z
-  .string()
-  .max(2000)
-  .refine(
-    (value) =>
-      !value ||
-      /^\/api\/media\/[a-zA-Z0-9-]+$/.test(value) ||
-      /^https?:\/\//.test(value),
-    "올바른 이미지 주소를 입력해 주세요.",
-  );
-export const postSchema = z
-  .object({
-    title: z
-      .string()
-      .trim()
-      .min(1, "제목을 입력해 주세요.")
-      .max(160, "제목은 160자까지 입력할 수 있습니다."),
-    slug,
-    excerpt: z.string().max(160, "요약은 160자까지 입력할 수 있습니다."),
-    bodyMarkdown: z.string().max(1_000_000, "본문이 너무 깁니다."),
-    coverUrl: imageUrl,
-    coverAlt: z.string().max(300),
-    tags: z
-      .array(z.string().trim().min(1).max(32))
-      .max(12)
-      .transform((tags) => [...new Set(tags)]),
-    status: z.enum(["draft", "published"]),
-    visibility: z.enum(["public", "private"]),
-    seriesId: z.string().max(64).nullable(),
-    revision: z.number().int().positive().optional(),
-  })
-  .superRefine((post, ctx) => {
-    if (post.status === "published" && !post.bodyMarkdown.trim())
-      ctx.addIssue({
-        code: "custom",
-        path: ["bodyMarkdown"],
-        message: "발행하려면 본문을 작성해 주세요.",
-      });
-    if (post.coverUrl && !post.coverAlt.trim())
-      ctx.addIssue({
-        code: "custom",
-        path: ["coverAlt"],
-        message: "대표 이미지의 대체 텍스트를 입력해 주세요.",
-      });
-  });
-export const seriesSchema = z.object({
-  name: z.string().trim().min(1, "시리즈 이름을 입력해 주세요.").max(100),
-  slug,
-  description: z.string().max(300),
-  revision: z.number().int().positive().optional(),
-  postIds: z.array(z.string().max(64)).max(1000).optional(),
+const text = (max = 300) => z.string().trim().max(max);
+const required = (max = 100) => text(max).min(1, "필수 항목을 입력해 주세요.");
+export const safeHref = (value: string) => {
+  if (!value) return true;
+  if (/^\/[a-zA-Z0-9/_#.?%=&-]*$/.test(value) && !value.startsWith("//"))
+    return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+};
+const href = text(2000).refine(
+  safeHref,
+  "링크는 사이트 내부 경로 또는 https:// 주소여야 합니다.",
+);
+const asset = text(2000).refine(
+  (v) => !v || Object.hasOwn(portfolioAssets, v) || safeHref(v),
+  "이미지는 기존 에셋 이름, 내부 경로 또는 https:// 주소여야 합니다.",
+);
+const image = { icon: asset };
+const label = { label: required() };
+const list = (max = 20) => z.array(required(300)).max(max);
+export const homeSchema = z.object({
+  navigation: z.object({
+    logo: asset,
+    items: z
+      .array(
+        z.object({
+          ...label,
+          section: z.enum([
+            "about",
+            "experience",
+            "education",
+            "certifications",
+            "skills",
+            "languages",
+            "recommendations",
+            "contact",
+          ]),
+        }),
+      )
+      .max(8),
+    contact: z.object({ ...label, ...image }),
+  }),
+  intro: z.object({
+    title: required(160),
+    description: text(600),
+    illustration: asset,
+    experienceLink: z.object({
+      ...label,
+      imageKeys: z.array(asset).max(4),
+      arrow: asset,
+    }),
+    profile: z.object({
+      name: required(80),
+      role: text(160),
+      description: text(600),
+      avatar: asset,
+      signature: asset,
+      facts: z.array(z.object({ text: required(120), ...image })).max(6),
+      downloadCv: z.object({ ...label, href }),
+    }),
+  }),
+  about: z.object({
+    ...label,
+    description: text(2000),
+    keySkillsLabel: text(100),
+    keySkills: list(),
+  }),
+  experience: z.object({
+    ...label,
+    companies: z
+      .array(
+        z.object({
+          name: required(),
+          logo: asset,
+          roles: z
+            .array(
+              z.object({
+                title: required(160),
+                employmentType: text(100),
+                period: text(100),
+                description: text(2000),
+                highlights: list(12),
+              }),
+            )
+            .min(1)
+            .max(8),
+        }),
+      )
+      .max(12),
+  }),
+  education: z.object({
+    ...label,
+    items: z
+      .array(
+        z.object({
+          degree: required(160),
+          institution: text(160),
+          period: text(100),
+          description: text(2000),
+        }),
+      )
+      .max(12),
+  }),
+  certifications: z.object({
+    ...label,
+    items: z
+      .array(
+        z.object({
+          title: required(160),
+          issuer: text(160),
+          issued: text(100),
+          logo: asset,
+        }),
+      )
+      .max(16),
+  }),
+  skills: z.object({
+    ...label,
+    items: list(30),
+    technologiesLabel: text(100),
+    technologies: z.array(z.object({ name: required(), ...image })).max(24),
+  }),
+  languages: z.object({
+    ...label,
+    items: z
+      .array(
+        z.object({ name: required(), proficiency: text(200), flag: asset }),
+      )
+      .max(12),
+  }),
+  recommendations: z.object({
+    ...label,
+    items: z
+      .array(
+        z.object({
+          name: required(),
+          role: text(160),
+          quote: required(2000),
+          avatar: asset,
+        }),
+      )
+      .max(12),
+  }),
+  contact: z.object({
+    ...label,
+    description: text(600),
+    illustration: asset,
+    networkLabel: text(100),
+    channels: z
+      .array(
+        z
+          .object({
+            kind: z.enum(["email", "phone"]),
+            ...label,
+            value: required(160),
+            ...image,
+          })
+          .superRefine((c, ctx) => {
+            if (c.kind === "email" && !z.email().safeParse(c.value).success)
+              ctx.addIssue({
+                code: "custom",
+                path: ["value"],
+                message: "올바른 이메일 주소를 입력해 주세요.",
+              });
+            if (c.kind === "phone" && !/^\+?[0-9() .-]{3,40}$/.test(c.value))
+              ctx.addIssue({
+                code: "custom",
+                path: ["value"],
+                message: "전화번호 형식을 확인해 주세요.",
+              });
+          }),
+      )
+      .max(4),
+    networks: z.array(z.object({ name: required(), ...image, href })).max(8),
+  }),
+  footer: z.object({ copyright: text(160), backToTop: z.object(label) }),
 });
-export const introSchema = z.object({
-  eyebrow: z
-    .string()
-    .trim()
-    .max(60, "상단 라벨은 60자까지 입력할 수 있습니다."),
-  name: z
-    .string()
-    .trim()
-    .min(1, "이름을 입력해 주세요.")
-    .max(40, "이름은 40자까지 입력할 수 있습니다."),
-  headline: z
-    .string()
-    .trim()
-    .min(1, "헤드라인을 입력해 주세요.")
-    .max(160, "헤드라인은 160자까지 입력할 수 있습니다.")
-    .transform((value) => value.replace(/\r\n?/g, "\n")),
-  description: z
-    .string()
-    .trim()
-    .max(400, "소개는 400자까지 입력할 수 있습니다."),
+export const homeUpdateSchema = z.object({
+  content: homeSchema,
+  revision: z.number().int().positive(),
 });
 export function parseInput<T>(schema: z.ZodType<T>, input: unknown): T {
   const parsed = schema.safeParse(input);
-  if (!parsed.success) throw new AppError(parsed.error.issues[0].message);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    throw new AppError(`${issue.path.join(" → ")}: ${issue.message}`);
+  }
   return parsed.data;
 }

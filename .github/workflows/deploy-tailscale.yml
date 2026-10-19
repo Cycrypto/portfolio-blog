@@ -81,4 +81,4 @@ jobs:
         run: |
           curl --fail --retry 5 --retry-delay 3 https://junha.space/api/health
           curl --fail --silent https://junha.space/ -o /tmp/home.html
-          grep -q 'Full Stack Developer' /tmp/home.html
+          grep -q 'id="experience"' /tmp/home.html

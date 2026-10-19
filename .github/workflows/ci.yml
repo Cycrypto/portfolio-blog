@@ -51,7 +51,6 @@ jobs:
         run: |
           set -euo pipefail
           docker run -d --name portfolio-ci -p 127.0.0.1:13000:3000 \
-            -e ADMIN_PASSWORD=ci-container-only \
             --tmpfs /app/data:uid=1000,gid=1000,mode=0700 portfolio-blog:ci
           trap 'docker logs portfolio-ci; docker rm -f portfolio-ci' EXIT
           for attempt in {1..60}; do
@@ -63,6 +62,6 @@ jobs:
           test "$(docker inspect -f '{{.State.Health.Status}}' portfolio-ci)" = healthy
           curl --fail http://127.0.0.1:13000/api/health
           curl --fail --silent http://127.0.0.1:13000/ -o /tmp/home.html
-          grep -q '박준하' /tmp/home.html
-          curl --fail --silent http://127.0.0.1:13000/blog -o /dev/null
-          curl --fail --silent http://127.0.0.1:13000/robots.txt -o /dev/null
+          grep -q 'Oliver Rowland' /tmp/home.html
+          test "$(curl --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:13000/blog)" = 404
+          test "$(curl --silent -o /dev/null -w '%{http_code}' http://127.0.0.1:13000/api/admin/home)" = 503

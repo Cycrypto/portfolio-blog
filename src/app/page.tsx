@@ -3,12 +3,12 @@ import { repository } from "@/lib/repository";
 import { Portfolio } from "@/components/portfolio";
 export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
-  const intro = repository().getIntro();
+  const { intro } = repository().getHome();
   return {
-    title: `${intro.name} — 포트폴리오`,
-    description: intro.description || intro.headline.replace(/\n/g, " "),
+    title: `${intro.profile.name} — 포트폴리오`,
+    description: intro.description || intro.title.replace(/\n/g, " "),
   };
 }
 export default function Page() {
-  return <Portfolio intro={repository().getIntro()} />;
+  return <Portfolio content={repository().getHome()} />;
 }

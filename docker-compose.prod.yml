@@ -10,7 +10,8 @@ services:
     restart: unless-stopped
     init: true
     environment:
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env.portfolio}
+      CF_ACCESS_TEAM_DOMAIN: ${CF_ACCESS_TEAM_DOMAIN:?Set Cloudflare Access team domain}
+      CF_ACCESS_AUD: ${CF_ACCESS_AUD:?Set administrator application AUD}
       SITE_URL: https://junha.space
       DATA_DIR: /app/data
     ports:

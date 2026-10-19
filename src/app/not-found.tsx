@@ -9,10 +9,10 @@ export default function NotFound() {
         <p className="font-mono text-xs text-accent">404 / NOT FOUND</p>
         <h1 className="my-6 font-heading text-3xl">페이지를 찾을 수 없어요.</h1>
         <p className="mb-8 text-muted">
-          주소가 바뀌었거나 공개되지 않은 글일 수 있습니다.
+          주소를 확인하거나 메인 화면으로 돌아가 주세요.
         </p>
-        <Link href="/blog" className={buttonClass()}>
-          모든 글 보기
+        <Link href="/" className={buttonClass()}>
+          포트폴리오로 돌아가기
         </Link>
       </main>
       <div className="px-6">
