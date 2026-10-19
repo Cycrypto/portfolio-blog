@@ -3,110 +3,66 @@ name: CI
 on:
   pull_request:
   push:
-    branches:
-      - main
+    branches: [main, codex/deploy-redesigned-portfolio]
 
 permissions:
   contents: read
 
 jobs:
-  backend-build:
-    name: Backend Build
+  validate:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
         env:
-          POSTGRES_USER: admin
-          POSTGRES_PASSWORD: admin
-          POSTGRES_DB: team_blog
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U admin -d team_blog"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      NODE_ENV: test
-      DB_HOST: 127.0.0.1
-      DB_PORT: 5432
-      DB_USERNAME: admin
-      DB_PASSWORD: admin
-      DB_DATABASE: team_blog
-      DB_SYNCHRONIZE: "false"
-      DB_LOGGING: "false"
-      JWT_SECRET: test-secret
-    defaults:
-      run:
-        working-directory: backend
+          SITE_URL: https://junha.space
+      - run: npm run typecheck
+
+  browser:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-failure
+          path: test-results/
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Test
-        run: npm test -- --runInBand
-
-      - name: Build
-        run: npm run build
-
-      - name: Migration smoke test
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t portfolio-blog:ci .
+      - name: Verify production image
+        shell: bash
         run: |
-          npm run migration:run:prod
-          output="$(npm run --silent migration:show:prod || true)"
-          echo "$output"
-          if echo "$output" | grep -q '\[ \]'; then
-            echo "Pending migrations detected after migration:run"
-            exit 1
-          fi
-
-  frontend-build:
-    name: Frontend Build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-  worker-tests:
-    name: Worker Tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: worker
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Test
-        run: npm test
+          set -euo pipefail
+          docker run -d --name portfolio-ci -p 127.0.0.1:13000:3000 \
+            -e ADMIN_PASSWORD=ci-container-only \
+            --tmpfs /app/data:uid=1000,gid=1000,mode=0700 portfolio-blog:ci
+          trap 'docker logs portfolio-ci; docker rm -f portfolio-ci' EXIT
+          for attempt in {1..60}; do
+            if [[ $(docker inspect -f '{{.State.Health.Status}}' portfolio-ci) == healthy ]]; then
+              break
+            fi
+            sleep 2
+          done
+          test "$(docker inspect -f '{{.State.Health.Status}}' portfolio-ci)" = healthy
+          curl --fail http://127.0.0.1:13000/api/health
+          curl --fail --silent http://127.0.0.1:13000/ -o /tmp/home.html
+          grep -q 'Full Stack Developer' /tmp/home.html
+          curl --fail --silent http://127.0.0.1:13000/blog -o /dev/null
+          curl --fail --silent http://127.0.0.1:13000/portfolio/illustration-intro.png -o /dev/null

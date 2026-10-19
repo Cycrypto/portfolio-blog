@@ -1,7 +1,16 @@
 name: Deploy (Tailscale)
 
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag, or commit to deploy
+        required: true
+        default: main
 
 permissions:
   contents: read
@@ -10,74 +19,66 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
-env:
-  DEPLOY_HOST: 100.76.8.11
-  DEPLOY_USER: ubuntu
-  DEPLOY_PORT: "22"
-  DEPLOY_PATH: /home/ubuntu/apps/portfolio-blog
-  COMPOSE_FILE: docker-compose.prod.yml
-
 jobs:
   deploy:
-    name: Deploy to production
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     environment: production
     steps:
-      - name: Resolve Tailscale auth mode
-        id: ts_auth
-        shell: bash
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.event.workflow_run.head_sha }}
+      - name: Resolve release commit
+        id: release
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Select Tailscale authentication
+        id: auth
         env:
-          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET || secrets.TS_OAUTH_PASSWORD }}
-          TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+          OAUTH_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET || secrets.TS_OAUTH_PASSWORD }}
+          AUTH_KEY: ${{ secrets.TAILSCALE_AUTHKEY }}
         run: |
-          if [[ -n "$TS_OAUTH_CLIENT_ID" && -n "$TS_OAUTH_SECRET" ]]; then
+          if [[ -n "$OAUTH_ID" && -n "$OAUTH_SECRET" ]]; then
             echo "mode=oauth" >> "$GITHUB_OUTPUT"
-          elif [[ -n "$TAILSCALE_AUTHKEY" ]]; then
+          elif [[ -n "$AUTH_KEY" ]]; then
             echo "mode=authkey" >> "$GITHUB_OUTPUT"
           else
-            echo "Neither OAuth secrets nor TAILSCALE_AUTHKEY is configured."
+            echo "Configure Tailscale OAuth credentials or an auth key" >&2
             exit 1
           fi
-
-      - name: Connect to tailnet
-        if: ${{ steps.ts_auth.outputs.mode == 'oauth' }}
-        uses: tailscale/github-action@v4
+      - uses: tailscale/github-action@v4
+        if: steps.auth.outputs.mode == 'oauth'
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET || secrets.TS_OAUTH_PASSWORD }}
-          tags: tag:ci
-          version: latest
-
-      - name: Connect to tailnet (auth key fallback)
-        if: ${{ steps.ts_auth.outputs.mode == 'authkey' }}
-        uses: tailscale/github-action@v4
+          tags: ${{ vars.TAILSCALE_TAGS || 'tag:ci' }}
+          retry: 1
+      - uses: tailscale/github-action@v4
+        if: steps.auth.outputs.mode == 'authkey'
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          version: latest
-
-      - name: Deploy via SSH
+          retry: 1
+      - name: Deploy exact release over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ env.DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_USER }}
+          host: 100.76.8.11
+          username: ubuntu
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
-          port: ${{ env.DEPLOY_PORT }}
-          command_timeout: 45m
+          command_timeout: 40m
           script: |
             set -eu
-            hostname
-            uname -m
-            docker ps --format 'table {{.Names}}	{{.Image}}	{{.Status}}	{{.Ports}}'
-            python3 - <<'PYINSPECT'
-            import json, subprocess
-            ids = subprocess.check_output(['docker','ps','-q'], text=True).split()
-            for cid in ids:
-                c=json.loads(subprocess.check_output(['docker','inspect',cid],text=True))[0]
-                labels=c['Config'].get('Labels') or {}
-                safe={k:v for k,v in labels.items() if k in ('com.docker.compose.project','com.docker.compose.project.config_files','com.docker.compose.project.working_dir','com.docker.compose.service','traefik.enable','traefik.docker.network') or (k.startswith('traefik.http.') and any(k.endswith(suffix) for suffix in ('.rule','.entrypoints','.certresolver','.port','.service','.tls')))}
-                print(json.dumps({'name':c['Name'],'labels':safe,'networks':list(c['NetworkSettings']['Networks']),'mounts':[{'source':m['Source'],'destination':m['Destination']} for m in c['Mounts']]}))
-            PYINSPECT
             cd /home/ubuntu/apps/portfolio-blog
-            git status --short
-            ls -la docker-compose* .env* 2>/dev/null || true
+            git fetch origin ${{ steps.release.outputs.sha }}
+            export DEPLOYMENT_VERSION=${{ steps.release.outputs.sha }}
+            release_dir="$PWD/releases/$DEPLOYMENT_VERSION"
+            mkdir -p "$release_dir"
+            git archive "$DEPLOYMENT_VERSION" | tar -x -C "$release_dir"
+            bash "$release_dir/scripts/deploy.sh" "$PWD"
+      - name: Verify public website
+        run: |
+          curl --fail --retry 5 --retry-delay 3 https://junha.space/api/health
+          curl --fail --silent https://junha.space/ -o /tmp/home.html
+          grep -q 'Full Stack Developer' /tmp/home.html
