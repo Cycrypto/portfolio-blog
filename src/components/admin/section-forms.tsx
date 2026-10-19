@@ -433,8 +433,9 @@ function ExperienceForm({ value, update }: FormProps) {
                     value={role.highlights}
                     onChange={(highlights) => patchRole({ highlights })}
                     max={12}
-                    hint="설명 아래에 글머리 목록으로 표시됩니다. Enter로 추가합니다."
+                    hint="설명 아래에 글머리 목록으로 표시됩니다. 문장 하나를 쓰고 Enter로 추가합니다."
                     placeholder="성과 한 줄 입력 후 Enter"
+                    splitOnComma={false}
                   />
                 </>
               )}

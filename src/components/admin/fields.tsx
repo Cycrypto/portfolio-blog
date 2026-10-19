@@ -134,6 +134,7 @@ export function TagField({
   max,
   hint,
   placeholder = "입력 후 Enter",
+  splitOnComma = true,
 }: {
   path: string;
   label: string;
@@ -142,15 +143,17 @@ export function TagField({
   max: number;
   hint?: string;
   placeholder?: string;
+  splitOnComma?: boolean;
 }) {
   const id = fieldId(path);
   const error = useFieldError(path);
   const [draft, setDraft] = useState("");
   const [dragging, setDragging] = useState<number | null>(null);
   const full = value.length >= max;
+  const separator = splitOnComma ? /[,\n]/ : /\n/;
   const add = (raw: string) => {
     const parts = raw
-      .split(/[,\n]/)
+      .split(separator)
       .map((part) => part.trim())
       .filter(Boolean);
     if (!parts.length) return;
@@ -181,7 +184,10 @@ export function TagField({
       id={id}
       label={`${label} (${value.length}/${max})`}
       help={
-        hint ?? "Enter 또는 쉼표로 추가합니다. 끌어서 순서를 바꿀 수 있습니다."
+        hint ??
+        (splitOnComma
+          ? "Enter 또는 쉼표로 추가합니다. 끌어서 순서를 바꿀 수 있습니다."
+          : "Enter로 추가합니다. 끌어서 순서를 바꿀 수 있습니다.")
       }
       error={error}
     >
@@ -233,13 +239,13 @@ export function TagField({
           onBlur={() => add(draft)}
           onPaste={(e) => {
             const pasted = e.clipboardData.getData("text");
-            if (/[,\n]/.test(pasted)) {
+            if (separator.test(pasted)) {
               e.preventDefault();
               add(draft + pasted);
             }
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === ",") {
+            if (e.key === "Enter" || (splitOnComma && e.key === ",")) {
               e.preventDefault();
               add(draft);
             } else if (e.key === "Backspace" && !draft && value.length)
