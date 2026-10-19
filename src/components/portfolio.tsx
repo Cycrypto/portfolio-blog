@@ -157,18 +157,25 @@ export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
 }
 // Organisations with their roles, drawn as a logo-led timeline (Experience, Activities).
 function Timeline({ data }: { data: Timeline }) {
+  // Keep one logo column for the whole list so rows without a logo still line up.
+  const withLogos = data.companies.some((company) => company.logo);
   return (
     <div className="space-y-8">
       {data.companies.map((company, companyIndex) => (
         <div
           key={companyIndex}
-          className={`relative ${company.logo ? "grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-4" : "min-w-0"}`}
+          className={`relative ${withLogos ? "grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-4" : "min-w-0"}`}
         >
-          <Asset
-            name={company.logo}
-            alt={company.name}
-            className="size-10 rounded"
-          />
+          {withLogos &&
+            (company.logo ? (
+              <Asset
+                name={company.logo}
+                alt={company.name}
+                className="size-10 rounded"
+              />
+            ) : (
+              <span aria-hidden className="size-10 rounded bg-ink/5" />
+            ))}
           <div className="min-w-0 space-y-8">
             {company.roles.map((role, roleIndex) => (
               <article key={roleIndex} className="relative">
