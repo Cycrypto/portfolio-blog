@@ -116,7 +116,7 @@ export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
             </li>
           ))}
         </ul>
-        <div className="mt-10 flex flex-wrap gap-3">
+        <div className="mt-10 -ml-1.5 flex flex-wrap gap-0">
           {ref.contact.networks.map((network, index) => (
             <a
               key={index}
@@ -304,7 +304,7 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
                       className="size-10 rounded"
                     />
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-display text-lg leading-[1.28]">
+                      <h3 className="font-display text-lg font-bold leading-[1.28]">
                         {item.title}
                       </h3>
                       <p className="mt-1 text-sm">{item.issuer}</p>
@@ -346,7 +346,9 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
                   <div key={index} className="flex items-center gap-4">
                     <Asset name={item.flag} alt="" className="size-10" />
                     <div>
-                      <h3 className="font-display text-lg">{item.name}</h3>
+                      <h3 className="font-display text-lg font-bold">
+                        {item.name}
+                      </h3>
                       <p className="mt-1 text-sm">{item.proficiency}</p>
                     </div>
                   </div>
@@ -394,7 +396,7 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
             {ref.contact.networks.length > 0 && (
               <div>
                 <p className="mb-4 text-sm">{ref.contact.networkLabel}</p>
-                <div className="flex justify-center gap-4">
+                <div className="flex justify-center gap-1">
                   {ref.contact.networks.map((network, index) => (
                     <a
                       key={index}
