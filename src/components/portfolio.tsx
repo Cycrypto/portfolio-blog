@@ -30,17 +30,33 @@ function Asset({
     />
   );
 }
-function SkillChips({ items }: { items: readonly string[] }) {
+export const skillLevels: Record<string, string> = {
+  advanced: "Advanced",
+  intermediate: "Intermediate",
+  beginner: "Beginner",
+};
+function SkillChips({
+  items,
+}: {
+  items: readonly (string | { name: string; level: string })[];
+}) {
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map((item, index) => (
-        <span
-          key={`${item}-${index}`}
-          className="rounded bg-ink/5 px-2.5 py-1 text-sm leading-[1.4]"
-        >
-          {item}
-        </span>
-      ))}
+      {items.map((item, index) => {
+        const { name, level } =
+          typeof item === "string" ? { name: item, level: "" } : item;
+        return (
+          <span
+            key={`${name}-${index}`}
+            className="inline-flex items-baseline gap-1.5 rounded bg-ink/5 px-2.5 py-1 text-sm leading-[1.4]"
+          >
+            {name}
+            {skillLevels[level] && (
+              <span className="text-xs text-muted">{skillLevels[level]}</span>
+            )}
+          </span>
+        );
+      })}
     </div>
   );
 }

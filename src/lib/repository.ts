@@ -40,6 +40,11 @@ export function upgradeHome(value: unknown): HomeContent | null {
   delete home.recommendations;
   if (!home.experience || typeof home.experience !== "object")
     home.experience = { label: "Experience", companies: [] };
+  const skills = home.skills as { items?: Json[] } | undefined;
+  if (skills && Array.isArray(skills.items))
+    skills.items = skills.items.map((item) =>
+      typeof item === "string" ? { name: item, level: "" } : item,
+    );
   const navigation = home.navigation as { items?: Json[] } | undefined;
   if (navigation && Array.isArray(navigation.items)) {
     navigation.items = navigation.items.filter(
@@ -125,7 +130,7 @@ function migrateHome(value: unknown, intro: unknown): HomeContent {
       old.contact.resumeHref === "/resume" ? "" : old.contact.resumeHref;
     home.about.description = old.about.description;
     home.about.keySkills = old.about.keySkills;
-    home.skills.items = old.skills;
+    home.skills.items = old.skills.map((name) => ({ name, level: "" }));
     home.skills.technologies = [];
     home.education.items = [];
     home.certifications.items = [];

@@ -201,7 +201,7 @@ export const defaultHome: HomeContent = {
       "Team collaboration",
       "Technical documentation",
       "TypeScript",
-    ],
+    ].map((name) => ({ name, level: "" as const })),
     technologiesLabel: "Technologies & tools:",
     technologies: [
       {

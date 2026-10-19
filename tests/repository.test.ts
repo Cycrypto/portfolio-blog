@@ -172,6 +172,10 @@ test("a saved document with retired sections upgrades and keeps every other edit
     experience: undefined,
     recommendations: { label: "Recommendations", items: [] },
   };
+  (legacy as { skills: { items: unknown } }).skills = {
+    ...edited.skills,
+    items: ["Python & FastAPI", { name: "AWS", level: "advanced" }],
+  };
   repo.db
     .prepare("UPDATE home_content SET content=?, revision=7 WHERE id=1")
     .run(JSON.stringify(legacy));
@@ -190,6 +194,10 @@ test("a saved document with retired sections upgrades and keeps every other edit
       label: "Experience",
       companies: [],
     });
+    assert.deepEqual(document.content.skills.items, [
+      { name: "Python & FastAPI", level: "" },
+      { name: "AWS", level: "advanced" },
+    ]);
     assert.deepEqual(document.content.intro.cta, {
       label: "View Talks",
       section: "about",

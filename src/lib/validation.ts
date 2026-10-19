@@ -131,7 +131,14 @@ export const homeSchema = z.object({
   }),
   skills: z.object({
     ...label,
-    items: list(30),
+    items: z
+      .array(
+        z.object({
+          name: required(300),
+          level: z.enum(["", "advanced", "intermediate", "beginner"]),
+        }),
+      )
+      .max(30),
     technologiesLabel: text(100),
     technologies: z.array(z.object({ name: required(), ...image })).max(24),
   }),

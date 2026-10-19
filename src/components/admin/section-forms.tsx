@@ -23,6 +23,7 @@ import {
   TextField,
 } from "./fields";
 import { ImagePicker } from "./image-picker";
+import { skillLevels } from "../portfolio";
 
 export type Mutate = (mutate: (draft: HomeContent) => void) => void;
 type FormProps = { value: HomeContent; update: Mutate };
@@ -583,13 +584,48 @@ function SkillsForm({ value, update }: FormProps) {
           value={s.label}
           onChange={(v) => update((d) => (d.skills.label = v))}
         />
-        <TagField
+        <ItemList
           path="skills.items"
           label="역량 태그"
-          value={s.items}
-          onChange={(v) => update((d) => (d.skills.items = v))}
+          items={s.items}
+          onChange={(fn) =>
+            update((d) => (d.skills.items = fn(d.skills.items)))
+          }
           max={30}
-        />
+          create={() => ({ name: "", level: "" as const })}
+          summary={(item) =>
+            [item.name, skillLevels[item.level]].filter(Boolean).join(" · ")
+          }
+          emptyHint="역량 태그가 없습니다. 태그 하나에 이름과 숙련도를 넣어 주세요."
+          compact
+        >
+          {(item, patch, index) => (
+            <>
+              <TextField
+                path={`skills.items.${index}.name`}
+                label="이름"
+                value={item.name}
+                onChange={(name) => patch({ name })}
+                placeholder="예: Python & FastAPI"
+              />
+              <SelectField
+                path={`skills.items.${index}.level`}
+                label="숙련도"
+                value={item.level}
+                onChange={(level) =>
+                  patch({ level: level as (typeof item)["level"] })
+                }
+                options={[
+                  { value: "", label: "표시 안 함" },
+                  { value: "advanced", label: "Advanced" },
+                  { value: "intermediate", label: "Intermediate" },
+                  { value: "beginner", label: "Beginner" },
+                ]}
+                hint="태그 옆에 작게 표시됩니다."
+              />
+            </>
+          )}
+        </ItemList>
       </Group>
       <Group
         title="기술 도구"
