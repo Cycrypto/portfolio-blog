@@ -42,6 +42,12 @@ bash "$release_dir/scripts/deploy.sh" "$PWD"
 배포 후 `https://junha.space`의 홈, `/blog`, `/series`, `/admin/login` 및
 정적 이미지가 새 화면으로 표시되는지 확인합니다.
 
+서버의 외부 DNS나 이미지 레지스트리에 문제가 있으면 다른 장비에서 서버
+아키텍처(`linux/amd64`)에 맞춰 이미지를 빌드하고 `docker save` / `docker load`로
+전송할 수 있습니다. 동일한 커밋의 소스도 릴리스 디렉터리로 전송한 뒤
+`DEPLOY_PREBUILT=1`을 설정해 배포 스크립트를 실행합니다. 이 모드는 서버에서
+소스 fetch나 이미지 빌드를 수행하지 않고 이미 존재하는 릴리스 이미지를 검증합니다.
+
 ## 재배포와 복구
 
 관리자 비밀번호와 DB는 릴리스 밖에 보관됩니다. 재배포할 때 기존 볼륨을

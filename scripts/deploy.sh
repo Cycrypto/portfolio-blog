@@ -10,7 +10,11 @@ env_file="$base_dir/.env.portfolio"
 
 compose=(docker compose --env-file "$env_file" -f "$release_dir/docker-compose.prod.yml")
 "${compose[@]}" config --quiet
-"${compose[@]}" build portfolio
+if [[ "${DEPLOY_PREBUILT:-0}" == 1 ]]; then
+  docker image inspect "portfolio-blog:$DEPLOYMENT_VERSION" >/dev/null
+else
+  "${compose[@]}" build portfolio
+fi
 
 # Verify the new image before attaching its production routing labels.
 check_name="portfolio-check-${DEPLOYMENT_VERSION:0:12}"
