@@ -13,18 +13,13 @@ import {
 import type { HomeContent, HomeDocument } from "./types";
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
-const retiredAssets = new Set([
-  "companyNorthstack",
-  "companyPixelbase",
-  "companyCloudCore",
-  "avatarMaya",
-  "avatarDaniel",
-]);
+const retiredAssets = new Set(["avatarMaya", "avatarDaniel"]);
 const isSection = (v: unknown): v is (typeof sectionIds)[number] =>
   typeof v === "string" && (sectionIds as readonly string[]).includes(v);
 // Bring a previously saved home document up to the current schema: retired
-// sections disappear, links that pointed at them move to a live section, and
-// image names that no longer ship with the site are cleared.
+// sections disappear, links that pointed at them move to a live section, image
+// names that no longer ship with the site are cleared, and a section added
+// later starts out empty (so the page hides it until it has entries).
 export function upgradeHome(value: unknown): HomeContent | null {
   const current = homeSchema.safeParse(value);
   if (current.success) return current.data;
@@ -42,16 +37,31 @@ export function upgradeHome(value: unknown): HomeContent | null {
             )
           : node;
   const home = clear(structuredClone(value) as Json) as Record<string, Json>;
-  delete home.experience;
   delete home.recommendations;
+  if (!home.experience || typeof home.experience !== "object")
+    home.experience = { label: "Experience", companies: [] };
   const navigation = home.navigation as { items?: Json[] } | undefined;
-  if (navigation && Array.isArray(navigation.items))
+  if (navigation && Array.isArray(navigation.items)) {
     navigation.items = navigation.items.filter(
       (item) =>
         item &&
         typeof item === "object" &&
         isSection((item as never)["section"]),
     );
+    if (
+      !navigation.items.some(
+        (item) => (item as { section?: string }).section === "experience",
+      )
+    ) {
+      const about = navigation.items.findIndex(
+        (item) => (item as { section?: string }).section === "about",
+      );
+      navigation.items.splice(about + 1, 0, {
+        label: "Experience",
+        section: "experience",
+      });
+    }
+  }
   const intro = home.intro as Record<string, Json> | undefined;
   if (intro && typeof intro === "object") {
     const link = (intro.cta ?? intro.experienceLink) as

@@ -17,6 +17,7 @@ const assetGroups: { prefix: string; title: string }[] = [
   { prefix: "avatar", title: "프로필" },
   { prefix: "signature", title: "서명" },
   { prefix: "heroMark", title: "첫 화면 버튼" },
+  { prefix: "company", title: "회사 로고" },
   { prefix: "certification", title: "자격증 로고" },
   { prefix: "tech", title: "기술 도구" },
   { prefix: "flag", title: "국기" },

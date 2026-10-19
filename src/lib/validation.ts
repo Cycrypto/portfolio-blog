@@ -39,6 +39,7 @@ const label = { label: required() };
 const list = (max = 20) => z.array(required(300)).max(max);
 export const sectionIds = [
   "about",
+  "experience",
   "education",
   "certifications",
   "skills",
@@ -78,6 +79,29 @@ export const homeSchema = z.object({
     description: text(2000),
     keySkillsLabel: text(100),
     keySkills: list(),
+  }),
+  experience: z.object({
+    ...label,
+    companies: z
+      .array(
+        z.object({
+          name: required(),
+          logo: asset,
+          roles: z
+            .array(
+              z.object({
+                title: required(160),
+                employmentType: text(100),
+                period: text(100),
+                description: text(2000),
+                highlights: list(12),
+              }),
+            )
+            .min(1, "직무를 하나 이상 추가해 주세요.")
+            .max(8),
+        }),
+      )
+      .max(12),
   }),
   education: z.object({
     ...label,

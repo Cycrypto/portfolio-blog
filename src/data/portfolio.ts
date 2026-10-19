@@ -10,6 +10,10 @@ export const defaultHome: HomeContent = {
         section: "about",
       },
       {
+        label: "Experience",
+        section: "experience",
+      },
+      {
         label: "Education",
         section: "education",
       },
@@ -29,8 +33,8 @@ export const defaultHome: HomeContent = {
       "Building scalable web applications with clean architecture, modern tools, and thoughtful user experience.",
     illustration: "illustrationIntro",
     cta: {
-      label: "View Education",
-      section: "education",
+      label: "View Experience",
+      section: "experience",
       imageKeys: ["heroMark1", "heroMark2", "heroMark3"],
       arrow: "iconArrowRight",
     },
@@ -74,6 +78,68 @@ export const defaultHome: HomeContent = {
       "TypeScript",
       "Database management",
       "Performance optimization",
+    ],
+  },
+  experience: {
+    label: "Experience",
+    companies: [
+      {
+        name: "Northstack",
+        logo: "companyNorthstack",
+        roles: [
+          {
+            title: "Senior Full Stack Developer",
+            employmentType: "Full-Time",
+            period: "Jan 2025 – Present",
+            description:
+              "Leading full-stack development for scalable web applications and reliable digital products across teams.",
+            highlights: [
+              "Improved platform performance and stability",
+              "Built frontend and backend product features",
+              "Collaborated with product and engineering teams",
+            ],
+          },
+          {
+            title: "Full Stack Developer",
+            employmentType: "Full-Time",
+            period: "Jan 2023 – Dec 2024",
+            description:
+              "Worked on responsive web applications, API integrations, and backend systems using modern frameworks.",
+            highlights: [],
+          },
+        ],
+      },
+      {
+        name: "Pixelbase",
+        logo: "companyPixelbase",
+        roles: [
+          {
+            title: "Frontend Developer",
+            employmentType: "Full-Time",
+            period: "Apr 2021 – Dec 2022",
+            description:
+              "Developed responsive user interfaces and interactive web experiences for client and internal digital products, focusing on usability, accessibility, and performance.",
+            highlights: [],
+          },
+        ],
+      },
+      {
+        name: "CloudCore",
+        logo: "companyCloudCore",
+        roles: [
+          {
+            title: "Junior Web Developer",
+            employmentType: "Part-Time",
+            period: "Aug 2020 – May 2021",
+            description:
+              "Supported frontend and backend development tasks while contributing to modern web projects, maintaining internal systems, and improving workflow efficiency.",
+            highlights: [
+              "Assisted in developing responsive website interfaces",
+              "Worked with REST APIs and backend integrations",
+            ],
+          },
+        ],
+      },
     ],
   },
   education: {

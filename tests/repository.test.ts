@@ -150,25 +150,26 @@ test("a saved document with retired sections upgrades and keeps every other edit
   let repo = new Repository(path);
   const edited = structuredClone(repo.getHomeDocument().content);
   edited.about.description = "유지되는 소개";
+  const navWithoutExperience = edited.navigation.items.filter(
+    (item) => item.section !== "experience",
+  );
   const legacy = {
     ...edited,
     navigation: {
       ...edited.navigation,
-      items: [
-        { label: "Experience", section: "experience" },
-        ...edited.navigation.items,
-      ],
+      items: [{ label: "Talks", section: "talks" }, ...navWithoutExperience],
     },
     intro: {
       ...edited.intro,
       cta: undefined,
       experienceLink: {
-        label: "View Experience",
-        imageKeys: ["heroMark1", "companyNorthstack"],
+        label: "View Talks",
+        section: "talks",
+        imageKeys: ["heroMark1", "avatarMaya"],
         arrow: "iconArrowRight",
       },
     },
-    experience: { label: "Experience", companies: [] },
+    experience: undefined,
     recommendations: { label: "Recommendations", items: [] },
   };
   repo.db
@@ -180,17 +181,21 @@ test("a saved document with retired sections upgrades and keeps every other edit
     const document = repo.getHomeDocument();
     assert.equal(document.revision, 8);
     assert.equal(document.content.about.description, "유지되는 소개");
-    assert.deepEqual(
-      document.content.navigation.items,
-      edited.navigation.items,
-    );
+    assert.deepEqual(document.content.navigation.items, [
+      navWithoutExperience[0],
+      { label: "Experience", section: "experience" },
+      ...navWithoutExperience.slice(1),
+    ]);
+    assert.deepEqual(document.content.experience, {
+      label: "Experience",
+      companies: [],
+    });
     assert.deepEqual(document.content.intro.cta, {
-      label: "View Experience",
+      label: "View Talks",
       section: "about",
       imageKeys: ["heroMark1", ""],
       arrow: "iconArrowRight",
     });
-    assert.ok(!("experience" in document.content));
     assert.ok(!("recommendations" in document.content));
   } finally {
     repo.close();

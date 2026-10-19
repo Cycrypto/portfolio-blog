@@ -2,6 +2,7 @@
 import type { ComponentType } from "react";
 import {
   Award,
+  Briefcase,
   Contact,
   GraduationCap,
   Languages,
@@ -306,6 +307,140 @@ function AboutForm({ value, update }: FormProps) {
         onChange={(v) => update((d) => (d.about.keySkills = v))}
         max={20}
       />
+    </Group>
+  );
+}
+function ExperienceForm({ value, update }: FormProps) {
+  const e = value.experience;
+  const setCompanies = (
+    fn: (
+      list: HomeContent["experience"]["companies"],
+    ) => HomeContent["experience"]["companies"],
+  ) => update((d) => (d.experience.companies = fn(d.experience.companies)));
+  return (
+    <Group
+      title="경력·활동"
+      hint="회사나 단체(동아리, 프로그램, 커뮤니티) 하나에 직무·역할을 여러 개 넣을 수 있습니다. 같은 곳에서 역할이 바뀐 경우 직무를 추가하면 타임라인으로 이어집니다. 항목이 없으면 메인 화면과 메뉴에서 숨겨집니다."
+    >
+      <TitleField
+        path="experience.label"
+        value={e.label}
+        onChange={(v) => update((d) => (d.experience.label = v))}
+      />
+      <ItemList
+        path="experience.companies"
+        label="회사·단체"
+        items={e.companies}
+        onChange={setCompanies}
+        max={12}
+        create={() => ({
+          name: "",
+          logo: "",
+          roles: [
+            {
+              title: "",
+              employmentType: "",
+              period: "",
+              description: "",
+              highlights: [],
+            },
+          ],
+        })}
+        summary={(c) => [c.name, c.roles[0]?.title].filter(Boolean).join(" · ")}
+        emptyHint="아직 경력·활동이 없습니다. 회사나 단체를 먼저 추가한 뒤 직무를 채워 주세요."
+      >
+        {(company, patch, ci) => (
+          <>
+            <Row>
+              <TextField
+                path={`experience.companies.${ci}.name`}
+                label="회사·단체 이름"
+                value={company.name}
+                onChange={(name) => patch({ name })}
+                placeholder="예: 소프트웨어 마에스트로"
+              />
+              <ImagePicker
+                path={`experience.companies.${ci}.logo`}
+                label="로고"
+                value={company.logo}
+                onChange={(logo) => patch({ logo })}
+                shape="icon"
+                suggest="company"
+                hint="정사각형 로고. 비우면 로고 없이 표시됩니다."
+              />
+            </Row>
+            <ItemList
+              path={`experience.companies.${ci}.roles`}
+              label="직무·역할"
+              items={company.roles}
+              onChange={(fn) =>
+                setCompanies((list) =>
+                  list.map((c, i) =>
+                    i === ci ? { ...c, roles: fn(c.roles) } : c,
+                  ),
+                )
+              }
+              max={8}
+              create={() => ({
+                title: "",
+                employmentType: "",
+                period: "",
+                description: "",
+                highlights: [],
+              })}
+              summary={(r) => [r.title, r.period].filter(Boolean).join(" · ")}
+            >
+              {(role, patchRole, ri) => (
+                <>
+                  <TextField
+                    path={`experience.companies.${ci}.roles.${ri}.title`}
+                    label="직무·역할"
+                    value={role.title}
+                    onChange={(title) => patchRole({ title })}
+                    placeholder="예: Backend Developer"
+                    maxLength={160}
+                  />
+                  <Row>
+                    <TextField
+                      path={`experience.companies.${ci}.roles.${ri}.employmentType`}
+                      label="형태"
+                      value={role.employmentType}
+                      onChange={(employmentType) =>
+                        patchRole({ employmentType })
+                      }
+                      placeholder="예: 정규직, 인턴, 팀 프로젝트"
+                    />
+                    <TextField
+                      path={`experience.companies.${ci}.roles.${ri}.period`}
+                      label="기간"
+                      value={role.period}
+                      onChange={(period) => patchRole({ period })}
+                      placeholder="예: 2025. 04 – 현재"
+                    />
+                  </Row>
+                  <TextField
+                    path={`experience.companies.${ci}.roles.${ri}.description`}
+                    label="한 문단 설명"
+                    value={role.description}
+                    onChange={(description) => patchRole({ description })}
+                    multiline
+                    maxLength={2000}
+                  />
+                  <TagField
+                    path={`experience.companies.${ci}.roles.${ri}.highlights`}
+                    label="주요 성과"
+                    value={role.highlights}
+                    onChange={(highlights) => patchRole({ highlights })}
+                    max={12}
+                    hint="설명 아래에 글머리 목록으로 표시됩니다. Enter로 추가합니다."
+                    placeholder="성과 한 줄 입력 후 Enter"
+                  />
+                </>
+              )}
+            </ItemList>
+          </>
+        )}
+      </ItemList>
     </Group>
   );
 }
@@ -825,6 +960,15 @@ export const adminSections: AdminSection[] = [
     paths: ["about"],
     anchor: "about",
     Form: AboutForm,
+  },
+  {
+    id: "experience",
+    title: "경력·활동",
+    hint: "회사·단체별 직무와 성과",
+    icon: Briefcase,
+    paths: ["experience"],
+    anchor: "experience",
+    Form: ExperienceForm,
   },
   {
     id: "education",

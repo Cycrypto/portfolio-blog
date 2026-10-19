@@ -34,6 +34,7 @@ test("Pencil portfolio renders all sections and original artwork on desktop and 
   ).toBeVisible();
   for (const title of [
     "About",
+    "Experience",
     "Education",
     "Certifications",
     "Skills",
@@ -44,7 +45,7 @@ test("Pencil portfolio renders all sections and original artwork on desktop and 
       page.getByRole("heading", { name: title, exact: true }),
     ).toBeVisible();
   }
-  for (const retired of ["Experience", "Recommendations"])
+  for (const retired of ["Recommendations"])
     await expect(
       page.getByRole("heading", { name: retired, exact: true }),
     ).toHaveCount(0);
