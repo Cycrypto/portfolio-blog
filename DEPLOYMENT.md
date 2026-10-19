@@ -14,6 +14,36 @@
 - Compose 프로젝트: `portfolio-next`
 - 로컬 확인 주소: `http://127.0.0.1:13000/api/health`
 
+## 공개 접속: Cloudflare Tunnel
+
+`junha.space`는 개인 Cloudflare 계정의 `junha-portfolio` 터널을 통해
+서버의 `http://127.0.0.1:13000`에 연결합니다. Tailscale은 서버 관리와
+SSH 배포에 사용합니다. 공개 웹 접속에는 Tailscale 설치가 필요하지 않습니다.
+공유기 인바운드 포트 개방이나 기존 Traefik 인증서 갱신에 의존하지 않습니다.
+
+- Cloudflare 계정: `Jh01love00@gmail.com's Account`
+- 터널 ID: `085a255d-76c6-4aba-935a-eddcd80ff6c2`
+- 네임서버: `fattouche.ns.cloudflare.com`, `jean.ns.cloudflare.com`
+- 루트 DNS: 프록시가 활성화된 CNAME → `<터널 ID>.cfargotunnel.com`
+- 공개 경로: `junha.space` 전체 → `http://127.0.0.1:13000`
+- 서버 커넥터 경로: `/home/ubuntu/apps/portfolio-blog/tunnel`
+
+커넥터는 앱과 분리된 `portfolio-tunnel` Compose 프로젝트로 실행합니다.
+`docker-compose.tunnel.yml`을 커넥터 경로의 `docker-compose.yml`로 복사하고,
+해당 터널의 토큰을 같은 디렉터리의 `tunnel-token` 파일에 권한 600으로
+저장합니다. 디렉터리 권한은 700으로 유지합니다. 토큰을 Git이나 명령행
+인수에 넣지 않습니다. 다른 위치의 토큰은 `CLOUDFLARE_TOKEN_FILE`로 지정합니다.
+현재 서버의 ubuntu UID/GID는 1000이며 Compose의 실행 사용자와 일치합니다.
+
+```bash
+cd /home/ubuntu/apps/portfolio-blog/tunnel
+docker compose up -d
+curl --fail http://127.0.0.1:20243/ready
+```
+
+`coffeenote`와 `brain` 컨테이너는 중지했으며 이 터널에는 연결하지 않습니다.
+DNS 이전 시 기존 메일 MX·SPF·DKIM·DMARC 및 다른 서브도메인 레코드를 보존합니다.
+
 기존 저장소의 운영 Compose 파일과 환경변수를 덮어쓰지 않도록 릴리스를
 별도 디렉터리에 추출합니다. 기존 컨테이너나 PostgreSQL·MinIO 볼륨을
 일괄 삭제하는 명령은 사용하지 않습니다.

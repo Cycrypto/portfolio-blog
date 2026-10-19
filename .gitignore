@@ -12,3 +12,5 @@ playwright-report/
 .DS_Store
 .deployment-version
 next-env.d.ts
+/tunnel-token
+/tunnel/
