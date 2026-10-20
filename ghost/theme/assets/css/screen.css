@@ -11,6 +11,9 @@
   --code-bg: #251b16;
   --code-ink: #f6e9df;
   --code-label: #c5aea1;
+  --action-hover: #3a2620;
+  --placeholder: #a0918a;
+  --backdrop: rgb(26 10 6 / 44%);
   --font-sans: var(
     --gh-font-body,
     "IBM Plex Sans KR",
@@ -28,6 +31,27 @@
   --shell: 960px;
   --header-height: 88px;
   color-scheme: light;
+}
+
+/* The system preference controls the first paint and live appearance changes. */
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191613;
+    --surface: #231e1a;
+    --ink: #f4e9df;
+    --muted: #d1bfb3;
+    --subtle: #beaaa0;
+    --accent: #f28d72;
+    --line: #51433a;
+    --soft: #302822;
+    --code-bg: #100e0c;
+    --code-ink: #f6e9df;
+    --code-label: #c5aea1;
+    --action-hover: #decec1;
+    --placeholder: #beaaa0;
+    --backdrop: rgb(0 0 0 / 65%);
+    color-scheme: dark;
+  }
 }
 
 *,
@@ -997,7 +1021,7 @@ button {
 }
 
 .button--primary:hover {
-  background: #3a2620;
+  background: var(--action-hover);
 }
 
 .button--secondary {
@@ -1031,7 +1055,7 @@ button {
 }
 
 .search-dialog::backdrop {
-  background: rgb(26 10 6 / 44%);
+  background: var(--backdrop);
 }
 
 .search-panel {
@@ -1087,7 +1111,7 @@ button {
 }
 
 .search-field input::placeholder {
-  color: #a0918a;
+  color: var(--placeholder);
 }
 
 .search-field input::-webkit-search-cancel-button {

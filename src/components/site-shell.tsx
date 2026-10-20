@@ -91,7 +91,7 @@ export function SiteHeader({
               alt=""
               width={16}
               height={16}
-              className="size-4 brightness-0 invert"
+              className="size-4 brightness-0 invert dark:invert-0"
             />
           )}
           {navigation.contact.label}

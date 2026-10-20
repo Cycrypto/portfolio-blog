@@ -134,7 +134,7 @@ export function ImagePicker({
               id={`${id}-preview`}
               src={source}
               alt=""
-              className="size-full object-contain"
+              className="size-full object-contain dark:bg-artwork-paper"
             />
           ) : (
             <ImageOff size={20} className="text-muted" />

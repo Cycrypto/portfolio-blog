@@ -86,6 +86,37 @@ test("Pencil portfolio renders all sections and original artwork on desktop and 
   });
   expect(errors).toEqual([]);
 });
+test("system appearance changes update the portfolio without a reload", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/");
+  const background = () =>
+    page.locator("body").evaluate((el) => getComputedStyle(el).backgroundColor);
+  const light = await background();
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+  expect(await background()).not.toBe(light);
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+  await page.screenshot({ path: "test-results/portfolio-dark.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "메뉴 열기" }).click();
+  await expect(
+    page.getByRole("navigation", { name: "모바일 내비게이션" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({ path: "test-results/portfolio-dark-mobile.png" });
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator("html")).toHaveCSS("color-scheme", "light");
+  expect(await background()).toBe(light);
+});
 test("retired public pages, admin pages, and APIs are really removed", async ({
   request,
 }) => {
@@ -190,6 +221,14 @@ test("authorized administrator edits SQLite content and public page reflects it 
       page.getByRole("heading", { name: "프로필 카드", level: 1 }),
     ).toBeVisible();
     await page.waitForLoadState("networkidle");
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(page.locator("html")).toHaveCSS("color-scheme", "dark");
+    await expect(
+      page
+        .getByRole("navigation", { name: "편집 영역" })
+        .getByRole("button", { name: "첫 화면", exact: true }),
+    ).toHaveCSS("color", "rgb(244, 233, 223)");
+    await page.screenshot({ path: "test-results/admin-dark.png" });
     await page
       .locator("#home-intro-profile-avatar-file")
       .setInputFiles("public/portfolio/oliver-rowland.png");

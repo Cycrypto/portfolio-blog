@@ -105,13 +105,16 @@ export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
           </div>
           <Asset
             name={ref.intro.profile.signature}
-            className="hidden h-auto w-20 sm:block"
+            className="hidden h-auto w-20 dark:invert sm:block"
           />
         </div>
         <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-xs leading-relaxed">
           {ref.intro.profile.facts.map((f) => (
             <li key={f.text} className="flex items-center gap-2">
-              <Asset name={f.icon} className="size-3" />
+              <Asset
+                name={f.icon}
+                className="size-3 dark:brightness-0 dark:invert"
+              />
               {f.text}
             </li>
           ))}
@@ -126,7 +129,10 @@ export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
               aria-disabled={!network.href}
               className="flex size-8 items-center justify-center"
             >
-              <Asset name={network.icon} className="size-5" />
+              <Asset
+                name={network.icon}
+                className="size-5 dark:brightness-0 dark:invert"
+              />
             </a>
           ))}
         </div>
@@ -135,7 +141,7 @@ export function PortfolioProfile({ content: ref }: { content: HomeContent }) {
           <a
             href={ref.intro.profile.downloadCv.href || "/cv.pdf"}
             download={ref.intro.profile.downloadCv.href ? undefined : ""}
-            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded bg-ink px-4 text-sm text-paper transition-colors hover:bg-[#39271F]"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded bg-ink px-4 text-sm text-paper transition-colors hover:bg-action-hover"
           >
             <Download size={14} />
             {ref.intro.profile.downloadCv.label}
@@ -172,7 +178,7 @@ function Timeline({ data }: { data: Timeline }) {
               <Asset
                 name={company.logo}
                 alt={company.name}
-                className="size-10 rounded"
+                className="size-10 rounded dark:bg-artwork-paper"
               />
             ) : (
               <span aria-hidden className="size-10 rounded bg-ink/5" />
@@ -264,7 +270,10 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
                   ))}
                 </span>
                 <span>{ref.intro.cta.label}</span>
-                <Asset name={ref.intro.cta.arrow} className="ml-auto size-4" />
+                <Asset
+                  name={ref.intro.cta.arrow}
+                  className="ml-auto size-4 dark:brightness-0 dark:invert"
+                />
               </a>
             )}
           </div>
@@ -304,7 +313,7 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
                     <Asset
                       name={item.logo}
                       alt={item.issuer}
-                      className="size-10 rounded"
+                      className="size-10 rounded dark:bg-artwork-paper"
                     />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-display text-lg font-bold leading-[1.28]">
@@ -334,7 +343,7 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
                         key={index}
                         name={tech.icon}
                         alt={tech.name}
-                        className="size-8"
+                        className="size-8 dark:rounded dark:bg-artwork-paper dark:p-1"
                       />
                     ))}
                   </div>
@@ -409,7 +418,10 @@ export function Portfolio({ content: ref }: { content: HomeContent }) {
                       aria-disabled={!network.href}
                       className="flex size-10 items-center justify-center"
                     >
-                      <Asset name={network.icon} className="size-8" />
+                      <Asset
+                        name={network.icon}
+                        className="size-8 dark:brightness-0 dark:invert"
+                      />
                     </a>
                   ))}
                 </div>
