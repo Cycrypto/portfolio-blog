@@ -3,11 +3,18 @@
 // It creates the owner account, activates the junha theme, seeds sample posts,
 // and verifies the screens from the approved design. Do not run it against production.
 import { randomBytes } from "node:crypto";
+import {
+  seriesPosts,
+  extraSeriesPosts,
+  longSeriesPosts,
+} from "../tests/fixtures/series.mjs";
 
 const site = (process.env.BLOG_URL || "http://127.0.0.1:13001").replace(
   /\/$/,
   "",
 );
+if (!["localhost", "127.0.0.1", "[::1]"].includes(new URL(site).hostname))
+  throw new Error("Smoke fixtures may only be written to a local Ghost stack");
 const email = process.env.SMOKE_EMAIL || "owner@example.com";
 const password =
   process.env.SMOKE_PASSWORD ||
@@ -71,6 +78,12 @@ const posts = [
     tags: [{ name: "회고", slug: "retrospective" }],
     html: "<p>글꼴과 행간, 줄 길이를 하나씩 다시 정했습니다.</p>",
   },
+];
+const seededPosts = [
+  ...posts,
+  ...seriesPosts,
+  ...extraSeriesPosts,
+  ...longSeriesPosts,
 ];
 
 async function admin(path, { method = "GET", body, expect = [200] } = {}) {
@@ -173,21 +186,29 @@ await admin("/settings/", {
   },
 });
 
-const existing = await admin("/posts/?limit=all&fields=id,slug");
+const existing = { posts: [] };
+let existingPage = 1;
+while (existingPage) {
+  const batch = await admin(
+    `/posts/?limit=100&fields=id,slug&page=${existingPage}`,
+  );
+  existing.posts.push(...batch.posts);
+  existingPage = batch.meta.pagination.next;
+}
 const existingSlugs = new Set(existing.posts.map((post) => post.slug));
 for (const post of existing.posts) {
-  const isSample = posts.some((sample) => sample.slug === post.slug);
+  const isSample = seededPosts.some((sample) => sample.slug === post.slug);
   // Ghost creates a "Coming soon" fixture post during setup.
   if (!isSample && (freshSite || post.slug === "coming-soon")) {
     await admin(`/posts/${post.id}/`, { method: "DELETE", expect: [204] });
   }
 }
-for (const post of posts) {
+for (const post of seededPosts) {
   if (existingSlugs.has(post.slug)) continue;
   await admin("/posts/?source=html", {
     method: "POST",
     expect: [200, 201],
-    body: { posts: [{ ...post, status: "published" }] },
+    body: { posts: [{ status: "published", ...post }] },
   });
 }
 
@@ -209,6 +230,13 @@ expectIn(post, "language-yaml", "the code card");
 expectIn(post, "data-toc-desktop", "the table of contents container");
 expectIn(post, "health-checks-and-rollback", "the next post link");
 
+const series = await page("/series-smoke-3/");
+expectIn(series, "data-series-current=", "the current series post ID");
+expectIn(series, "#series-order-10", "server-rendered series order metadata");
+expectIn(series, "series-smoke-12", "series posts beyond the normal page size");
+if (series.includes("시리즈에 노출되면 안 되는 초안"))
+  throw new Error("A draft was exposed in the series contents");
+
 const missing = await page("/no-such-page/", 404);
 expectIn(missing, "페이지를", "the 404 message");
 
@@ -216,16 +244,23 @@ const apiUrl = home.match(/data-api-url="([^"]+)"/)?.[1];
 const apiKey = home.match(/data-api-key="([^"]+)"/)?.[1];
 if (!apiUrl || !apiKey)
   throw new Error("Search is missing the Content API URL or key");
-const search = await fetch(
-  `${apiUrl}posts/?key=${apiKey}&limit=100&include=tags&fields=title,url`,
+const searchSlugs = new Set();
+let searchPage = 1;
+while (searchPage) {
+  const search = await fetch(
+    `${apiUrl}posts/?key=${apiKey}&limit=100&include=tags&fields=title,url&page=${searchPage}`,
+  );
+  if (!search.ok)
+    throw new Error(`Content API search returned ${search.status}`);
+  const batch = await search.json();
+  batch.posts.forEach((post) =>
+    searchSlugs.add(new URL(post.url).pathname.replaceAll("/", "")),
+  );
+  searchPage = batch.meta.pagination.next;
+}
+const missingFromSearch = seededPosts.filter(
+  (post) => post.status !== "draft" && !searchSlugs.has(post.slug),
 );
-if (!search.ok) throw new Error(`Content API search returned ${search.status}`);
-const searchSlugs = new Set(
-  (await search.json()).posts.map((post) =>
-    new URL(post.url).pathname.replaceAll("/", ""),
-  ),
-);
-const missingFromSearch = posts.filter((post) => !searchSlugs.has(post.slug));
 if (missingFromSearch.length)
   throw new Error(
     `Search is missing ${missingFromSearch.map((post) => post.slug).join(", ")}`,

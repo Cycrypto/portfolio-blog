@@ -1,0 +1,18 @@
+{{#foreach tags}}
+  {{#match slug "~^" "series-"}}
+    <details class="series" data-series data-series-current="{{../id}}" open>
+      <summary class="series__summary">
+        <span class="series__label">시리즈</span>
+        <span class="series__title">{{name}}</span>
+        <span class="series__progress" data-series-progress></span>
+        {{> "icons/chevron"}}
+      </summary>
+      <div class="series__body">
+        <ol class="series__list" data-series-list>
+          {{> "series-items" series_slug=slug series_page=1}}
+        </ol>
+        <a class="series__all" href="{{url}}">시리즈 전체 보기 {{> "icons/arrow"}}</a>
+      </div>
+    </details>
+  {{/match}}
+{{/foreach}}

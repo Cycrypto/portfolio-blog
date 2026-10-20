@@ -129,6 +129,30 @@ CV 컨테이너·볼륨·포트와 공유하는 것은 없습니다.
 관리자 화면에서 테마 ZIP을 올릴 필요가 없습니다. Ghost 기본 검색과 Portal은 끄고,
 테마의 검색 대화상자가 Content API로 제목·요약·태그를 검색합니다.
 
+### 시리즈 작성과 순서 변경
+
+1. Ghost 관리자 → Tags → New tag에서 시리즈 이름(예: `홈서버 구축`)과 소개를 입력하고,
+   **Slug를 `series-home-server`처럼 `series-`로 시작하게 지정**합니다. 이름에는 접두어를 붙이지 않습니다.
+2. 묶을 글의 편집 화면 → Post settings → Tags에 이 시리즈 태그를 추가합니다.
+   일반 주제 태그와 함께 쓸 수 있으며 첫 번째 태그일 필요는 없습니다.
+3. 같은 글에 내부 태그 `#series-order-1`, `#series-order-2`처럼 **양의 정수로 된 순서 태그 하나**를 붙입니다.
+   번호를 바꾸고 글을 Update하면 목차·이전/다음 편·시리즈 목록에 반영됩니다.
+   `10`, `20`처럼 간격을 두어 번호를 정하면 사이에 `15`를 넣을 수도 있습니다.
+
+시리즈 목록은 `/tag/series-home-server/`이며 모든 공개 발행 글을 지정 순서로 표시합니다.
+각 글 위에는 현재 편이 강조된 접이식 목차, 아래에는 같은 시리즈 안의 이전·다음 편을 표시합니다.
+모바일에서는 목차를 접어서 시작합니다. 한 편짜리 시리즈에는 이전·다음 링크가 없습니다.
+글 제목·URL·발행일은 순서와 별개로 유지됩니다. 시리즈 이름·소개는 태그 설정에서 바꿉니다.
+
+- 번호가 없는 글이나 유효하지 않은 번호(0·음수·소수)는 번호가 있는 글 뒤에 발행일 오름차순으로 붙습니다.
+- 번호가 겹치면 발행일, 글 ID 순으로 정합니다. 한 글에 순서 태그가 여러 개면 가장 작은 유효 번호를 사용합니다.
+- 여러 시리즈 태그를 붙이면 각각의 목차를 표시하고, 글 아래 이동 링크는 글에 붙인 첫 시리즈 태그를 따릅니다.
+  시리즈마다 다른 순서가 필요하다면 현재 규칙으로는 지원하지 않으므로 한 글에 한 시리즈를 권장합니다.
+- 초안·예약 글은 발행 전에는 목차에 포함하지 않습니다. 내부 순서 태그는 독자에게 보이는 태그에서 숨깁니다.
+- 순서 정렬과 이전·다음 링크 생성은 테마에 포함된 JavaScript로 처리합니다. 별도 API 요청은 하지 않습니다.
+  JavaScript를 끈 경우에도 서버가 렌더링한 목차 링크는 남지만 발행일 오름차순으로 표시됩니다.
+  서버는 100편씩 다음 페이지까지 읽어 목차를 구성하므로 Ghost 6의 조회 제한으로 뒷부분이 누락되지 않습니다.
+
 ### 서버 최초 설정
 
 1. `.env.blog.example`을 `/home/ubuntu/apps/portfolio-blog/.env.blog`로 복사하고 `chmod 600`합니다.
@@ -185,10 +209,13 @@ CV 컨테이너·볼륨·포트와 공유하는 것은 없습니다.
 ```bash
 npm ci --prefix ghost
 npm run validate --prefix ghost          # gscan, Ghost 6 기준
+npm test --prefix ghost                  # 시리즈 정렬 규칙
 export BLOG_URL=http://127.0.0.1:13001 GHOST_DB_PASSWORD=local-db MYSQL_ROOT_PASSWORD=local-root \
   GHOST_STAFF_DEVICE_VERIFICATION=false
 docker compose -f docker-compose.blog.yml up -d --build --wait
-npm run smoke --prefix ghost              # 새 스택 전용: 관리자 생성, 테마 활성화, 예시 글 4개, 화면 확인
+npm run smoke --prefix ghost              # 새 스택 전용: 관리자·테마 설정, 일반 글과 12편·101편 시리즈 생성
+npm exec --prefix ghost -- playwright install chromium
+npm run test:browser --prefix ghost       # 시리즈 목차·이동·모바일 회귀 검사
 docker compose -f docker-compose.blog.yml down -v
 ```
 

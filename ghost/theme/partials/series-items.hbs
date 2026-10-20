@@ -1,0 +1,15 @@
+{{!-- Fetch successive batches: Ghost 6 caps each get query at 100 posts. --}}
+{{#get "posts" filter="tag:{{series_slug}}" include="tags" order="published_at asc,id asc" limit="100" page=series_page}}
+  {{#foreach posts}}
+    {{#if ../../series_cards}}
+      {{> "post-card" hide_tag=true series=true}}
+    {{else}}
+      <li class="series__item" data-series-item data-series-id="{{id}}" data-series-date="{{date published_at format="x"}}" data-series-order="{{> "series-order"}}">
+        <a class="series__link" href="{{url}}">{{title}}</a>
+      </li>
+    {{/if}}
+  {{/foreach}}
+  {{#if pagination.next}}
+    {{> "series-items" series_slug=../series_slug series_cards=../series_cards series_page=pagination.next}}
+  {{/if}}
+{{/get}}

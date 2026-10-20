@@ -82,8 +82,16 @@ jobs:
           cache-dependency-path: ghost/package-lock.json
       - run: npm ci --prefix ghost
       - run: npm run validate --prefix ghost
+      - run: npm test --prefix ghost
       - run: docker compose -f docker-compose.blog.yml up -d --build --wait --wait-timeout 300
       - run: npm run smoke --prefix ghost
+      - run: npm exec --prefix ghost -- playwright install --with-deps chromium
+      - run: npm run test:browser --prefix ghost
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ghost-series-failure
+          path: ghost/test-results/
       - name: Show Ghost logs
         if: failure()
         run: docker compose -f docker-compose.blog.yml logs --tail 200

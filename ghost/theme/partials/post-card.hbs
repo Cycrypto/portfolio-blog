@@ -1,5 +1,5 @@
-<article class="post-card{{#if feature_image}} has-image{{/if}}">
-  <h2 class="post-card__title"><a class="post-card__link" href="{{url}}">{{title}}</a></h2>
+<article class="post-card{{#if feature_image}} has-image{{/if}}"{{#if series}} data-series-item data-series-id="{{id}}" data-series-date="{{date published_at format="x"}}" data-series-order="{{> "series-order"}}"{{/if}}>
+  <h2 class="post-card__title"><a class="post-card__link" href="{{url}}">{{#if series}}<span class="post-card__number" data-series-number>{{@number}}.</span> {{/if}}{{title}}</a></h2>
   {{#if excerpt}}
     <p class="post-card__excerpt">{{excerpt}}</p>
   {{/if}}

@@ -27,6 +27,7 @@
       <ol class="toc__list" data-toc-list></ol>
     </nav>
     <div class="article-body">
+      {{> "series"}}
       <details class="toc toc--mobile" data-toc-mobile hidden>
         <summary>{{> "icons/list"}}<span>목차</span>{{> "icons/chevron"}}</summary>
         <ol class="toc__list" data-toc-list></ol>
@@ -40,13 +41,16 @@
         {{/if}}
         <button class="copy-link" type="button" data-copy-link data-url="{{url absolute="true"}}"><span data-copy-label>링크 복사</span>{{> "icons/arrow"}}</button>
       </footer>
-      {{#prev_post}}
-        <a class="next-post" href="{{url}}"><span class="next-post__label">다음 글</span><span class="next-post__title">{{title}}</span></a>
-      {{else}}
-        {{#next_post}}
-          <a class="next-post" href="{{url}}"><span class="next-post__label">최근 글</span><span class="next-post__title">{{title}}</span></a>
-        {{/next_post}}
-      {{/prev_post}}
+      <nav class="series-navigation" aria-label="시리즈 이전·다음 편" data-series-navigation hidden></nav>
+      <div class="article-related" data-general-next>
+        {{#prev_post}}
+          <a class="next-post" href="{{url}}"><span class="next-post__label">다음 글</span><span class="next-post__title">{{title}}</span></a>
+        {{else}}
+          {{#next_post}}
+            <a class="next-post" href="{{url}}"><span class="next-post__label">최근 글</span><span class="next-post__title">{{title}}</span></a>
+          {{/next_post}}
+        {{/prev_post}}
+      </div>
     </div>
   </div>
 </article>
