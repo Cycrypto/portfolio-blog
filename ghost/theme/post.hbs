@@ -35,12 +35,9 @@
       <div class="gh-content">
         {{content}}
       </div>
-      <footer class="article-foot">
-        {{#if tags}}
-          <p class="article-tags">{{#foreach tags}}<a href="{{url}}">{{name}}</a>{{#unless @last}} · {{/unless}}{{/foreach}}</p>
-        {{/if}}
-        <button class="copy-link" type="button" data-copy-link data-url="{{url absolute="true"}}"><span data-copy-label>링크 복사</span>{{> "icons/arrow"}}</button>
-      </footer>
+      {{#if tags}}
+        <p class="article-tags">{{#foreach tags}}<a href="{{url}}">{{name}}</a>{{#unless @last}} · {{/unless}}{{/foreach}}</p>
+      {{/if}}
       <nav class="series-navigation" aria-label="시리즈 이전·다음 편" data-series-navigation hidden></nav>
       <div class="article-related" data-general-next>
         {{#prev_post}}
