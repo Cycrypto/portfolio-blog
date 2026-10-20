@@ -41,10 +41,10 @@
       <nav class="series-navigation" aria-label="시리즈 이전·다음 편" data-series-navigation hidden></nav>
       <div class="article-related" data-general-next>
         {{#prev_post}}
-          <a class="next-post" href="{{url}}"><span class="next-post__label">다음 글</span><span class="next-post__title">{{title}}</span></a>
+          {{> "adjacent-post" label="다음 글"}}
         {{else}}
           {{#next_post}}
-            <a class="next-post" href="{{url}}"><span class="next-post__label">최근 글</span><span class="next-post__title">{{title}}</span></a>
+            {{> "adjacent-post" label="최근 글"}}
           {{/next_post}}
         {{/prev_post}}
       </div>
