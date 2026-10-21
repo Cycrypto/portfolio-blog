@@ -1,31 +1,11 @@
-// Internal order tags stay out of the public tag list and never change post URLs.
-export function seriesOrder(value = "") {
-  const orders = String(value)
-    .trim()
-    .split(/\s+/)
-    .map((tag) => {
-      const match = /^#series-order-(\d+)$/.exec(tag);
-      const order = match ? Number(match[1]) : NaN;
-      return Number.isSafeInteger(order) && order > 0 ? order : Infinity;
-    });
-  return Math.min(...orders);
-}
+import { compareSeriesEntries } from "./series-order.js";
+export { seriesOrder, compareSeriesEntries } from "./series-order.js";
 
-export function compareSeriesEntries(a, b) {
-  const first = seriesOrder(a.seriesOrder);
-  const second = seriesOrder(b.seriesOrder);
-  if (first !== second) return first - second;
-  return (
-    Number(a.seriesDate) - Number(b.seriesDate) ||
-    a.seriesId.localeCompare(b.seriesId)
-  );
-}
-
-function sortEntries(list) {
+function sortEntries(list, scope = "") {
   const items = Array.from(list.children).filter((item) =>
     item.hasAttribute("data-series-item"),
   );
-  items.sort((a, b) => compareSeriesEntries(a.dataset, b.dataset));
+  items.sort((a, b) => compareSeriesEntries(a.dataset, b.dataset, scope));
   items.forEach((item, index) => {
     list.append(item);
     const number = item.querySelector("[data-series-number]");
@@ -51,12 +31,14 @@ function adjacentLink(item, direction) {
 }
 
 function initSeries() {
-  document.querySelectorAll("[data-series-feed]").forEach(sortEntries);
+  document
+    .querySelectorAll("[data-series-feed]")
+    .forEach((feed) => sortEntries(feed, feed.dataset.seriesScope));
   let hasNavigation = false;
   document.querySelectorAll("[data-series]").forEach((panel) => {
     const list = panel.querySelector("[data-series-list]");
     if (!list) return;
-    const items = sortEntries(list);
+    const items = sortEntries(list, panel.dataset.seriesScope);
     const current = items.findIndex(
       (item) => item.dataset.seriesId === panel.dataset.seriesCurrent,
     );

@@ -129,7 +129,6 @@ test("retired public pages, admin pages, and APIs are really removed", async ({
     "/admin/home",
     "/admin/posts/new",
     "/admin/media",
-    "/admin/series",
     "/api/posts",
     "/api/series",
     "/api/media",

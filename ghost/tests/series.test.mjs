@@ -5,6 +5,41 @@ import {
   compareSeriesEntries,
 } from "../theme/assets/js/series.js";
 
+test("series-specific orders are independent and automatic mode overrides legacy tags", () => {
+  const value = "#series-order-1 #series-order-first-8 #series-order-second-2";
+  assert.equal(seriesOrder(value, "first"), 8);
+  assert.equal(seriesOrder(value, "second"), 2);
+  assert.equal(seriesOrder(value, "legacy"), 1);
+  assert.equal(
+    seriesOrder("#series-order-1 #series-order-first-auto", "first"),
+    Infinity,
+  );
+  const entries = [
+    {
+      seriesOrder: "#series-order-first-2 #series-order-second-1",
+      seriesDate: "10",
+      seriesId: "a",
+    },
+    {
+      seriesOrder: "#series-order-first-1 #series-order-second-2",
+      seriesDate: "20",
+      seriesId: "b",
+    },
+  ];
+  assert.deepEqual(
+    [...entries]
+      .sort((a, b) => compareSeriesEntries(a, b, "first"))
+      .map((post) => post.seriesId),
+    ["b", "a"],
+  );
+  assert.deepEqual(
+    [...entries]
+      .sort((a, b) => compareSeriesEntries(a, b, "second"))
+      .map((post) => post.seriesId),
+    ["a", "b"],
+  );
+});
+
 test("series order is numeric and accepts padded numbers", () => {
   assert.equal(seriesOrder("#series-order-002"), 2);
   const entries = [10, 2, 100, 1].map((order) => ({
