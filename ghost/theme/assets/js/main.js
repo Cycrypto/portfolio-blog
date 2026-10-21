@@ -186,26 +186,6 @@
     update();
   }
 
-  function initCopyLink() {
-    $$("[data-copy-link]").forEach((button) => {
-      const label = $("[data-copy-label]", button);
-      const original = label.textContent;
-      let timer = 0;
-      button.addEventListener("click", async () => {
-        try {
-          await copyText(button.dataset.url || window.location.href);
-          label.textContent = "복사했습니다";
-        } catch {
-          label.textContent = "복사하지 못했습니다";
-        }
-        window.clearTimeout(timer);
-        timer = window.setTimeout(() => {
-          label.textContent = original;
-        }, 1800);
-      });
-    });
-  }
-
   function initSearch() {
     const dialog = $("[data-search-dialog]");
     const openers = $$("[data-search-open]");
@@ -483,6 +463,5 @@
 
   enhanceCodeBlocks();
   buildToc();
-  initCopyLink();
   initSearch();
 })();

@@ -9,5 +9,7 @@ playwright-report
 *.tsbuildinfo
 tunnel-token
 tunnel
-ghost
+ghost/node_modules
+ghost/test-results
+ghost/playwright-report
 docker-compose.blog.yml

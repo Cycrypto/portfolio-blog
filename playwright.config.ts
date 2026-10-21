@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 import { generateKeyPairSync } from "node:crypto";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
+import { ghostFixture, ghostTestKey } from "./tests/support/ghost-fixture.mjs";
 const folder = resolve("data/e2e");
 mkdirSync(folder, { recursive: true });
 for (const name of [
@@ -14,6 +15,8 @@ const { publicKey, privateKey } = generateKeyPairSync("rsa", {
   modulusLength: 2048,
 });
 const fixture = resolve(folder, "access-keys.json");
+const ghostFixtureFile = resolve(folder, "ghost.json");
+writeFileSync(ghostFixtureFile, JSON.stringify(ghostFixture()));
 writeFileSync(
   fixture,
   JSON.stringify({
@@ -57,6 +60,9 @@ export default defineConfig({
       CF_ACCESS_AUD: "portfolio-admin-test",
       SITE_URL: "http://127.0.0.1:3001",
       TEST_ACCESS_JWKS_FILE: fixture,
+      TEST_GHOST_DATA_FILE: ghostFixtureFile,
+      GHOST_ADMIN_URL: "https://ghost-test.invalid",
+      GHOST_ADMIN_API_KEY: ghostTestKey,
       NEXT_TELEMETRY_DISABLED: "1",
     },
   },

@@ -75,11 +75,15 @@ export function verifyOrigin(request: Request) {
     throw new AppError("허용되지 않은 요청입니다.", 403);
   }
 }
-export const permissions = { admin: ["home:read", "home:write"] } as const;
-export function authorize(
-  principal: Principal,
-  permission: "home:read" | "home:write",
-) {
+export type AdminPermission =
+  "home:read" | "home:write" | "series:read" | "series:write";
+export const permissions: Record<
+  Principal["role"],
+  readonly AdminPermission[]
+> = {
+  admin: ["home:read", "home:write", "series:read", "series:write"],
+};
+export function authorize(principal: Principal, permission: AdminPermission) {
   if (!permissions[principal.role]?.includes(permission))
     throw new AppError("관리자 권한이 없습니다.", 403);
 }

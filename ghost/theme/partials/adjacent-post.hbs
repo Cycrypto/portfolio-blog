@@ -1,0 +1,18 @@
+<a class="next-post" href="{{url}}">
+  <span class="next-post__thumb" aria-hidden="true">
+    {{#if feature_image}}
+      <img
+        src="{{img_url feature_image size="s"}}"
+        srcset="{{img_url feature_image size="s"}} 320w, {{img_url feature_image size="m"}} 720w"
+        sizes="(max-width: 720px) 112px, 200px"
+        width="200" height="125" alt="" loading="lazy" decoding="async">
+    {{else}}
+      <svg class="next-post__placeholder" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" focusable="false"><rect x="10" y="6" width="28" height="36" rx="3"/><path d="M17 16h14M17 23h14M17 30h8"/></svg>
+    {{/if}}
+  </span>
+  <span class="next-post__body">
+    <span class="next-post__label">{{label}}{{> "icons/arrow"}}</span>
+    <span class="next-post__title">{{title}}</span>
+    <time class="next-post__date" datetime="{{date published_at format="YYYY-MM-DD"}}">{{date published_at format="YYYY. MM. DD"}}</time>
+  </span>
+</a>

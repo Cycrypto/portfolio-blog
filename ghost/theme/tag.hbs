@@ -8,7 +8,7 @@
       <p class="list-count">{{pagination.total}}개의 글</p>
       {{> "tag-filter" active=tag.slug}}
     </section>
-    <div class="post-feed" data-series-feed>
+    <div class="post-feed" data-series-feed data-series-scope="{{tag.id}}">
       {{> "series-items" series_slug=tag.slug series_page=1 series_cards=true}}
     </div>
   {{else}}

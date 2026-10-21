@@ -18,6 +18,8 @@
   --color-danger-soft: var(--ds-danger-soft);
   --color-code: var(--ds-code-bg);
   --color-code-text: var(--ds-code-text);
+  --color-action-hover: var(--ds-action-hover);
+  --color-artwork-paper: #fffdf9;
   /* Habibi has no Hangul; the Korean serif after it takes over for Korean text only. */
   --font-display: "Habibi", "Nanum Myeongjo", Georgia, serif;
   --font-heading:
@@ -47,7 +49,32 @@
   --ds-danger-soft: #f9e1db;
   --ds-code-bg: #251b16;
   --ds-code-text: #f6e9df;
+  --ds-action-hover: #39271f;
   color-scheme: light;
+}
+/* CSS follows system changes immediately, including before hydration. */
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    --ds-bg: #191613;
+    --ds-surface: #231e1a;
+    --ds-soft: #302822;
+    --ds-text: #f4e9df;
+    --ds-muted: #beaaa0;
+    --ds-border: #51433a;
+    --ds-accent: #f0785c;
+    --ds-accent-text: #f28d72;
+    --ds-accent-soft: #44291f;
+    --ds-success: #9bcca7;
+    --ds-success-soft: #223629;
+    --ds-warning: #e5c27e;
+    --ds-warning-soft: #3b301d;
+    --ds-danger: #ff9d91;
+    --ds-danger-soft: #442522;
+    --ds-code-bg: #100e0c;
+    --ds-code-text: #f6e9df;
+    --ds-action-hover: #decec1;
+    color-scheme: dark;
+  }
 }
 html {
   scroll-behavior: smooth;

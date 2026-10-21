@@ -21,9 +21,12 @@ export function SiteHeader({
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const header = useRef<HTMLElement>(null);
-  const items = navigation.items.filter(
-    (item) => !hidden.includes(item.section),
-  );
+  const items = [
+    ...navigation.items
+      .filter((item) => !hidden.includes(item.section))
+      .map((item) => ({ label: item.label, href: `/#${item.section}` })),
+    { label: "블로그", href: "https://blog.junha.space" },
+  ];
   useEffect(() => {
     if (!open) return;
     const key = (e: KeyboardEvent) => {
@@ -71,8 +74,8 @@ export function SiteHeader({
           {items.map((item, index) => (
             <a
               key={index}
-              href={`/#${item.section}`}
-              className="inline-flex min-h-11 items-center text-sm text-muted hover:text-accent"
+              href={item.href}
+              className="inline-flex min-h-11 items-center whitespace-nowrap text-sm text-muted hover:text-accent"
             >
               {item.label}
             </a>
@@ -88,7 +91,7 @@ export function SiteHeader({
               alt=""
               width={16}
               height={16}
-              className="size-4 brightness-0 invert"
+              className="size-4 brightness-0 invert dark:invert-0"
             />
           )}
           {navigation.contact.label}
@@ -113,11 +116,11 @@ export function SiteHeader({
         >
           {[
             ...items,
-            { label: navigation.contact.label, section: "contact" },
+            { label: navigation.contact.label, href: "/#contact" },
           ].map((item, index) => (
             <a
               key={index}
-              href={`/#${item.section}`}
+              href={item.href}
               onClick={() => setOpen(false)}
               className="rounded px-3 py-3 text-muted hover:bg-soft"
             >

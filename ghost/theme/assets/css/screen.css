@@ -11,6 +11,9 @@
   --code-bg: #251b16;
   --code-ink: #f6e9df;
   --code-label: #c5aea1;
+  --action-hover: #3a2620;
+  --placeholder: #a0918a;
+  --backdrop: rgb(26 10 6 / 44%);
   --font-sans: var(
     --gh-font-body,
     "IBM Plex Sans KR",
@@ -28,6 +31,27 @@
   --shell: 960px;
   --header-height: 88px;
   color-scheme: light;
+}
+
+/* The system preference controls the first paint and live appearance changes. */
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191613;
+    --surface: #231e1a;
+    --ink: #f4e9df;
+    --muted: #d1bfb3;
+    --subtle: #beaaa0;
+    --accent: #f28d72;
+    --line: #51433a;
+    --soft: #302822;
+    --code-bg: #100e0c;
+    --code-ink: #f6e9df;
+    --code-label: #c5aea1;
+    --action-hover: #decec1;
+    --placeholder: #beaaa0;
+    --backdrop: rgb(0 0 0 / 65%);
+    color-scheme: dark;
+  }
 }
 
 *,
@@ -518,21 +542,11 @@ button {
   display: none;
 }
 
-.article-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 24px;
-  margin-top: 40px;
-  padding: 20px 0 8px;
-  border-top: 1px solid var(--line);
+.article-tags {
+  margin: 32px 0 0;
+  color: var(--accent);
   font-size: 14px;
   line-height: 1.7;
-}
-
-.article-tags {
-  margin: 0;
-  color: var(--accent);
 }
 
 .article-tags a:hover {
@@ -540,32 +554,53 @@ button {
   text-underline-offset: 0.2em;
 }
 
-.copy-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: auto;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--subtle);
-  font-size: 14px;
-  line-height: 1.7;
-  cursor: pointer;
-}
-
-.copy-link:hover {
-  color: var(--accent);
-}
-
 .next-post {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+  margin-top: 32px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  transition: border-color 0.15s ease;
+}
+
+.next-post__thumb {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  min-height: 125px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--subtle);
+}
+
+.next-post__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.next-post__placeholder {
+  width: 48px;
+  height: 48px;
+}
+
+.next-post__body {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding-top: 24px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .next-post__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   color: var(--subtle);
   font-size: 14px;
   line-height: 1.6;
@@ -573,13 +608,24 @@ button {
 
 .next-post__title {
   font-family: var(--font-heading);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
-  line-height: 1.6;
+  line-height: 1.5;
   transition: color 0.15s ease;
 }
 
-.next-post:hover .next-post__title {
+.next-post__date {
+  color: var(--subtle);
+  font-size: 12px;
+}
+
+.next-post:hover,
+.next-post:focus-visible {
+  border-color: var(--accent);
+}
+
+.next-post:hover .next-post__title,
+.next-post:focus-visible .next-post__title {
   color: var(--accent);
 }
 
@@ -1025,7 +1071,7 @@ button {
 }
 
 .button--primary:hover {
-  background: #3a2620;
+  background: var(--action-hover);
 }
 
 .button--secondary {
@@ -1059,7 +1105,7 @@ button {
 }
 
 .search-dialog::backdrop {
-  background: rgb(26 10 6 / 44%);
+  background: var(--backdrop);
 }
 
 .search-panel {
@@ -1115,7 +1161,7 @@ button {
 }
 
 .search-field input::placeholder {
-  color: #a0918a;
+  color: var(--placeholder);
 }
 
 .search-field input::-webkit-search-cancel-button {
@@ -1496,18 +1542,26 @@ button {
     font-size: 12px;
   }
 
-  .article-foot {
-    flex-direction: column;
-    align-items: flex-start;
+  .next-post {
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px;
   }
 
-  .copy-link {
-    margin-left: 0;
+  .next-post__thumb {
+    min-height: 100px;
+  }
+
+  .next-post__body {
+    gap: 6px;
+  }
+
+  .next-post__label {
+    font-size: 12px;
   }
 
   .next-post__title {
-    font-size: 21px;
-    line-height: 1.7;
+    font-size: 16px;
   }
 
   .series {

@@ -1,6 +1,6 @@
 {{#foreach tags}}
   {{#match slug "~^" "series-"}}
-    <details class="series" data-series data-series-current="{{../id}}" open>
+    <details class="series" data-series data-series-current="{{../id}}" data-series-scope="{{id}}" open>
       <summary class="series__summary">
         <span class="series__label">시리즈</span>
         <span class="series__title">{{name}}</span>

@@ -14,6 +14,9 @@ services:
       CF_ACCESS_AUD: ${CF_ACCESS_AUD:?Set administrator application AUD}
       SITE_URL: https://junha.space
       DATA_DIR: /app/data
+      GHOST_ADMIN_URL: ${GHOST_ADMIN_URL:-https://blog.junha.space}
+      GHOST_API_URL: ${GHOST_API_URL:-}
+      GHOST_ADMIN_API_KEY: ${GHOST_ADMIN_API_KEY:-}
     ports:
       - "127.0.0.1:13000:3000"
     volumes:
