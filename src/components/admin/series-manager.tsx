@@ -74,9 +74,15 @@ export function SeriesManager({
     .map((id) => posts.get(id))
     .filter((post): post is SeriesPost => !!post);
   const included = new Set(form.postIds);
+  const inOtherSeries = new Set(
+    saved.series
+      .filter((series) => series.id !== selectedId)
+      .flatMap((series) => series.postIds),
+  );
   const candidates = saved.posts.filter(
     (post) =>
       !included.has(post.id) &&
+      !inOtherSeries.has(post.id) &&
       post.title
         .toLocaleLowerCase()
         .includes(search.trim().toLocaleLowerCase()),
