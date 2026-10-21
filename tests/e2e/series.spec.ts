@@ -181,6 +181,19 @@ test("administrator adds posts, reorders, saves, resets, and creates a series on
     await page
       .getByRole("button", { name: "버리고 계속", exact: true })
       .click();
+    await expect(titles()).toHaveText(["서버 준비"]);
+    const candidates = page.getByRole("list", { name: "추가할 글" });
+    await expect(candidates.getByRole("button")).toHaveCount(2);
+    await expect(candidates).not.toContainText("Docker 설치");
+    await expect(candidates).not.toContainText("서비스 배포");
+    await expect(candidates).toContainText("백업 설정");
+    await expect(candidates).toContainText("모니터링");
+    await page
+      .getByRole("searchbox", { name: "추가할 글 검색" })
+      .fill("Docker");
+    await expect(candidates.getByRole("button")).toHaveCount(0);
+    await expect(page.getByText("검색 결과가 없습니다.")).toBeVisible();
+    await page.getByRole("searchbox", { name: "추가할 글 검색" }).clear();
     await page
       .getByRole("button", { name: "새 시리즈 만들기", exact: true })
       .click();
@@ -191,13 +204,15 @@ test("administrator adds posts, reorders, saves, resets, and creates a series on
     await expect(page.getByLabel("시리즈 이름", { exact: true })).toHaveValue(
       "운영 노트",
     );
+    await expect(candidates.getByRole("button")).toHaveCount(2);
+    await expect(candidates).not.toContainText("서버 준비");
     await page
-      .getByRole("button", { name: "서비스 배포 시리즈에 추가", exact: true })
+      .getByRole("button", { name: "모니터링 시리즈에 추가", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "서버 준비 시리즈에 추가", exact: true })
+      .getByRole("button", { name: "백업 설정 시리즈에 추가", exact: true })
       .click();
-    await expect(titles()).toHaveText(["서버 준비", "서비스 배포"]);
+    await expect(titles()).toHaveText(["백업 설정", "모니터링"]);
     await page.getByRole("button", { name: "저장", exact: true }).click();
     await expect(
       page.getByRole("button", { name: "저장", exact: true }),
@@ -209,9 +224,9 @@ test("administrator adds posts, reorders, saves, resets, and creates a series on
       ),
     ).toBe(true);
     await page
-      .getByRole("button", { name: "서비스 배포 위로", exact: true })
+      .getByRole("button", { name: "모니터링 위로", exact: true })
       .click();
-    await expect(titles()).toHaveText(["서비스 배포", "서버 준비"]);
+    await expect(titles()).toHaveText(["모니터링", "백업 설정"]);
     await page.evaluate(() => {
       (document.activeElement as HTMLElement | null)?.blur();
       window.scrollTo({ top: 0, behavior: "instant" });
