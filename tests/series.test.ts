@@ -29,10 +29,12 @@ test("series management preserves Ghost content while supporting publication ord
   });
   const state = ghostFixture();
   let failPost = "";
+  const origins = new Set<string>();
   mock.method(
     globalThis,
     "fetch",
     async (input: string | URL | Request, init?: RequestInit) => {
+      origins.add(new URL(String(input)).origin);
       if (failPost && String(input).includes(`posts/${failPost}/`))
         return Response.json({}, { status: 409 });
       return ghostResponse(state, input, init);
@@ -48,6 +50,28 @@ test("series management preserves Ghost content while supporting publication ord
     );
   assert.equal(series().order, "publication");
   assert.deepEqual(series().postIds, [id(101), id(102)]);
+
+  await t.test(
+    "private API routing preserves public series links",
+    async () => {
+      const before = process.env.GHOST_API_URL;
+      process.env.GHOST_API_URL = "http://ghost:2368";
+      try {
+        origins.clear();
+        const internal = await getSeriesWorkspace(new GhostAdmin());
+        assert.deepEqual([...origins], ["http://ghost:2368"]);
+        assert.equal(internal.blogUrl, "https://ghost-test.invalid");
+        assert.ok(
+          internal.series.every((series) =>
+            series.url.startsWith("https://ghost-test.invalid/"),
+          ),
+        );
+      } finally {
+        if (before === undefined) delete process.env.GHOST_API_URL;
+        else process.env.GHOST_API_URL = before;
+      }
+    },
+  );
 
   await t.test("create a series with an automatic slug", async () => {
     const created = await createSeries(

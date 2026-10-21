@@ -152,6 +152,10 @@ Ghost 설정 → Integrations → Custom Integration에서 시리즈 관리용 �
 서버의 `.env.portfolio`에 `GHOST_ADMIN_URL=https://blog.junha.space`와
 `GHOST_ADMIN_API_KEY=<Admin API key>`를 설정한 뒤 포트폴리오 컨테이너를 다시 생성합니다.
 Content API key가 아닌 **Admin API key**를 사용합니다. 키는 서버에서만 사용하며 브라우저에 보내지 않습니다.
+Ghost 관리 API에 Cloudflare Access가 적용된 경우 `GHOST_API_URL=http://ghost:2368`을 별도로 지정하고
+서버의 `docker-compose.portfolio.override.yml`에서 포트폴리오를 Ghost Docker 네트워크에 연결합니다.
+`GHOST_ADMIN_URL`은 독자에게 보여주는 공개 블로그 주소로 유지합니다. 외부 Access 보호를 해제하지 않습니다.
+배포·롤백 스크립트는 이 서버 전용 override를 자동으로 적용합니다.
 `.env.local`에도 같은 변수를 넣으면 로컬 관리자에서 연결할 수 있습니다.
 기존 Cloudflare Access 관리자 앱이 `/admin/*`와 `/api/admin/*`를 모두 보호해야 합니다.
 테마에도 정렬 규칙이 추가되므로 포트폴리오 앱과 Ghost 테마를 함께 배포합니다.

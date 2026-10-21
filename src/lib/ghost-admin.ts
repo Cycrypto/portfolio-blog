@@ -25,6 +25,7 @@ interface GhostResponse<T> {
 
 export class GhostAdmin {
   readonly blogUrl: string;
+  private apiUrl: string;
   private key: string;
   constructor() {
     const rawUrl = process.env.GHOST_ADMIN_URL?.trim();
@@ -45,6 +46,16 @@ export class GhostAdmin {
       )
         throw new Error();
       this.blogUrl = url.href.replace(/\/$/, "");
+      const apiUrl = new URL(process.env.GHOST_API_URL?.trim() || this.blogUrl);
+      if (
+        !["https:", "http:"].includes(apiUrl.protocol) ||
+        apiUrl.username ||
+        apiUrl.password ||
+        apiUrl.search ||
+        apiUrl.hash
+      )
+        throw new Error();
+      this.apiUrl = apiUrl.href.replace(/\/$/, "");
     } catch {
       throw new AppError("블로그 주소 설정을 확인해 주세요.", 503);
     }
@@ -64,12 +75,14 @@ export class GhostAdmin {
       .sign(Buffer.from(secret, "hex"));
     let response: Response;
     try {
-      response = await fetch(`${this.blogUrl}/ghost/api/admin/${path}`, {
+      response = await fetch(`${this.apiUrl}/ghost/api/admin/${path}`, {
         method,
         headers: {
           Authorization: `Ghost ${token}`,
           "Accept-Version": "v6.0",
           "Content-Type": "application/json",
+          // Internal Docker requests terminate TLS at the existing reverse proxy.
+          "X-Forwarded-Proto": "https",
         },
         body: body === undefined ? undefined : JSON.stringify(body),
         cache: "no-store",

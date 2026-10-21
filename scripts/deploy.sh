@@ -9,6 +9,8 @@ env_file="$base_dir/.env.portfolio"
 [[ -f "$env_file" ]] || { echo "Configure $env_file first" >&2; exit 1; }
 
 compose=(docker compose --env-file "$env_file" -f "$release_dir/docker-compose.prod.yml")
+override_file="$base_dir/docker-compose.portfolio.override.yml"
+[[ -f "$override_file" ]] && compose+=(-f "$override_file")
 "${compose[@]}" config --quiet
 if [[ "${DEPLOY_PREBUILT:-0}" == 1 ]]; then
   docker image inspect "portfolio-blog:$DEPLOYMENT_VERSION" >/dev/null
@@ -51,8 +53,9 @@ fi
 rollback() {
   if [[ -n "$previous_version" && -f "$previous_release/docker-compose.prod.yml" ]]; then
     echo "Restoring previous portfolio release"
-    DEPLOYMENT_VERSION="$previous_version" docker compose --env-file "$env_file" \
-      -f "$previous_release/docker-compose.prod.yml" up -d --wait --wait-timeout 120 portfolio
+    local previous=(docker compose --env-file "$env_file" -f "$previous_release/docker-compose.prod.yml")
+    [[ -f "$override_file" ]] && previous+=(-f "$override_file")
+    DEPLOYMENT_VERSION="$previous_version" "${previous[@]}" up -d --wait --wait-timeout 120 portfolio
   else
     # The first replacement leaves the old application's containers available.
     "${compose[@]}" stop portfolio
